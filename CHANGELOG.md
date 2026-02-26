@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Initial release of the AgentStack Cursor plugin.
 - **Manifest:** `.cursor-plugin/plugin.json` with name, description, keywords (8dna, rules-engine, payments, mcp, backend, buffs, projects).
-- **MCP:** `mcp.json` with cloud and self-hosted config reference; [MCP_QUICKSTART.md](MCP_QUICKSTART.md) for API key and Cursor setup.
+- **MCP:** `mcp.json` with cloud config; [MCP_QUICKSTART.md](MCP_QUICKSTART.md) for API key and Cursor setup.
 - **Skills:**
   - `agentstack-8dna` — 8DNA hierarchy and evolution (parent_uuid, generation, data/config/protected).
   - `agentstack-projects` — Create/manage projects and API keys via MCP (create_project_anonymous, get_projects, attach_to_user, etc.).

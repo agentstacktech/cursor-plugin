@@ -15,5 +15,6 @@
     "agentstack"
   ],
   "license": "MIT",
-  "version": "0.4.0"
+  "version": "0.4.0",
+  "repository": "https://github.com/agentstacktech/cursor-plugin"
 }
