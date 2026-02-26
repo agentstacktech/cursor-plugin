@@ -1,0 +1,19 @@
+{
+  "name": "agentstack",
+  "displayName": "AgentStack — Full Backend Ecosystem",
+  "author": "AgentStack",
+  "description": "Full backend ecosystem for Cursor: 8DNA hierarchical data, Rules Engine, Buffs (trials/subscriptions), Payments, 60+ MCP tools (Projects, Auth, Scheduler, Analytics, Webhooks, Notifications, Wallets). More than a database — unified JSON + DNA architecture, server-side logic without boilerplate.",
+  "keywords": [
+    "8dna",
+    "rules-engine",
+    "payments",
+    "mcp",
+    "backend",
+    "buffs",
+    "projects",
+    "ecosystem",
+    "agentstack"
+  ],
+  "license": "MIT",
+  "version": "0.4.0"
+}

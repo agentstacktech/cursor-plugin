@@ -1,0 +1,23 @@
+{
+  "description": "AgentStack MCP server configuration for Cursor. Use this to add the AgentStack MCP server to Cursor Settings > MCP.",
+  "mcpServers": {
+    "agentstack": {
+      "type": "http",
+      "baseUrl": "https://agentstack.tech/mcp",
+      "headers": {
+        "Content-Type": "application/json",
+        "X-API-Key": "<YOUR_API_KEY>"
+      },
+      "tools": {
+        "enabled": true,
+        "autoDiscover": true
+      }
+    }
+  },
+  "notes": [
+    "Replace <YOUR_API_KEY> with your project API key.",
+    "To get an API key: create a project via projects.create_project_anonymous (see Quick Start in README), or use your existing project API key from AgentStack dashboard.",
+    "For self-hosted MCP use baseUrl: http://localhost:8100/mcp (or your MCP server URL).",
+    "Cursor MCP deeplink (optional): cursor://anysphere.cursor-deeplink/mcp/install?name=agentstack&config=<BASE64_ENCODED_JSON>. Encode the mcpServers.agentstack object as Base64 to generate the link."
+  ]
+}

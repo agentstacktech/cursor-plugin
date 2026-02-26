@@ -1,0 +1,35 @@
+---
+description: AgentStack API and JSON usage — use MCP from Cursor; for direct HTTP use /api/projects, /api/logic, /api/neural and other /api/* endpoints.
+globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/api/**"]
+---
+
+# AgentStack API
+
+## From Cursor: MCP
+
+Use **MCP** (base URL `https://agentstack.tech/mcp`) for full integration: projects, logic/rules, buffs, payments, scheduler, analytics, auth, and more. One API key, 60+ tools — the recommended way to work with AgentStack from Cursor.
+
+## Direct HTTP API
+
+Base URL: `https://agentstack.tech`. All capabilities under **`/api`**:
+
+- **Projects:** `/api/projects` — list, get, create, update, delete; project data in the response payload.
+- **Logic Engine:** `/api/logic` — create, update, list, execute rules.
+- **Neural / events:** `/api/neural` — neural events and triggers.
+- **Buffs:** `/api/buffs` — create, apply, list buffs (trials, subscriptions, effects).
+- **Payments:** `/api/payments` — create payment, status, transactions.
+- **Auth:** `/api/auth` — login, register, profile.
+- **Scheduler:** `/api/scheduler` — scheduled tasks.
+- **Analytics:** `/api/analytics` — usage, metrics.
+- **API keys:** `/api/apikeys` — list, create, delete keys.
+
+When an endpoint supports a **path** or **field** query param for partial read/update, use it to keep payloads small. Exact request shapes: OpenAPI/docs in the AgentStack repo (`docs/api/*.yaml` or backend routes).
+
+## Auth
+
+Use project credentials: `X-API-Key`, `X-Project-ID`, or session — same as for MCP.
+
+## References
+
+- **MCP:** **MCP_SERVER_CAPABILITIES** — full list of tools.
+- **Backend:** `agentstack-core/core_app.py`, `endpoints/*` — routes and prefixes.
