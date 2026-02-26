@@ -29,7 +29,7 @@ curl -X POST https://agentstack.tech/mcp/tools/projects.create_project_anonymous
 3. Use the config from `mcp.json` in this repo:
    - **Name:** `agentstack`
    - **Type:** `HTTP`
-   - **Base URL:** `https://agentstack.tech/mcp` (or your self-hosted URL, e.g. `http://localhost:8100/mcp`)
+   - **Base URL:** `https://agentstack.tech/mcp`
    - **Headers:** Add header `X-API-Key` with your API key.
 
 **Config file locations:**
@@ -66,12 +66,15 @@ In Cursor Chat you can say:
 
 The agent will call tools like `projects.create_project_anonymous`, `projects.get_projects`, `projects.get_stats`, etc.
 
+## If MCP doesn’t show up or tools don’t run
+
+- **Check API key** — valid key from AgentStack, no extra spaces in the header value.
+- **Check Base URL** — must be `https://agentstack.tech/mcp`.
+- **Restart Cursor** after changing MCP config.
+
 ## Full tool list and docs
 
 For all 60+ tools (Auth, Payments, Projects, Scheduler, Analytics, Rules, Webhooks, Notifications, Wallets), see the main docs:
 
 - [MCP Server Capabilities](https://github.com/agentstack/agentstack/blob/main/docs/MCP_SERVER_CAPABILITIES.md) (in the AgentStack repo)
 
-## Self-hosted MCP
-
-If you run the MCP server yourself (e.g. from the AgentStack repo `mcp/` folder), set `baseUrl` to your server, e.g. `http://localhost:8100/mcp`. Your API key is still required for auth.

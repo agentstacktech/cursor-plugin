@@ -63,7 +63,7 @@ node scripts/validate-plugin.mjs
 
 - [ ] Получен API key (анонимный проект или из дашборда AgentStack). Шаги: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
 - [ ] В Cursor: Settings → Features → Model Context Protocol (MCP) → Add Server
-- [ ] Заполнено: Name `agentstack`, Type `HTTP`, Base URL `https://agentstack.tech/mcp` (или self-hosted)
+- [ ] Заполнено: Name `agentstack`, Type `HTTP`, Base URL `https://agentstack.tech/mcp`
 - [ ] В Headers добавлен `X-API-Key` с полученным ключом
 - [ ] При необходимости Cursor перезапущен
 

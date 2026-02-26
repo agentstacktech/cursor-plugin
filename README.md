@@ -8,13 +8,13 @@ JSON-based data store (8DNA: JSON+ with built-in variants, e.g. A/B tests) and s
 
 | Component | Description |
 |-----------|-------------|
-| **MCP server config** | Connect Cursor to the AgentStack MCP (cloud or self-hosted). |
+| **MCP server config** | Connect Cursor to the AgentStack MCP. |
 | **Skills** | 8DNA, Projects, Rules Engine, **Assets**, **RBAC**, **Buffs** (trials, subscriptions), **Payments** (payments, wallets), **Auth** (login, profile) — so the agent knows when and how to use AgentStack. |
 | **Rules** | Coding patterns for DNA/config and HTTP API usage (/api/projects, /api/logic, etc.). |
 
 ## Quick Start
 
-**Installing the plugin:** From [Cursor Marketplace](https://cursor.com/marketplace) (after approval) or, for local testing before publish, add the plugin from the folder/repo — see [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md) and [Cursor Docs — Plugins](https://cursor.com/docs/plugins).
+**Installing the plugin:** From [Cursor Marketplace](https://cursor.com/marketplace) or add from folder for local use — [Cursor Docs → Plugins](https://cursor.com/docs/plugins).
 
 1. **Get an API key**  
    Create an anonymous project (no signup) or use your existing project key. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
@@ -23,7 +23,7 @@ JSON-based data store (8DNA: JSON+ with built-in variants, e.g. A/B tests) and s
    In Cursor: **Settings → MCP** (or **Features → Model Context Protocol**). Add a server with:
    - **Name:** `agentstack`
    - **Type:** HTTP
-   - **Base URL:** `https://agentstack.tech/mcp` (or your self-hosted URL)
+   - **Base URL:** `https://agentstack.tech/mcp`
    - **Header:** `X-API-Key` = your API key  
 
    Full example is in [mcp.json](mcp.json).
@@ -65,16 +65,11 @@ rules/
 
 ## Documentation
 
-- **Quick Start:** [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
-- **Verification & testing checklist:** [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md)
-- **How to verify the plugin and what it can do:** [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md)
-- **Full MCP tool list and behavior:** See the main AgentStack docs (e.g. **MCP_SERVER_CAPABILITIES** in the AgentStack repo).
-- **HTTP API (projects, logic, neural, buffs, etc.):** Backend routes under `/api/*`; see AgentStack repo (e.g. `core_app.py`, `docs/api/`).
-- **Plugins index and comparison (Cursor, Claude, GPT, VS Code):** [docs/plugins/README.md](https://github.com/agentstack/agentstack/blob/main/docs/plugins/README.md) in the main repo.
+- **Quick Start:** [MCP_QUICKSTART.md](MCP_QUICKSTART.md) — API key and MCP setup in a few steps.
+- **Full MCP tool list:** [MCP_SERVER_CAPABILITIES](https://github.com/agentstack/agentstack/blob/main/docs/MCP_SERVER_CAPABILITIES.md) in the AgentStack repo.
+- **Plugins index (Cursor, Claude, GPT, VS Code):** [docs/plugins/README.md](https://github.com/agentstack/agentstack/blob/main/docs/plugins/README.md).
 
-## Self-hosted MCP
-
-If you run the AgentStack MCP server yourself, set the MCP **Base URL** to your server (e.g. `http://localhost:8100/mcp`). You still need an API key for auth. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+*For maintainers:* [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md), [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md).
 
 ## License
 
