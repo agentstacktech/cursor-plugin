@@ -2,19 +2,21 @@
 
 Get the AgentStack MCP server working in Cursor in under 2 minutes.
 
+**Flow:** Create an anonymous project (no account) → get API key → add key in Cursor → use 60+ tools in chat. The MCP server allows `GET /mcp/tools` and `projects.create_project_anonymous` **without X-API-Key** so you can get a key before configuring Cursor.
+
 ## Step 1: Get an API key
 
 **Option A — No account (try first):**
 
-1. Call the MCP endpoint once (e.g. with curl or from another tool) to create an anonymous project and get keys:
+1. Create an anonymous project to get keys (no signup). From a terminal:
 
 ```bash
 curl -X POST https://agentstack.tech/mcp/tools/projects.create_project_anonymous \
   -H "Content-Type: application/json" \
-  -d '{"tool": "projects.create_project_anonymous", "params": {"name": "My Cursor Project"}}'
+  -d '{"params": {"name": "My Cursor Project"}}'
 ```
 
-2. From the response, copy `project_api_key` or `user_api_key` — use it as your API key in Cursor.
+2. From the response, copy `user_api_key` (or `api_key` / `project_api_key`) — use it as your API key in Cursor.
 
 **Option B — With account:**
 

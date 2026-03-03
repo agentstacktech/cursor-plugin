@@ -16,8 +16,10 @@ JSON-based data store (8DNA: JSON+ with built-in variants, e.g. A/B tests) and s
 
 **Installing the plugin:** From [Cursor Marketplace](https://cursor.com/marketplace) or add from folder for local use — [Cursor Docs → Plugins](https://cursor.com/docs/plugins).
 
+**Flow:** Create an anonymous project (no account) → get API key → add key in Cursor → use 60+ tools in chat. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+
 1. **Get an API key**  
-   Create an anonymous project (no signup) or use your existing project key. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+   Create an anonymous project (no signup) via curl or use your existing project key. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
 
 2. **Add MCP in Cursor**  
    In Cursor: **Settings → MCP** (or **Features → Model Context Protocol**). Add a server with:
