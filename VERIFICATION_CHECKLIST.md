@@ -1,130 +1,130 @@
-# Cursor Plugin AgentStack — Проверка и тестирование
+# Cursor Plugin AgentStack — Verification and testing
 
-**Версия:** 0.1  
-**Дата:** 2026-02-23  
-**Цель:** Подготовка к проверке плагина и пошаговое тестирование перед релизом или подачей в Marketplace.
+**Version:** 0.1  
+**Date:** 2026-02-23  
+**Purpose:** Prepare the plugin for verification and step-by-step testing before release or Marketplace submission.
 
 ---
 
-## Часть 1. Подготовка (перед тестированием)
+## Part 1. Preparation (before testing)
 
-### 1.1 Автоматическая валидация структуры
+### 1.1 Automatic structure validation
 
-Из корня репозитория плагина выполните:
+From the plugin repo root run:
 
 ```bash
 node scripts/validate-plugin.mjs
 ```
 
-Либо запустите все проверки плагина одной командой (структура + MCP):
+Or run all plugin checks in one command (structure + MCP):
 
 ```powershell
 .\scripts\run-all-verification.ps1
-# С ключом: .\scripts\run-all-verification.ps1 -ApiKey "your-key"
+# With key: .\scripts\run-all-verification.ps1 -ApiKey "your-key"
 ```
 
-Ожидается: все проверки пройдены, код выхода 0.
+Expected: all checks pass, exit code 0.
 
-- [ ] Скрипт выполнен без ошибок
-- [ ] Все обязательные файлы и папки на месте
-- [ ] `plugin.json` и `mcp.json` валидны
-- [ ] В репозитории нет захардкоженных секретов (только плейсхолдеры)
+- [ ] Script completed without errors
+- [ ] All required files and folders present
+- [ ] `plugin.json` and `mcp.json` are valid
+- [ ] No hardcoded secrets in repo (placeholders only)
 
-### 1.2 Ручная проверка контента
+### 1.2 Manual content check
 
-- [ ] **plugin.json:** `name` в kebab-case, `version` в формате semver (например 0.4.0)
-- [ ] **README.md:** ссылки на MCP_QUICKSTART и TESTING_AND_CAPABILITIES работают
-- [ ] **mcp.json:** в заголовках указан плейсхолдер `<YOUR_API_KEY>` или `YOUR_API_KEY_HERE`, не реальный ключ
-- [ ] **Skills:** в каждой папке `skills/*/` есть файл `SKILL.md` с frontmatter `name` и `description`
-- [ ] **Rules:** в `rules/` есть `.mdc` файлы с `description` и при необходимости `globs`
+- [ ] **plugin.json:** `name` in kebab-case, `version` in semver format (e.g. 0.4.0)
+- [ ] **README.md:** links to MCP_QUICKSTART and TESTING_AND_CAPABILITIES work
+- [ ] **mcp.json:** headers use placeholder `<YOUR_API_KEY>` or `YOUR_API_KEY_HERE`, not a real key
+- [ ] **Skills:** each `skills/*/` folder has `SKILL.md` with frontmatter `name` and `description`
+- [ ] **Rules:** `rules/` contains `.mdc` files with `description` and `globs` if needed
 
-### 1.3 Документация для ревью (Security / Marketplace)
+### 1.3 Documentation for review (Security / Marketplace)
 
-- [ ] Прочитан [CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md](../../../docs/plugins/CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md) — ответы для ревьюеров готовы
-- [ ] CHANGELOG актуален, последняя версия совпадает с `plugin.json`
+- [ ] Read [CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md](../../../docs/plugins/CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md) — answers for reviewers ready
+- [ ] CHANGELOG is up to date, latest version matches `plugin.json`
 
 ---
 
-## Часть 2. Тестирование плагина
+## Part 2. Plugin testing
 
-### 2.1 Установка плагина
+### 2.1 Install the plugin
 
-**Вариант A — локально (до публикации):**
+**Option A — locally (before publish):**
 
-- [ ] Плагин добавлен из папки / из репозитория согласно [Cursor Docs — Plugins](https://cursor.com/docs/plugins)
-- [ ] В Cursor видно название плагина (AgentStack — Full Backend Ecosystem) и версию
+- [ ] Plugin added from folder / repo per [Cursor Docs — Plugins](https://cursor.com/docs/plugins)
+- [ ] Cursor shows plugin name (AgentStack — Full Backend Ecosystem) and version
 
-**Вариант B — из Marketplace (после публикации):**
+**Option B — from Marketplace (after publish):**
 
-- [ ] Cursor → Settings → Plugins → найден "AgentStack" → Install
-- [ ] Установка прошла без ошибок
+- [ ] Cursor → Settings → Plugins → search "AgentStack" → Install
+- [ ] Install completed without errors
 
-### 2.2 Настройка MCP
+### 2.2 MCP setup
 
-- [ ] Получен API key (анонимный проект или из дашборда AgentStack). Шаги: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
-- [ ] В Cursor: Settings → Features → Model Context Protocol (MCP) → Add Server
-- [ ] Заполнено: Name `agentstack`, Type `HTTP`, Base URL `https://agentstack.tech/mcp`
-- [ ] В Headers добавлен `X-API-Key` с полученным ключом
-- [ ] При необходимости Cursor перезапущен
+- [ ] API key obtained (anonymous project or from AgentStack dashboard). Steps: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
+- [ ] In Cursor: Settings → Features → Model Context Protocol (MCP) → Add Server
+- [ ] Filled: Name `agentstack`, Type `HTTP`, Base URL `https://agentstack.tech/mcp`
+- [ ] Headers include `X-API-Key` with the key
+- [ ] Cursor restarted if needed
 
-### 2.3 Проверка MCP (доступность endpoint)
+### 2.3 MCP check (endpoint availability)
 
-Опционально — убедиться, что MCP endpoint отвечает:
+Optional — confirm MCP endpoint responds:
 
 ```powershell
-# PowerShell: проверка доступности (ожидается 401 без ключа или 200 с ключом)
+# PowerShell: availability check (expect 401 without key or 200 with key)
 Invoke-WebRequest -Uri "https://agentstack.tech/mcp/tools" -Method GET -Headers @{"X-API-Key"="YOUR_KEY"} -UseBasicParsing | Select-Object StatusCode
 ```
 
-Или с curl (если установлен):
+Or with curl (if installed):
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: YOUR_KEY" https://agentstack.tech/mcp/tools
 ```
 
-- [ ] Endpoint возвращает 200 (сервис доступен; с ключом — полный доступ, без ключа некоторые сервера отдают 200 для GET /tools или 401)
+- [ ] Endpoint returns 200 (service available; with key — full access; without key some servers return 200 for GET /tools or 401)
 
-### 2.4 Сценарии в чате Cursor
+### 2.4 Chat scenarios in Cursor
 
-Выполнить в чате Cursor и убедиться, что агент вызывает MCP tools и возвращает осмысленный ответ:
+Run in Cursor chat and confirm the agent calls MCP tools and returns a sensible answer:
 
-| # | Запрос в чате | Ожидаемый tool / результат |
+| # | Chat request | Expected tool / result |
 |---|----------------|----------------------------|
-| 1 | "Создай проект в AgentStack с названием Test Verification" | `projects.create_project_anonymous` или аналог, в ответе есть project_id или ключ |
-| 2 | "Покажи список моих проектов в AgentStack" | `projects.get_projects`, список проектов (или пустой) |
-| 3 | "Дай статистику по проекту &lt;project_id&gt;" (подставить ID из п.1) | `projects.get_stats`, данные по проекту |
+| 1 | "Create a project in AgentStack named Test Verification" | `projects.create_project_anonymous` or similar; response has project_id or key |
+| 2 | "Show my AgentStack projects" | `projects.get_projects`, project list (or empty) |
+| 3 | "Get stats for project &lt;project_id&gt;" (use ID from step 1) | `projects.get_stats`, project data |
 
-- [ ] Сценарий 1 выполнен
-- [ ] Сценарий 2 выполнен
-- [ ] Сценарий 3 выполнен
+- [ ] Scenario 1 done
+- [ ] Scenario 2 done
+- [ ] Scenario 3 done
 
-### 2.5 Skills и Rules (качественная проверка)
+### 2.5 Skills and Rules (quality check)
 
-- [ ] При запросе про «проекты» или «AgentStack» агент предлагает вызов MCP (projects.*), а не свой HTTP-клиент
-- [ ] При работе с кодом (например, с файлами под globs из rules) рекомендации соответствуют DNA-паттернам и использованию `/api/*` (см. [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md))
+- [ ] For requests about "projects" or "AgentStack" the agent suggests MCP calls (projects.*), not its own HTTP client
+- [ ] When working with code (e.g. files under rules globs) recommendations match DNA patterns and use of `/api/*` (see [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md))
 
-### 2.6 Типичные проблемы
+### 2.6 Common issues
 
-| Симптом | Действие |
-|--------|----------|
-| Агент не вызывает MCP | Проверить MCP в Settings (URL, заголовок X-API-Key), перезапустить Cursor |
-| 401 / 403 | Проверить валидность API key, лимиты подписки |
-| "Tool not found" | Сверить имя tool с документацией; проверить список: `GET https://agentstack.tech/mcp/tools` с X-API-Key |
-| Skills не срабатывают | Плагин установлен; в описании skill есть триггерные фразы (проекты, 8DNA, правила) |
-
----
-
-## Часть 3. После тестирования
-
-- [ ] Все пункты Части 1 и 2 отмечены
-- [ ] Зафиксированы версия в `plugin.json` и запись в CHANGELOG
-- [ ] При подаче в Marketplace: заполнена форма по [CURSOR_MARKETPLACE_SUBMIT.md](../../../docs/plugins/CURSOR_MARKETPLACE_SUBMIT.md)
-- [ ] После публикации: выполнить [CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md](../../../docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md)
+| Symptom | Action |
+|--------|--------|
+| Agent does not call MCP | Check MCP in Settings (URL, X-API-Key header), restart Cursor |
+| 401 / 403 | Check API key validity, subscription limits |
+| "Tool not found" | Match tool name to docs; check list: `GET https://agentstack.tech/mcp/tools` with X-API-Key |
+| Skills not triggering | Plugin installed; skill description has trigger phrases (projects, 8DNA, rules) |
 
 ---
 
-**Ссылки**
+## Part 3. After testing
 
-- [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md) — возможности плагина и детали проверки
-- [MCP_QUICKSTART.md](MCP_QUICKSTART.md) — API key и настройка MCP в Cursor
-- [.cursor-plugin/VALIDATION.md](.cursor-plugin/VALIDATION.md) — соответствие структуры Cursor plugin building docs
+- [ ] All items in Part 1 and 2 checked
+- [ ] Version in `plugin.json` and CHANGELOG entry updated
+- [ ] For Marketplace submission: form filled per [CURSOR_MARKETPLACE_SUBMIT.md](../../../docs/plugins/CURSOR_MARKETPLACE_SUBMIT.md)
+- [ ] After publish: run [CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md](../../../docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md)
+
+---
+
+**Links**
+
+- [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md) — plugin capabilities and verification details
+- [MCP_QUICKSTART.md](MCP_QUICKSTART.md) — API key and MCP setup in Cursor
+- [.cursor-plugin/VALIDATION.md](.cursor-plugin/VALIDATION.md) — structure alignment with Cursor plugin building docs

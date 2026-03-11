@@ -1,119 +1,119 @@
-# Проверка плагина AgentStack и его возможности
+# AgentStack plugin testing and capabilities
 
-## Подготовка к проверке и тестированию
+## Preparation for testing
 
-Перед ручным тестированием выполните чеклист и автоматическую валидацию:
+Before manual testing, run the checklist and automatic validation:
 
-- **[VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md)** — пошаговый чеклист: валидация структуры, установка, настройка MCP, сценарии в чате.
-- **Валидация структуры:** из корня плагина: `node scripts/validate-plugin.mjs`
-- **Проверка MCP endpoint (опционально):** `.\scripts\test-mcp-endpoint.ps1` (PowerShell) или см. блок «Проверка MCP» в чеклисте.
+- **[VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md)** — step-by-step checklist: structure validation, install, MCP setup, chat scenarios.
+- **Structure validation:** from plugin root: `node scripts/validate-plugin.mjs`
+- **MCP endpoint check (optional):** `.\scripts\test-mcp-endpoint.ps1` (PowerShell) or see "MCP check" block in the checklist.
 
 ---
 
-## Как проверить, что плагин работает
+## How to verify the plugin works
 
-### 1. Установка плагина
+### 1. Install the plugin
 
-**Вариант A: из Marketplace (после публикации)**  
-- Cursor → Settings → Plugins (или Marketplace) → найти "AgentStack" → Install.
+**Option A: from Marketplace (after publish)**  
+- Cursor → Settings → Plugins (or Marketplace) → search "AgentStack" → Install.
 
-**Вариант B: локально (до публикации)**  
-- Скопировать папку `provided_plugins/cursor-plugin` (или открыть проект AgentStack) в место, откуда Cursor подхватывает плагины, либо открыть репозиторий, в котором плагин лежит.  
-- Либо добавить плагин через Cursor UI, если есть опция "Add plugin from folder".
+**Option B: locally (before publish)**  
+- Copy folder `provided_plugins/cursor-plugin` (or open the AgentStack project) to where Cursor loads plugins, or open the repo that contains the plugin.  
+- Or add the plugin via Cursor UI if there is an "Add plugin from folder" option.
 
-Актуальный способ установки локального плагина см. в [Cursor Docs — Plugins](https://cursor.com/docs/plugins).
+Current way to install a local plugin: [Cursor Docs — Plugins](https://cursor.com/docs/plugins).
 
-### 2. Подключение MCP (обязательно для вызова инструментов)
+### 2. MCP connection (required for calling tools)
 
-Плагин даёт Skills и Rules, но **вызов проектов, логики, баффов и т.д. идёт через MCP**. Без настроенного MCP инструменты вызываться не будут.
+The plugin provides Skills and Rules, but **calls to projects, logic, buffs, etc. go through MCP**. Without MCP configured, tools will not be called.
 
-1. **Получить API key**  
-   - Через curl (анонимный проект):
+1. **Get an API key**  
+   - Via curl (anonymous project):
      ```bash
      curl -X POST https://agentstack.tech/mcp/tools/projects.create_project_anonymous \
        -H "Content-Type: application/json" \
        -d '{"tool": "projects.create_project_anonymous", "params": {"name": "Test"}}'
      ```
-   - Из ответа взять `project_api_key` или `user_api_key`.
+   - From the response take `project_api_key` or `user_api_key`.
 
-2. **Добавить MCP-сервер в Cursor**  
-   - **Settings** → **Features** → **Model Context Protocol** (или **MCP Servers**).  
+2. **Add MCP server in Cursor**  
+   - **Settings** → **Features** → **Model Context Protocol** (or **MCP Servers**).  
    - Add Server: **Name** `agentstack`, **Type** `HTTP`, **Base URL** `https://agentstack.tech/mcp`.  
-   - В заголовках указать `X-API-Key` = ваш ключ.
+   - In headers set `X-API-Key` = your key.
 
-3. **Перезапустить Cursor** (если MCP не появился).
+3. **Restart Cursor** (if MCP did not appear).
 
-Подробно: [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+Details: [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
 
-### 3. Проверка в чате
+### 3. Testing in chat
 
-В чате Cursor попросите агента:
+In Cursor chat ask the agent:
 
-- "Создай проект в AgentStack с названием Test Project"  
-  → Ожидается вызов `projects.create_project_anonymous` (или `projects.create_project` при наличии авторизации).
-- "Покажи список моих проектов в AgentStack"  
-  → Ожидается `projects.get_projects`.
-- "Дай статистику по проекту &lt;project_id&gt;"  
-  → Ожидается `projects.get_stats`.
+- "Create a project in AgentStack named Test Project"  
+  → Expected: call to `projects.create_project_anonymous` (or `projects.create_project` when authenticated).
+- "Show my AgentStack projects"  
+  → Expected: `projects.get_projects`.
+- "Get stats for project &lt;project_id&gt;"  
+  → Expected: `projects.get_stats`.
 
-Если агент вызывает MCP tools и возвращает осмысленный ответ — плагин и MCP работают.
+If the agent calls MCP tools and returns a sensible answer — the plugin and MCP are working.
 
-### 4. Проверка Skills и Rules
+### 4. Checking Skills and Rules
 
-- **Skills** подхватываются Cursor и используются при выборе, "как делать" (8DNA, проекты, Rules Engine). В логах/поведении агента можно убедиться, что он следует инструкциям из Skills (например, создаёт проект через MCP, а не пишет свой HTTP-клиент).
-- **Rules** (.mdc) применяются к файлам по globs (например, при работе с `**/api/**` или `*.py`). Код, который агент предлагает для работы с AgentStack, должен соответствовать правилам (структура data/config/protected, использование `/api/*`).
+- **Skills** are picked up by Cursor and used when choosing "how to do" (8DNA, projects, Rules Engine). In logs/agent behavior you can confirm it follows Skill instructions (e.g. creates a project via MCP instead of writing its own HTTP client).
+- **Rules** (.mdc) apply to files by globs (e.g. when working with `**/api/**` or `*.py`). Code the agent suggests for AgentStack should follow the rules (data/config/protected structure, use of `/api/*`).
 
-### 5. Типичные проблемы
+### 5. Common issues
 
-| Симптом | Что проверить |
+| Symptom | What to check |
 |--------|----------------|
-| Агент не вызывает MCP | MCP добавлен в Settings, указан верный Base URL и `X-API-Key`, Cursor перезапущен. |
-| 401 / 403 при вызове | Ключ валидный, не истёк; для части операций нужна подписка (например, Professional для add_user). |
-| "Tool not found" | Имя tool совпадает с документацией (например, `projects.create_project_anonymous`). Проверить список: `GET https://agentstack.tech/mcp/tools` (с заголовком `X-API-Key`). |
-| Skills не срабатывают | Убедиться, что плагин установлен и что в описании skill есть нужные триггерные фразы (проекты, 8DNA, правила и т.д.). |
+| Agent does not call MCP | MCP added in Settings, correct Base URL and `X-API-Key`, Cursor restarted. |
+| 401 / 403 on call | Key is valid, not expired; some operations require a subscription (e.g. Professional for add_user). |
+| "Tool not found" | Tool name matches documentation (e.g. `projects.create_project_anonymous`). Check list: `GET https://agentstack.tech/mcp/tools` (with `X-API-Key` header). |
+| Skills not triggering | Ensure plugin is installed and the skill description has the right trigger phrases (projects, 8DNA, rules, etc.). |
 
 ---
 
-## Возможности плагина
+## Plugin capabilities
 
-### Что входит в плагин
+### What the plugin includes
 
-| Компонент | Назначение |
+| Component | Purpose |
 |-----------|------------|
-| **Манифест** (`.cursor-plugin/plugin.json`) | Имя, описание, ключевые слова для Marketplace и для Cursor. |
-| **MCP-конфиг** (`mcp.json`) | Пример конфигурации MCP-сервера AgentStack (URL, заголовок API key). |
-| **Skills** (3 штуки) | Обучают агента, *когда* и *как* использовать AgentStack: 8DNA, проекты, Rules Engine. |
-| **Rules** (2 файла .mdc) | Рекомендации по коду: структура data/config/protected и использование HTTP API (`/api/*`). |
-| **Документация** | README, MCP_QUICKSTART, этот файл. |
+| **Manifest** (`.cursor-plugin/plugin.json`) | Name, description, keywords for Marketplace and Cursor. |
+| **MCP config** (`mcp.json`) | Example AgentStack MCP server config (URL, API key header). |
+| **Skills** (3) | Teach the agent *when* and *how* to use AgentStack: 8DNA, projects, Rules Engine. |
+| **Rules** (2 .mdc files) | Code guidelines: data/config/protected structure and HTTP API usage (`/api/*`). |
+| **Documentation** | README, MCP_QUICKSTART, this file. |
 
-### Возможности через MCP (после настройки MCP)
+### Capabilities via MCP (after MCP setup)
 
-Плагин сам по себе не выполняет запросы к бэкенду — это делает **MCP-сервер AgentStack**. После добавления MCP в Cursor агент получает доступ к инструментам, например:
+The plugin does not call the backend itself — the **AgentStack MCP server** does. After adding MCP in Cursor the agent gets access to tools such as:
 
-- **Проекты:** создание (в т.ч. анонимное), список, детали, обновление, удаление, статистика, пользователи, настройки, активность, API-ключи, привязка анонимного проекта к пользователю.
-- **Логика и правила:** создание/обновление/удаление правил, список, выполнение, процессоры, команды.
-- **Баффы:** создание, применение, продление, откат, отмена, список активных, эффективные лимиты, временные и постоянные эффекты.
-- **Платежи:** создание, статус, возврат, список транзакций, баланс.
-- **Auth:** быстрый вход, создание пользователя, назначение роли, профиль.
-- **Планировщик:** создание/отмена/получение/список задач и др.
-- **Аналитика:** использование, метрики.
-- **API-ключи:** создание, список, отзыв и др.
-- **Webhooks, уведомления, кошельки** — по мере реализации на бэкенде и в MCP.
+- **Projects:** create (including anonymous), list, details, update, delete, stats, users, settings, activity, API keys, attach anonymous project to user.
+- **Logic and rules:** create/update/delete rules, list, execute, processors, commands.
+- **Buffs:** create, apply, extend, rollback, cancel, list active, effective limits, temporary and persistent effects.
+- **Payments:** create, status, refund, list transactions, balance.
+- **Auth:** quick sign-in, create user, assign role, profile.
+- **Scheduler:** create/cancel/get/list tasks, etc.
+- **Analytics:** usage, metrics.
+- **API keys:** create, list, revoke, etc.
+- **Webhooks, notifications, wallets** — as implemented on backend and in MCP.
 
-Точный список инструментов и их параметры: **MCP_SERVER_CAPABILITIES** в репозитории AgentStack или `GET https://agentstack.tech/mcp/tools` (с `X-API-Key`).
+Full tool list and parameters: **MCP_SERVER_CAPABILITIES** in the AgentStack repo or `GET https://agentstack.tech/mcp/tools` (with `X-API-Key`).
 
-### Возможности Skills
+### Skills capabilities
 
-- **agentstack-8dna:** проектирование и запросы к данным с иерархией (`parent_uuid`) и эволюцией (`generation`), работа со структурой `data`/`config`/`protected` и genetic coding.
-- **agentstack-projects:** создание и управление проектами и API-ключами через MCP, анонимные проекты, привязка к пользователю.
-- **agentstack-rules-engine:** настройка серверной логики без кода (when/do), использование Logic Engine и правил через MCP, связка с баффами и командами.
+- **agentstack-8dna:** design and query data with hierarchy (`parent_uuid`) and evolution (`generation`), work with `data`/`config`/`protected` structure and genetic coding.
+- **agentstack-projects:** create and manage projects and API keys via MCP, anonymous projects, attach to user.
+- **agentstack-rules-engine:** configure server logic without code (when/do), use Logic Engine and rules via MCP, link with buffs and commands.
 
-### Возможности Rules (.mdc)
+### Rules capabilities (.mdc)
 
-- **agentstack-dna-patterns:** единые паттерны по структуре `data`, `config`, `protected` и по именованию ключей при работе с AgentStack в коде.
-- **agentstack-json-config:** когда и как использовать HTTP API (`/api/projects`, `/api/logic`, `/api/neural`, `/api/buffs` и т.д.) и MCP.
+- **agentstack-dna-patterns:** consistent patterns for `data`, `config`, `protected` structure and key naming when using AgentStack in code.
+- **agentstack-json-config:** when and how to use HTTP API (`/api/projects`, `/api/logic`, `/api/neural`, `/api/buffs`, etc.) and MCP.
 
-### Итог
+### Summary
 
-- **Проверка:** установить плагин → настроить MCP с API key → в чате попросить создать/показать проекты и проверить вызовы MCP; при необходимости проверить применение Skills и Rules по поведению и коду.
-- **Возможности:** доступ к 60+ MCP-инструментам AgentStack (проекты, логика, баффы, платежи, auth, планировщик, аналитика и др.), плюс три Skills и два Rules для согласованной работы с 8DNA, проектами и Rules Engine.
+- **Testing:** install plugin → configure MCP with API key → in chat ask to create/list projects and verify MCP calls; optionally verify Skills and Rules from behavior and code.
+- **Capabilities:** access to 60+ AgentStack MCP tools (projects, logic, buffs, payments, auth, scheduler, analytics, etc.), plus three Skills and two Rules for consistent use of 8DNA, projects, and Rules Engine.
