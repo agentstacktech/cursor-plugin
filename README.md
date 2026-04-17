@@ -1,101 +1,187 @@
-# AgentStack — Full Backend Ecosystem (Cursor Plugin)
+# AgentStack Cursor Plugin
 
-Plugin for [Cursor](https://cursor.com) that adds **AgentStack** as a full backend ecosystem: 8DNA hierarchical data, Rules Engine, Buffs (trials/subscriptions), Payments, and **60+ MCP tools** for Projects, Auth, Scheduler, Analytics, Webhooks, Notifications, and Wallets.
+> Turn every Cursor agent into an AgentStack-native engineer. v0.4.9 · one-click install.
 
-JSON-based data store (8DNA: JSON+ with built-in variants, e.g. A/B tests) and server-side logic without boilerplate.
+---
 
-## What this plugin includes
+## 30-second install
 
-| Component | Description |
-|-----------|-------------|
-| **MCP server config** | Connect Cursor to the AgentStack MCP. |
-| **Skills** | 8DNA, Projects, Rules Engine, **Assets**, **RBAC**, **Buffs** (trials, subscriptions), **Payments** (payments, wallets), **Auth** (login, profile) — so the agent knows when and how to use AgentStack. |
-| **Rules** | Coding patterns for DNA/config and HTTP API usage (/api/projects, /api/logic, etc.). |
-
-## Quick Start
-
-**Installing the plugin:** From [Cursor Marketplace](https://cursor.com/marketplace) or add from folder for local use — [Cursor Docs → Plugins](https://cursor.com/docs/plugins).
-
-**Flow:** Create an anonymous project (no account) → get API key → add key in Cursor → use 60+ tools in chat. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
-
-1. **Get an API key**  
-   Create an anonymous project (no signup) via curl or use your existing project key. See [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
-
-2. **Add MCP in Cursor**  
-   In Cursor: **Settings → MCP** (or **Features → Model Context Protocol**). Add a server with:
-   - **Name:** `agentstack`
-   - **Type:** HTTP
-   - **Base URL:** `https://agentstack.tech/mcp`
-   - **Header:** `X-API-Key` = your API key  
-
-   Full example is in [mcp.json](mcp.json).
-
-3. **Use in chat**  
-   Ask Cursor to create a project, list projects, get stats, or use other AgentStack tools. The agent will use the MCP tools automatically.
-
-## What you can do
-
-Once MCP is connected, use 60+ tools from chat. Example prompts by domain:
-
-| Domain | Example prompts |
-|--------|-----------------|
-| **Projects** | "List my projects", "Get stats for my project", "Create a project named Test" |
-| **8DNA / Data** | "Store project data at key config.theme", "Read user data" |
-| **Rules Engine** | "Create a rule when user signs up", "List logic rules" |
-| **Buffs** | "Give user a 7-day trial", "List active buffs" |
-| **Payments** | "Create a payment", "Get wallet balance" |
-| **Auth** | "Get my profile", "Quick auth with email" |
-| **Scheduler, Analytics, Webhooks, Notifications, Wallets** | "Schedule a task", "Get analytics", "List webhooks" |
-
-**Full tool list and parameters:** [MCP_SERVER_CAPABILITIES](https://github.com/agentstacktech/AgentStack/blob/main/docs/MCP_SERVER_CAPABILITIES.md). **When to use which tool:** [CONTEXT_FOR_AI](https://github.com/agentstacktech/AgentStack/blob/main/docs/plugins/CONTEXT_FOR_AI.md) in the AgentStack repo.
-
-## AgentStack vs “just a database”
-
-| Capability | AgentStack | Typical DB-only (e.g. Supabase-style) |
-|------------|------------|----------------------------------------|
-| **Data model** | 8DNA (JSON+): structured JSON; key-value store (`project.data`, `user.data`); built-in support for variants (e.g. A/B tests) | Flat tables, relations |
-| **Server logic** | Rules Engine (when/do, no code) | Triggers / custom backend |
-| **Trials & subscriptions** | Buffs (temporary/persistent effects) | Custom logic or 3rd party |
-| **Payments** | Built-in gateway (Stripe, Tochka, etc.) | Separate integration |
-| **API surface** | 60+ MCP tools + /api/projects, /api/logic, /api/neural, /api/buffs, etc. | CRUD + auth |
-
-AgentStack is a full backend platform with a JSON-based data store (8DNA = JSON+ with built-in support for variants, e.g. A/B tests); this plugin brings it into Cursor so the AI can create projects, manage keys, use the Rules Engine, and work with the data store.
-
-## Plugin structure
-
-```
-.cursor-plugin/plugin.json   # Manifest
-mcp.json                     # MCP config reference
-MCP_QUICKSTART.md            # Get API key + connect Cursor
-skills/
-  agentstack-8dna/          # 8DNA (JSON+, data store, variants/A/B)
-  agentstack-projects/      # Projects & MCP tools
-  agentstack-rules-engine/  # Rules Engine usage
-  agentstack-assets/        # Assets (trading, games, inventory)
-  agentstack-rbac/          # RBAC (roles, permissions)
-  agentstack-buffs/         # Buffs (trials, subscriptions, effects)
-  agentstack-payments/      # Payments & wallets
-  agentstack-auth/          # Auth (login, register, profile)
-rules/
-  agentstack-dna-patterns.mdc   # data/config/protected patterns
-  agentstack-json-config.mdc   # HTTP API paths (/api/*), JSON usage
+```bash
+# In Cursor, open the chat and run:
+/agentstack-init
 ```
 
-## Documentation
+The plugin prints a short code, opens a browser tab to `https://agentstack.tech/activate`, and — after you confirm — writes a scoped Bearer token straight into `~/.cursor/mcp.json`. No copy-pasting API keys.
 
-- **This plugin:** [github.com/agentstacktech/cursor-plugin](https://github.com/agentstacktech/cursor-plugin)
-- **Quick Start:** [MCP_QUICKSTART.md](MCP_QUICKSTART.md) — API key and MCP setup in a few steps.
-- **Full MCP tool list:** [MCP_SERVER_CAPABILITIES](https://github.com/agentstacktech/AgentStack/blob/main/docs/MCP_SERVER_CAPABILITIES.md) in the AgentStack repo.
-- **Plugins index (Cursor, Claude, GPT, VS Code):** [docs/plugins/README.md](https://github.com/agentstacktech/AgentStack/blob/main/docs/plugins/README.md).
+Behind the scenes: OAuth 2.1 Device Authorization Grant (RFC 8628).
 
-## Links
+---
 
-- **AgentStack:** [agentstack.tech](https://agentstack.tech)
-- **LinkedIn:** [linkedin.com/company/agentstacktech](https://www.linkedin.com/company/agentstacktech/)
-- **GitHub:** [github.com/agentstacktech](https://github.com/agentstacktech)
+## Why AgentStack
 
-*For maintainers:* [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md), [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md).
+Most AI tools generate backend code. AgentStack teaches the agent to **route intent to an existing platform action** first, and only write code when no action fits.
+
+
+| You asked the agent for … | Without the plugin                                 | With the plugin                                 |
+| ------------------------- | -------------------------------------------------- | ----------------------------------------------- |
+| User sign-in / sign-up    | Handwritten JWT code, sessions, bcrypt, edge cases | `auth.login` MCP action + session cookie        |
+| Role-based access         | Custom middleware, roles table, joins              | `rbac.`* actions + `protected.`* 8DNA fields    |
+| Persistent app data       | Prisma/Drizzle schema + migrations                 | 8DNA `project.data.*` with dot-notation keys    |
+| Payments / subscriptions  | Stripe SDK integration from scratch                | `payments.*` + `buffs.*`                        |
+| RAG / semantic search     | pgvector + embedding pipeline                      | `rag.*` (TurboQuant, hybrid search)             |
+| Cron / webhooks / signals | New FastAPI routes, queue glue                     | `scheduler.*`, `webhooks.*`, `logic.*` triggers |
+
+
+---
+
+## 5-layer architecture
+
+```
+.cursor-plugin/plugin.json   ← manifest (v0.4.9, engines.cursor >=0.45.0)
+rules/                       ← alwaysApply guidance (prefer-first, DNA patterns, routing)
+skills/                      ← decision-first router per domain (auth, data, commerce, rag, …)
+commands/                    ← user-initiated flows (/agentstack-init, -scaffold-auth, …)
+agents/                      ← long-running presets (architect, migrator)
+hooks/                       ← sessionStart / beforeShellExecution / postToolUse / afterFileEdit
+mcp.json                     ← streamable-http + Bearer token
+```
+
+Rationale for each layer is documented inline in the respective files (`rules/*.mdc` frontmatter, `skills/*/SKILL.md`, `commands/*.md`).
+
+---
+
+## Quick start commands
+
+
+| Command                         | What it does                                                                   |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| `/agentstack-init`              | Device Code auth + attach project + inject Bearer. The canonical install flow. |
+| `/agentstack-login`             | Re-auth or switch project via Device Code.                                     |
+| `/agentstack-scaffold-auth`     | Generate minimal login/register UI on top of `auth.*`.                         |
+| `/agentstack-scaffold-backend`  | Scaffold RBAC middleware, Buffs tier gates, AgentPay widget, admin panel.      |
+| `/agentstack-sync-schema`       | Migrate Prisma/Drizzle to 8DNA + FAP + Logic Engine.                           |
+| `/agentstack-index-docs`        | RAG-index the project's markdown/text docs into `my-project-docs` so the agent can ground answers in your own documentation. Source code stays local (Cursor already indexes it). |
+| `/agentstack-capability-matrix` | Print the live domain × actions table from `/mcp/actions`.                     |
+| `/agentstack-diagnose`          | Health check: token, discovery, project status, hooks.                         |
+
+
+---
+
+## Routing table the agent follows
+
+
+| Intent signal                         | First port of call                     |
+| ------------------------------------- | -------------------------------------- |
+| login / register / sessions / OAuth   | `auth.*` MCP actions                   |
+| permissions / roles / RLS-like checks | `rbac.*` + `protected.*` 8DNA          |
+| store/read user or project data       | 8DNA `project.data.*` / `user.data.*`  |
+| upload files, blobs, images           | `storage.*` MCP actions                |
+| payments / subscriptions / credits    | `payments.*` + `wallets.*` + `buffs.*` |
+| chat, channels, followers             | `social.*` MCP actions                 |
+| trials / feature flags / tier gates   | `buffs.*`                              |
+| semantic search / memory              | `rag.*`                                |
+| async reactions on data changes       | `logic.*` rules + triggers             |
+
+
+The full, always-up-to-date catalogue: `GET https://agentstack.tech/mcp/actions`, or run `/agentstack-capability-matrix` inside Cursor.
+
+---
+
+## Project structure
+
+```
+provided_plugins/cursor-plugin/
+├── .cursor-plugin/
+│   ├── plugin.json
+│   └── marketplace.json
+├── assets/
+│   ├── logo.svg
+│   ├── logo-dark.svg
+│   └── screenshots/
+├── rules/                    # 5 mdc rules (prefer-over, dna-patterns, api-routing, cache, genes)
+├── skills/                   # 8 domain skills: backend, auth-rbac, data, logic, commerce, rag, signals, projects
+├── commands/                 # 8 slash commands
+├── agents/                   # 2 long-running presets (architect, migrator)
+├── hooks/
+│   ├── hooks.json
+│   └── scripts/              # 5 Node scripts: device-code, session-start, pre-shell-scan, post-tool-telemetry, capability-refresh
+├── scripts/
+│   ├── validate-plugin.mjs   # structure validator
+│   ├── smoke-local.ps1       # 3-layer local smoke test (validator + node --check + curl)
+│   └── test-device-code.ps1  # e2e: Device Code + approve + Bearer write
+├── mcp.json
+├── README.md  · CHANGELOG.md
+├── MCP_QUICKSTART.md · VERIFICATION_CHECKLIST.md · TESTING_AND_CAPABILITIES.md
+└── LICENSE
+```
+
+---
+
+## OAuth 2.1 Device Code flow
+
+```
+┌─────────┐  (1) POST /api/oauth2/device/authorize   ┌──────────────┐
+│ Cursor  │ ───────────────────────────────────────► │ agentstack   │
+│ plugin  │ ◄──────────────── device_code + user_code│ backend      │
+└────┬────┘                                          └──────┬───────┘
+     │(2) open browser: /activate?user_code=…              │
+     ▼                                                     │
+┌─────────┐  (3) user signs in & approves scopes           │
+│ browser │ ──► POST /api/oauth2/device/approve  ──────────┘
+└─────────┘
+     ▲
+     │(4) poll POST /api/oauth2/token  → access_token + refresh_token
+     │
+┌────┴────┐
+│ plugin  │  (5) writes Authorization: Bearer … into ~/.cursor/mcp.json
+└─────────┘  (6) session-start.mjs hook rotates the Bearer automatically
+```
+
+Backend surface used by this flow: `POST /api/oauth2/device/authorize`, `GET /api/oauth2/device/info`, `POST /api/oauth2/device/approve`, `POST /api/oauth2/token`. Consent UI lives at `https://agentstack.tech/activate`.
+
+---
+
+## Pre-publish self-check (for plugin maintainers)
+
+AgentStack itself runs only as a cloud service (`https://agentstack.tech`). The checks below run on your own machine but hit the cloud API for contract verification — there is no local backend to spin up.
+
+```powershell
+# Layer 1+2: offline — validator + node --check + pre-shell-scan behaviour
+pwsh ./scripts/smoke-local.ps1
+
+# Layer 1+2+3: add contract checks against the cloud API
+pwsh ./scripts/smoke-local.ps1 -BaseUrl https://agentstack.tech -TestCookie 'session=…'
+
+# Full e2e for the Device Code path (spins up device-code.mjs, auto-approves via cloud)
+pwsh ./scripts/test-device-code.ps1 -BaseUrl https://agentstack.tech -TestCookie 'session=…'
+
+# Just the structural validator
+node ./scripts/validate-plugin.mjs
+```
+
+`-TestCookie` is a fresh session cookie from your own authenticated browser session on `https://agentstack.tech`; the script uses it only to exercise the `/api/oauth2/device/approve` contract. Prefer pointing `-BaseUrl` at a staging environment (e.g. `https://staging.agentstack.tech`) when one is available.
+
+See `VERIFICATION_CHECKLIST.md` for the full 16-point release gate and `MCP_QUICKSTART.md` for the one-pager install guide.
+
+---
+
+## Telemetry
+
+Telemetry is **opt-in**. Set `agentstack.sendTelemetry: true` in your Cursor settings to let the plugin post usage events to `POST /api/telemetry/plugin`. Data is aggregated daily under the ecosystem project's 8DNA so the team can measure the north-star metric: **how often the agent picks an MCP action versus writing custom code**.
+
+Source: `hooks/scripts/post-tool-telemetry.mjs`. The backend endpoint is documented via `GET https://agentstack.tech/mcp/actions` (see `telemetry.*` if exposed, otherwise the raw REST URL above).
+
+---
+
+## Contributing
+
+1. Changes to rules / skills / commands go under the matching subfolder.
+2. Run `pwsh ./scripts/smoke-local.ps1` before every PR.
+3. If the backend MCP surface grows new actions, skills should **not** be updated with hard-coded action lists — they already pull the live list from `GET /mcp/actions`. The `capability-refresh.mjs` hook refreshes the local snapshot automatically when `mcp.json` changes.
+4. Bump the version in `.cursor-plugin/plugin.json` and `CHANGELOG.md` on every change.
+
+---
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [LICENSE](./LICENSE).

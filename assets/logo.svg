@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AgentStack plugin badge — light variant.
+
+  This is the canonical brand mark (same SVG served at
+  https://agentstack.tech/favicon.svg as the browser-tab favicon),
+  wrapped in a rounded 512×512 badge so it works as an app icon on
+  light UI chrome (plugin marketplace card, file tree, list rows).
+
+  Sync policy: the <path d="…"> below must stay byte-identical to
+  brand-mark.svg (and to the upstream favicon.svg). If the brand mark
+  changes, update all three files in the same change. A divergence
+  check is planned in validate-plugin.mjs (compares the path against
+  brand-mark.svg).
+
+  Rules (see assets/ICON_DESIGN.md for full rationale):
+    • Pure <path> mark. No <line>. Ever.
+      (gen1 used stroked <line> rails and they got dropped by the
+       Cursor icon PNG preview pipeline — do not reintroduce lines.)
+    • Mark fills the full 512×512 canvas — no padding, no badge, no
+      rounded rect. The whole viewBox is the mark's bounding box.
+    • viewBox 0 0 512 512. Keep square.
+    • No inline <text>. Wordmark is a separate asset.
+
+  Scaling math for the embedded mark (viewBox 256 → 512):
+    original transform = translate(0, 256) scale(0.1, -0.1)
+                       → path coords land in 0..256 with y-flip.
+    target             = fill 0..512 (full canvas, no padding)
+    scale factor       = 512 / 256 = 2 × 0.1 = 0.2
+    composed transform = translate(0, 512) scale(0.2, -0.2)
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 512 512"
+     width="512" height="512"
+     role="img"
+     aria-label="AgentStack">
+  <defs>
+    <linearGradient id="agentstackBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0EA5E9"/>
+      <stop offset="1" stop-color="#6366F1"/>
+    </linearGradient>
+  </defs>
+
+  <!--
+    Silhouette backfill: only the FIRST subpath of the mark (outer outline,
+    no inner cell holes), filled with the cyan->indigo gradient. The full
+    mark below has holes at the interior cells; those holes reveal this
+    gradient through, so cell faces stay colored exactly like before — but
+    the gradient stops at the mark's silhouette (no rounded badge around it).
+    The main <path d="…"> in the mark layer below stays byte-identical to
+    favicon.svg / brand-mark.svg.
+  -->
+  <g transform="translate(0, 512) scale(0.2, -0.2)" fill="url(#agentstackBg)" stroke="none" aria-hidden="true">
+    <path d="M1175 2450 c-182 -103 -910 -567 -913 -582 -2 -11 10 -26 32 -40 48
+-31 64 -70 42 -103 -19 -28 -43 -32 -72 -10 -10 8 -23 15 -28 15 -5 0 -6 -84
+-2 -202 7 -224 9 -230 76 -273 32 -20 40 -31 40 -55 0 -28 -29 -70 -48 -70 -5
+0 -17 7 -28 15 -10 8 -23 15 -29 15 -15 0 -20 -356 -5 -411 15 -54 35 -77 113
+-125 34 -21 156 -96 270 -167 225 -139 255 -151 321 -123 96 40 154 -8 90 -75
+l-25 -27 127 -78 c106 -65 135 -78 179 -82 62 -5 70 -2 295 138 91 57 257 159
+370 228 319 196 340 210 340 231 0 11 -18 35 -41 53 -100 81 -91 180 12 128
+l41 -22 -4 214 c-2 130 -8 221 -15 233 -6 11 -36 38 -67 60 -60 42 -75 70 -57
+104 17 31 55 37 89 12 l30 -21 6 23 c3 12 6 110 6 218 0 187 -1 198 -23 230
+-16 23 -98 80 -277 192 -140 87 -267 161 -281 164 -20 4 -47 -5 -98 -33 -56
+-30 -73 -35 -84 -25 -30 24 -27 51 9 91 l35 39 -23 15 c-13 8 -72 44 -133 80
+-137 83 -165 85 -270 26z"/>
+  </g>
+
+  <!-- Canonical AgentStack mark (same geometry as https://agentstack.tech/favicon.svg) -->
+  <g transform="translate(0, 512) scale(0.2, -0.2)" fill="#ffffff" stroke="none">
+    <path d="M1175 2450 c-182 -103 -910 -567 -913 -582 -2 -11 10 -26 32 -40 48
+-31 64 -70 42 -103 -19 -28 -43 -32 -72 -10 -10 8 -23 15 -28 15 -5 0 -6 -84
+-2 -202 7 -224 9 -230 76 -273 32 -20 40 -31 40 -55 0 -28 -29 -70 -48 -70 -5
+0 -17 7 -28 15 -10 8 -23 15 -29 15 -15 0 -20 -356 -5 -411 15 -54 35 -77 113
+-125 34 -21 156 -96 270 -167 225 -139 255 -151 321 -123 96 40 154 -8 90 -75
+l-25 -27 127 -78 c106 -65 135 -78 179 -82 62 -5 70 -2 295 138 91 57 257 159
+370 228 319 196 340 210 340 231 0 11 -18 35 -41 53 -100 81 -91 180 12 128
+l41 -22 -4 214 c-2 130 -8 221 -15 233 -6 11 -36 38 -67 60 -60 42 -75 70 -57
+104 17 31 55 37 89 12 l30 -21 6 23 c3 12 6 110 6 218 0 187 -1 198 -23 230
+-16 23 -98 80 -277 192 -140 87 -267 161 -281 164 -20 4 -47 -5 -98 -33 -56
+-30 -73 -35 -84 -25 -30 24 -27 51 9 91 l35 39 -23 15 c-13 8 -72 44 -133 80
+-137 83 -165 85 -270 26z m240 -27 c150 -87 159 -93 144 -108 -22 -20 -961
+-607 -980 -612 -20 -6 -299 146 -299 162 0 6 37 33 83 61 45 28 257 160 471
+294 214 133 401 246 415 251 42 13 81 2 166 -48z m534 -305 c334 -207 331
+-205 348 -246 13 -30 15 -70 11 -219 -2 -100 -7 -185 -10 -188 -6 -7 -40 18
+-328 240 -173 134 -206 155 -244 155 -30 0 -289 -152 -599 -352 -93 -59 -177
+-108 -187 -108 -10 0 -66 32 -124 72 -148 99 -150 124 -20 206 117 74 673 421
+789 493 67 41 121 68 139 68 20 1 88 -35 225 -121z m-1542 -500 c119 -67 148
+-88 161 -116 12 -25 55 -60 162 -134 443 -304 442 -303 371 -382 -35 -39 -139
+-106 -165 -106 -48 0 -641 387 -671 438 -11 19 -21 382 -10 382 3 0 72 -37
+152 -82z m1384 4 c205 -122 488 -323 509 -361 7 -13 9 -88 8 -209 l-3 -189
+-133 76 c-96 55 -134 82 -139 99 -8 34 -102 109 -421 336 -67 48 -129 98 -138
+111 -14 22 -14 27 1 59 21 44 151 146 185 146 9 0 68 -31 131 -68z m-13 -524
+c139 -91 154 -121 88 -171 -34 -27 -395 -252 -636 -397 -85 -52 -186 -114
+-225 -138 -122 -78 -110 -81 -422 111 -148 91 -282 180 -298 197 l-30 31 -3
+206 -3 206 28 -18 c15 -10 120 -87 233 -170 277 -205 344 -248 380 -247 40 1
+346 177 620 356 80 53 152 96 160 96 7 0 56 -28 108 -62z m346 -305 c142 -80
+176 -103 176 -122 0 -20 -870 -559 -934 -579 -22 -7 -52 -10 -66 -7 -28 7
+-260 144 -260 154 0 3 105 71 233 151 127 79 346 215 486 302 140 87 257 158
+260 158 2 0 50 -26 105 -57z"/>
+  </g>
+</svg>

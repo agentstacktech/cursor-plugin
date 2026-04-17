@@ -1,119 +1,117 @@
-# AgentStack plugin testing and capabilities
+# Testing & Capabilities — AgentStack Cursor Plugin v0.4.9
 
-## Preparation for testing
+How to verify each layer of the plugin and what each piece does. For the live MCP action catalogue, call `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
 
-Before manual testing, run the checklist and automatic validation:
+## Structure
 
-- **[VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md)** — step-by-step checklist: structure validation, install, MCP setup, chat scenarios.
-- **Structure validation:** from plugin root: `node scripts/validate-plugin.mjs`
-- **MCP endpoint check (optional):** `.\scripts\test-mcp-endpoint.ps1` (PowerShell) or see "MCP check" block in the checklist.
+| Layer | Path | Purpose |
+|-------|------|---------|
+| Manifest | `.cursor-plugin/plugin.json`, `.cursor-plugin/marketplace.json` | Declares paths, name, version, engines, listing metadata |
+| Rules | `rules/*.mdc` | `alwaysApply: true` guard rails that bias Cursor towards MCP |
+| Skills | `skills/<domain>/SKILL.md` | Decision-first routers per domain (8 total) |
+| Commands | `commands/*.md` | `/`-invoked workflows (`/agentstack-init`, etc.) |
+| Agents | `agents/*.md` | Long-running preset agents (architect, migrator) |
+| Hooks | `hooks/hooks.json` + `hooks/scripts/*.mjs` | Event-driven automation (sessionStart, beforeShell, postTool, afterFileEdit) |
+| MCP | `mcp.json` | Streamable-HTTP MCP server config (Bearer primary) |
+| Scripts | `scripts/validate-plugin.mjs`, `scripts/test-device-code.ps1` | Structure validation + E2E smoke test |
 
----
+## What each skill decides
 
-## How to verify the plugin works
+| Skill | Intent signals (trigger keywords) | Primary MCP actions |
+|-------|-----------------------------------|---------------------|
+| `agentstack-backend` | backend, API, server, DB, microservice, monolith | Routes to other skills |
+| `agentstack-data` | store, save, config, file, upload, variant, A/B, sandbox | `projects.update_project`, `storage.*`, FAP |
+| `agentstack-auth-rbac` | login, register, session, profile, role, admin, permission | `auth.*`, `rbac.*`, `projects.update_user_role` |
+| `agentstack-logic` | when X then Y, rule, automation, trigger, workflow, on signup | `logic.*`, `commands.execute` |
+| `agentstack-commerce` | payment, subscription, trial, wallet, inventory, tier gate | `payments.*`, `wallets.*`, `buffs.*`, `assets.*` |
+| `agentstack-rag` | vector, semantic, embedding, knowledge base, memory | `rag.collection_*`, `rag.search`, `rag.memory_*` |
+| `agentstack-signals` | cron, schedule, webhook, notification, field trigger | `scheduler.*`, `webhooks.*`, `notifications.*` |
+| `agentstack-projects` | workspace, tenant, API key, stats, service caps | `projects.*`, `apikeys.*` |
 
-### 1. Install the plugin
+## Manual test matrix
 
-**Option A: from Marketplace (after publish)**  
-- Cursor → Settings → Plugins (or Marketplace) → search "AgentStack" → Install.
+### 1. Install
+```text
+/agentstack-init
+```
+Expected: OAuth Device Code flow completes in under 30 s, Bearer written to `~/.cursor/mcp.json`.
 
-**Option B: locally (before publish)**  
-- Copy folder `provided_plugins/cursor-plugin` (or open the AgentStack project) to where Cursor loads plugins, or open the repo that contains the plugin.  
-- Or add the plugin via Cursor UI if there is an "Add plugin from folder" option.
+### 2. Capability discovery
+```text
+/agentstack-capability-matrix
+```
+Expected: 80+ actions grouped by domain.
 
-Current way to install a local plugin: [Cursor Docs — Plugins](https://cursor.com/docs/plugins).
+### 3. Auth scaffolding
+```text
+/agentstack-scaffold-auth
+```
+Expected: Login / register components that call `auth.quick_auth` / `auth.create_user` through `@agentstack/sdk`.
 
-### 2. MCP connection (required for calling tools)
+### 4. Rule creation
+Ask Cursor:
+> "When a user registers, give them a 7-day pro trial."
 
-The plugin provides Skills and Rules, but **calls to projects, logic, buffs, etc. go through MCP**. Without MCP configured, tools will not be called.
+Expected: a call to `logic.create` with a `when` of `user.registered` and a `do` step of `buffs.apply_temporary_effect`. Dry-run before enabling.
 
-1. **Get an API key**  
-   - Via curl (anonymous project):
-     ```bash
-     curl -X POST https://agentstack.tech/mcp/tools/projects.create_project_anonymous \
-       -H "Content-Type: application/json" \
-       -d '{"tool": "projects.create_project_anonymous", "params": {"name": "Test"}}'
-     ```
-   - From the response take `project_api_key` or `user_api_key`.
+### 5. Payment flow
+Ask:
+> "Add a one-time $9 purchase of `plan.pro`."
 
-2. **Add MCP server in Cursor**  
-   - **Settings** → **Features** → **Model Context Protocol** (or **MCP Servers**).  
-   - Add Server: **Name** `agentstack`, **Type** `HTTP`, **Base URL** `https://agentstack.tech/mcp`.  
-   - In headers set `X-API-Key` = your key.
+Expected: `payments.create` + `<AgentPay>` widget, no direct Stripe SDK.
 
-3. **Restart Cursor** (if MCP did not appear).
+### 6. RAG
+```text
+/agentstack-index-docs
+```
+Expected: collection `my-project-docs` populated from the project's markdown/text docs (README, ADRs, `docs/**`); follow-up asks like "what is our auth model?" return `rag.search` hits grounded in your docs. Source code is intentionally **not** indexed — Cursor handles code search locally.
 
-Details: [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+### 7. Diagnose
+```text
+/agentstack-diagnose
+```
+Expected: a single status table — MCP reachable, token fresh, project set, scope list, no errors.
 
-### 3. Testing in chat
+### 8. Automated checks
+```bash
+node scripts/validate-plugin.mjs
+pwsh ./scripts/smoke-local.ps1           # structural + hook syntax + behaviour
+pwsh ./scripts/test-device-code.ps1      # E2E Device Code (needs AGENTSTACK_TEST_COOKIE)
+```
 
-In Cursor chat ask the agent:
+## Telemetry (opt-in)
 
-- "Create a project in AgentStack named Test Project"  
-  → Expected: call to `projects.create_project_anonymous` (or `projects.create_project` when authenticated).
-- "Show my AgentStack projects"  
-  → Expected: `projects.get_projects`.
-- "Get stats for project &lt;project_id&gt;"  
-  → Expected: `projects.get_stats`.
+Add to `~/.cursor/settings.json`:
 
-If the agent calls MCP tools and returns a sensible answer — the plugin and MCP are working.
+```json
+{ "agentstack.sendTelemetry": true }
+```
 
-### 4. Checking Skills and Rules
+The `postToolUse` hook batches MCP usage events into `~/.cursor/agentstack-telemetry.jsonl` and flushes hourly to `POST /api/telemetry/plugin`. Data points: tool name, action, success, duration, `trace_id`. Never includes request bodies.
 
-- **Skills** are picked up by Cursor and used when choosing "how to do" (8DNA, projects, Rules Engine). In logs/agent behavior you can confirm it follows Skill instructions (e.g. creates a project via MCP instead of writing its own HTTP client).
-- **Rules** (.mdc) apply to files by globs (e.g. when working with `**/api/**` or `*.py`). Code the agent suggests for AgentStack should follow the rules (data/config/protected structure, use of `/api/*`).
+## CI recipe
 
-### 5. Common issues
+```yaml
+- name: Validate plugin structure
+  run: node scripts/validate-plugin.mjs
+  working-directory: ./cursor-plugin
 
-| Symptom | What to check |
-|--------|----------------|
-| Agent does not call MCP | MCP added in Settings, correct Base URL and `X-API-Key`, Cursor restarted. |
-| 401 / 403 on call | Key is valid, not expired; some operations require a subscription (e.g. Professional for add_user). |
-| "Tool not found" | Tool name matches documentation (e.g. `projects.create_project_anonymous`). Check list: `GET https://agentstack.tech/mcp/tools` (with `X-API-Key` header). |
-| Skills not triggering | Ensure plugin is installed and the skill description has the right trigger phrases (projects, 8DNA, rules, etc.). |
+- name: Layered smoke test (no backend)
+  run: pwsh scripts/smoke-local.ps1 -Quick
+  working-directory: ./cursor-plugin
 
----
+- name: Device Code smoke test (staging)
+  if: secrets.AGENTSTACK_TEST_COOKIE
+  run: pwsh scripts/test-device-code.ps1
+  working-directory: ./cursor-plugin
+  env:
+    AGENTSTACK_BASE_URL: https://staging.agentstack.tech
+    AGENTSTACK_TEST_COOKIE: ${{ secrets.AGENTSTACK_TEST_COOKIE }}
+```
 
-## Plugin capabilities
+## References
 
-### What the plugin includes
-
-| Component | Purpose |
-|-----------|------------|
-| **Manifest** (`.cursor-plugin/plugin.json`) | Name, description, keywords for Marketplace and Cursor. |
-| **MCP config** (`mcp.json`) | Example AgentStack MCP server config (URL, API key header). |
-| **Skills** (3) | Teach the agent *when* and *how* to use AgentStack: 8DNA, projects, Rules Engine. |
-| **Rules** (2 .mdc files) | Code guidelines: data/config/protected structure and HTTP API usage (`/api/*`). |
-| **Documentation** | README, MCP_QUICKSTART, this file. |
-
-### Capabilities via MCP (after MCP setup)
-
-The plugin does not call the backend itself — the **AgentStack MCP server** does. After adding MCP in Cursor the agent gets access to tools such as:
-
-- **Projects:** create (including anonymous), list, details, update, delete, stats, users, settings, activity, API keys, attach anonymous project to user.
-- **Logic and rules:** create/update/delete rules, list, execute, processors, commands.
-- **Buffs:** create, apply, extend, rollback, cancel, list active, effective limits, temporary and persistent effects.
-- **Payments:** create, status, refund, list transactions, balance.
-- **Auth:** quick sign-in, create user, assign role, profile.
-- **Scheduler:** create/cancel/get/list tasks, etc.
-- **Analytics:** usage, metrics.
-- **API keys:** create, list, revoke, etc.
-- **Webhooks, notifications, wallets** — as implemented on backend and in MCP.
-
-Full tool list and parameters: **MCP_SERVER_CAPABILITIES** in the AgentStack repo or `GET https://agentstack.tech/mcp/tools` (with `X-API-Key`).
-
-### Skills capabilities
-
-- **agentstack-8dna:** design and query data with hierarchy (`parent_uuid`) and evolution (`generation`), work with `data`/`config`/`protected` structure and genetic coding.
-- **agentstack-projects:** create and manage projects and API keys via MCP, anonymous projects, attach to user.
-- **agentstack-rules-engine:** configure server logic without code (when/do), use Logic Engine and rules via MCP, link with buffs and commands.
-
-### Rules capabilities (.mdc)
-
-- **agentstack-dna-patterns:** consistent patterns for `data`, `config`, `protected` structure and key naming when using AgentStack in code.
-- **agentstack-json-config:** when and how to use HTTP API (`/api/projects`, `/api/logic`, `/api/neural`, `/api/buffs`, etc.) and MCP.
-
-### Summary
-
-- **Testing:** install plugin → configure MCP with API key → in chat ask to create/list projects and verify MCP calls; optionally verify Skills and Rules from behavior and code.
-- **Capabilities:** access to 60+ AgentStack MCP tools (projects, logic, buffs, payments, auth, scheduler, analytics, etc.), plus three Skills and two Rules for consistent use of 8DNA, projects, and Rules Engine.
+- Plugin structure rationale: this file + `./README.md` + `./CHANGELOG.md`.
+- Decision-first rules: `./rules/*.mdc`.
+- Domain skills: `./skills/*/SKILL.md`.
+- Live MCP action catalogue: `GET https://agentstack.tech/mcp/actions` (or `/agentstack-capability-matrix`).

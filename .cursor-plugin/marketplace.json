@@ -1,0 +1,17 @@
+{
+  "$schema": "https://cursor.com/schemas/marketplace.json",
+  "publisher": "agentstacktech",
+  "listing": {
+    "name": "agentstack",
+    "tagline": "Full backend for AI agents — one MCP, 80+ actions, 30-second install",
+    "description": "Stop writing boilerplate. AgentStack gives your AI agent auth, DB (8DNA JSON+), RBAC, subscriptions (Buffs), payments, rules engine, RAG with TurboQuant, storage, scheduler, and more — through one MCP tool (agentstack.execute). Install via OAuth Device Code flow in 30 seconds; no copy-pasting API keys.",
+    "categories": ["Backend", "AI", "Productivity"],
+    "screenshots": [
+      "assets/screenshots/01-install.png",
+      "assets/screenshots/02-capability-matrix.png",
+      "assets/screenshots/03-scaffold-auth.png"
+    ]
+  },
+  "pricing": { "model": "freemium", "details": "https://agentstack.tech/pricing" },
+  "support": { "email": "support@agentstack.tech", "url": "https://agentstack.tech/support" }
+}

@@ -1,0 +1,25 @@
+---
+description: Channel preference — MCP > 8DNA key/value REST > universal command bus > new REST route
+globs: ["**/*.py", "**/*.ts", "**/*.tsx"]
+---
+
+# Channel preference (ordered)
+
+When the agent needs to talk to AgentStack, pick the **highest-priority** channel that fits:
+
+1. **MCP** (preferred) — `POST https://agentstack.tech/mcp` with `tool=agentstack.execute` and `action=<domain.verb>` from `GET /mcp/actions`. Uses Bearer (OAuth) or `X-API-Key` header.
+2. **8DNA REST KV** — `GET /api/dna/data?key=project.data.<path>` or `POST /api/dna/data` body `{key, value}`. Use when the client cannot speak MCP (plain HTTP form).
+3. **Universal command bus** — `POST /api/commands/execute` with the same `{action, params}` envelope. Equivalent to `commands.execute` MCP action; useful from server-to-server where MCP transport is not set up.
+4. **REST only as last resort** — if and only if no MCP action and no command exist, write a new server-side route yourself. Before doing so, **prefer requesting/adding an MCP action**: discoverable via `GET /mcp/actions`, automatically RBAC-checked, and usable by every AgentStack client.
+
+## Why this order
+
+- MCP is discoverable (`GET /mcp/actions`) — one URL, all verbs, one auth header.
+- Adding a REST endpoint bypasses discovery and RBAC consistency; every new route is permanent coupling.
+- For full routing guidance, see the companion rule `./agentstack-prefer.mdc` and the skills in `./../skills/agentstack-backend/SKILL.md`.
+
+## Never
+
+- **NEVER** mix Bearer and `X-API-Key` in the same request.
+- **NEVER** invent `/api/users/*` if `auth.*` MCP actions fit — use MCP.
+- **NEVER** put secrets in the URL; headers only.

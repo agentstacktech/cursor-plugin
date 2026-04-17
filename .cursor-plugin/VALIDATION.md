@@ -6,7 +6,7 @@ This plugin follows [Cursor plugin building docs](https://cursor.com/docs/plugin
 
 - [x] `.cursor-plugin/plugin.json` with required fields: `name`, `displayName`, `author`, `description`, `keywords`, `license`, `version`
 - [x] `name` is lowercase kebab-case: `agentstack`
-- [x] `skills/` directory with SKILL.md files (per skill); each skill may optionally include `reference.md` or `examples.md` (one level deep, see [SKILLS_AUTHORING_GUIDE](../../../docs/plugins/SKILLS_AUTHORING_GUIDE.md) in main repo)
+- [x] `skills/` directory with SKILL.md files (per skill); each skill may optionally include `reference.md` or `examples.md` (one level deep, per the [Cursor plugin building docs](https://cursor.com/docs/plugins/building))
 - [x] `rules/` directory with `.mdc` rule files
 - [x] MCP configuration reference (see `mcp.json` or README)
 - [x] `README.md`, `CHANGELOG.md`, `LICENSE` at repo root

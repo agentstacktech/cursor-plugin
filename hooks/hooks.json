@@ -1,0 +1,24 @@
+{
+  "$schema": "https://cursor.com/schemas/hooks.json",
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "command": "node ./hooks/scripts/session-start.mjs" }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "node ./hooks/scripts/pre-shell-scan.mjs",
+        "matcher": "curl|wget|http|fetch|axios|Invoke-WebRequest|Invoke-RestMethod"
+      }
+    ],
+    "postToolUse": [
+      { "command": "node ./hooks/scripts/post-tool-telemetry.mjs" }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "node ./hooks/scripts/capability-refresh.mjs",
+        "matcher": "\\.cursor/mcp\\.json$|provided_plugins/cursor-plugin/mcp\\.json$"
+      }
+    ]
+  }
+}

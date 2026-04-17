@@ -1,30 +1,33 @@
 ---
-description: AgentStack 8DNA data patterns — use data/config/protected structure and genetic coding for keys when working with AgentStack entities and APIs.
-globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.json"]
+description: 8DNA data/protected structure, unified table (v0.4.7+), genetic key conventions
+globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.sql", "**/dna/**"]
 ---
 
-# AgentStack DNA patterns
+# AgentStack 8DNA patterns
 
-When reading or writing AgentStack entity data (projects, users, 8DNA tables):
+## Sections
 
-## Data structure
+- `data.*` — public or business data (readable by frontend if RBAC/FAP allow).
+- `data.config.*` — runtime-tunable configuration (shown in admin UI).
+- `protected.*` — secrets (API keys of 3rd parties, signing keys). NEVER returned in `projects.get_project`; accessed server-side via `ProtectedManager`.
+- `sandbox.*` — A/B / experiments, linked by `parent_uuid` to the main row.
 
-- **`data`** — All business data and public config. Use for: entity payloads, `config`, `system.config`. Never put secrets here.
-- **`protected`** — Sensitive only (API keys, signing keys, secrets). Access via backend ProtectedManager or documented key paths; never log or expose in client.
-- Prefer **genetic coding** for keys: dot-separated, hierarchical (e.g. `config.webhooks.timeout_ms`, `config.permissions.read`).
+## Unified storage (v0.4.7+)
 
-## Config and hierarchy
+- Single table `data_projects_8dna` holds both project and user rows.
+  - `user_id = 0` → project row (`project.data.*`, `project.protected.*`).
+  - `user_id > 0` → user row (`user.data.*`, `user.protected.*`).
+- Access the same row via either `projects.update_project` (project scope) or `POST /api/dna/data` with a full dotted key (`project.data.config.limits.api_calls.daily`).
 
-- Put public settings in `data.config`; system/tuning in `data.system.config` if needed.
-- For hierarchical entities, use `parent_uuid` to link to parent; use `generation` when modeling versions or evolution.
-- Inherit config from parent by walking `parent_uuid` and merging `data.config` instead of duplicating.
+## Dot-notation keys (genetic-style)
 
-## Naming and keys
+- Prefer deep semantic paths: `config.webhooks.timeout_ms`, `limits.api_calls.daily`, `features.ab.homepage_v2`.
+- Never dump everything into a flat top-level — agents reason about structure, not keys.
+- Use `parent_uuid` + `generation` for versioned rows and A/B forks.
+- Full decision matrix (when 8DNA vs Storage vs FAP vs Logic): `./../skills/agentstack-data/SKILL.md`.
 
-- Use consistent dot-notation for nested keys (e.g. `data.limits.api_calls`).
-- Follow existing AgentStack key paths for protected data (e.g. `keys.api.service_keys.*`, `keys.signing.webhook_master`).
+## Never
 
-## References
-
-- 8DNA Data+Config Merge architecture (data vs protected, key hierarchy).
-- 8DNA Hierarchy & Evolution (parent_uuid, generation, inheritance).
+- **NEVER** store real secrets in `data.*` — they will be returned by read actions.
+- **NEVER** introduce a parallel Prisma/Drizzle schema for data that belongs in 8DNA.
+- **NEVER** bypass RBAC by writing directly to the storage layer — go through MCP actions or `/api/dna/data`.

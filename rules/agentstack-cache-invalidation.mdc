@@ -1,0 +1,23 @@
+---
+description: After admin-editable mutations — invalidate consumer caches. Do not rely on TTL alone.
+globs: ["**/*.py", "**/*.ts", "**/*.tsx"]
+---
+
+# Cache invalidation after AgentStack mutations
+
+## Frontend (React Query)
+
+- After any mutation that touches data also read by another component, call `queryClient.invalidateQueries(...)` in `onSuccess`. Match by the query-key prefixes your hooks use (e.g. `['projects']`, `['rbac', 'users']`, `['buffs']`).
+- If you installed `@agentstack/sdk`, its React helpers (`useAgentStackMutation`, `useInvalidateOnWrite`) do this automatically for the canonical surfaces (8DNA, RBAC, buffs, rag, logic, payments).
+- As a rule of thumb: any admin-editable surface (8DNA config, RBAC, buffs, rag, logic, payments) should invalidate **all** queries whose key starts with that domain.
+
+## Backend (MCP discovery)
+
+- After adding / renaming / removing a tool or reloading service caps on the server:
+  - Call `POST /mcp/cache/clear` (or MCP action `discovery.cache_clear`) so connected clients re-fetch `GET /mcp/actions`.
+  - The plugin's `afterFileEdit` hook already triggers `capability-refresh.mjs` when `mcp.json` changes — extend it if you add other trigger files.
+
+## Admin-editable data
+
+- Any write to `data.config.*` shown elsewhere in the UI → invalidate the viewing queries in the same mutation handler.
+- Never rely on TTL when freshness matters for UX.

@@ -1,0 +1,62 @@
+---
+description: Genetic tag pattern — <domain>.<subsystem>.<role>.<generation> — an optional convention for indexes, design docs, and cross-module navigation
+globs: ["**/AI_INDEX.md", "**/INDEX.md", "**/genes/**", "**/CHANGELOG.md", "**/PLAN*.md"]
+---
+
+# Genetic tag pattern (optional convention)
+
+This rule activates only in files that already use the genetic-tag convention
+(`AI_INDEX.md`, `INDEX.md`, anything under a `genes/` folder, project
+`CHANGELOG.md`, `PLAN*.md`). If your codebase does not use these files it
+stays dormant.
+
+## Form
+
+`<domain>.<subsystem>.<role>.<generation>`
+
+- `<domain>` — a top-level section of your product (e.g. `billing`, `auth`,
+  `ui`, `infra`, `docs`).
+- `<subsystem>` — a named area inside that domain (e.g. `checkout`,
+  `session`, `navigation`).
+- `<role>` — the role this module plays (e.g. `entrypoint`, `validator`,
+  `schema`, `mapper`, `gateway`).
+- `<generation>` — `gen1`, `gen2`, … Bumped **only** when the semantics are
+  replaced; a refactor inside the same semantics stays on the current gen.
+
+### Examples
+
+- `billing.checkout.gateway.gen2` — a second-generation checkout gateway.
+- `ui.navigation.decision_tree.gen1` — a first take on navigation decisions.
+- `docs.plugins.capability_matrix.gen1` — first version of a plugin catalog.
+
+## When to introduce a tag / local index
+
+- **Many integration points** (≈ 10+ or multiple entry modules) → consider
+  a local `AI_INDEX.md` that lists hot files, the genetic tag, and sideways
+  references to related subsystems. Also reference it from any central
+  "navigation map" your project keeps.
+- **Non-trivial subsystem with non-obvious boundaries** (≥ 1 file + README
+  with surprising interfaces) → a minimal `AI_INDEX.md` is still worth it;
+  agents find it quickly via the tag.
+
+## Generation bump rules
+
+- Bump `gen<N>` only when replacing semantics. A performance rewrite of the
+  same semantics stays at the current generation.
+- When `gen2` lands, mark `gen1` as **legacy** wherever it is referenced and
+  in its own file so future readers follow the right trail.
+
+## Why this pattern
+
+- Tags like `billing.checkout.gateway.gen2` are **semantic addresses**: they
+  tie task meaning (checkout gateway) to a row in your navigation index and
+  to a subtree of related modules — not to a folder name that can change.
+- Use them in commit messages, PR descriptions, and agent summaries when
+  that reduces ambiguity. ("bumps billing.checkout.gateway to gen2" is
+  clearer than "refactors checkout module".)
+
+## Not required
+
+This is an opt-in convention. If your project does not have an index/genes
+tradition, this rule stays out of your way — the globs above don't match
+anything in a typical repo.

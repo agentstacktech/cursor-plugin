@@ -1,130 +1,100 @@
-# Cursor Plugin AgentStack — Verification and testing
+# Verification Checklist — AgentStack Cursor Plugin v0.4.9
 
-**Version:** 0.1  
-**Date:** 2026-02-23  
-**Purpose:** Prepare the plugin for verification and step-by-step testing before release or Marketplace submission.
+End-to-end scenario that exercises every layer of the plugin. Run before publishing to Cursor Marketplace.
 
----
+## 0. Prerequisites
 
-## Part 1. Preparation (before testing)
+- [ ] Cursor ≥ 0.45.0 installed.
+- [ ] Node 18+ on PATH (`node --version`).
+- [ ] Network access to the AgentStack cloud API (production `https://agentstack.tech` or a staging URL; override via `$env:AGENTSTACK_BASE_URL`). AgentStack is cloud-only — there is nothing to run locally.
+- [ ] Test user with a verified email on that environment.
 
-### 1.1 Automatic structure validation
+## 1. Structural validation
 
-From the plugin repo root run:
+- [ ] `node scripts/validate-plugin.mjs` exits 0 with no FAIL lines.
+- [ ] `pwsh scripts/smoke-local.ps1` exits 0 (structural + hook syntax + pre-shell-scan behaviour).
 
-```bash
-node scripts/validate-plugin.mjs
-```
+## 2. Install (OAuth Device Code)
 
-Or run all plugin checks in one command (structure + MCP):
+- [ ] Run `/agentstack-init` — plugin prints `user_code` and `verification_uri_complete`.
+- [ ] Browser auto-opens `/activate?user_code=...`.
+- [ ] `/activate` lists requested scopes and a human-readable client label ("Cursor (cursor-plugin)").
+- [ ] After approve, the plugin prints `AgentStack MCP connected.` with scope and expiry.
+- [ ] `~/.cursor/mcp.json` now has `Authorization: Bearer ...` under `mcpServers.agentstack.headers`.
+- [ ] `~/.cursor/agentstack-refresh` exists with `0600` perms (on Unix).
 
-```powershell
-.\scripts\run-all-verification.ps1
-# With key: .\scripts\run-all-verification.ps1 -ApiKey "your-key"
-```
+## 3. MCP connectivity
 
-Expected: all checks pass, exit code 0.
+- [ ] Cursor discovers the `agentstack` server — the side panel lists tools.
+- [ ] `/agentstack-capability-matrix` prints ~80 actions grouped by domain.
+- [ ] The live list from `GET https://agentstack.tech/mcp/actions` matches what the command prints.
 
-- [ ] Script completed without errors
-- [ ] All required files and folders present
-- [ ] `plugin.json` and `mcp.json` are valid
-- [ ] No hardcoded secrets in repo (placeholders only)
+## 4. Scaffolding
 
-### 1.2 Manual content check
+- [ ] `/agentstack-scaffold-auth` generates login + register + session gating that calls `auth.*` via `@agentstack/sdk`.
+- [ ] `/agentstack-scaffold-backend` adds RBAC middleware + buffs tier gates + AgentPay widget + admin panel.
+- [ ] `/agentstack-sync-schema` on a Prisma schema emits (a) 8DNA key plan, (b) FAP policy stubs, (c) migration script.
+- [ ] `/agentstack-index-docs` creates a `my-project-docs` RAG collection and ingests the project's markdown/text docs (refusing source code and secret-looking files).
 
-- [ ] **plugin.json:** `name` in kebab-case, `version` in semver format (e.g. 0.4.0)
-- [ ] **README.md:** links to MCP_QUICKSTART and TESTING_AND_CAPABILITIES work
-- [ ] **mcp.json:** headers use placeholder `<YOUR_API_KEY>` or `YOUR_API_KEY_HERE`, not a real key
-- [ ] **Skills:** each `skills/*/` folder has `SKILL.md` with frontmatter `name` and `description`
-- [ ] **Rules:** `rules/` contains `.mdc` files with `description` and `globs` if needed
+## 5. Hooks
 
-### 1.3 Documentation for review (Security / Marketplace)
+- [ ] `sessionStart`: with a Bearer < 2 min from expiry, restarting Cursor rotates it. `~/.cursor/mcp.json` gets a fresh token.
+- [ ] `beforeShellExecution`: `curl -H "X-API-Key: ask_realprefix..."` is blocked with a clear error.
+- [ ] `postToolUse`: with `agentstack.sendTelemetry: true` in `~/.cursor/settings.json`, MCP calls accumulate in `~/.cursor/agentstack-telemetry.jsonl` and flush hourly to `/api/telemetry/plugin`.
+- [ ] `afterFileEdit`: editing `mcp.json` triggers `capability-refresh.mjs`, which snapshots actions to `~/.cursor/agentstack-capabilities.json`.
 
-- [ ] Read [CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md](../../../docs/plugins/CURSOR_PLUGIN_SECURITY_REVIEW_PREP.md) — answers for reviewers ready
-- [ ] CHANGELOG is up to date, latest version matches `plugin.json`
+## 6. Agents
 
----
+- [ ] `@agentstack-architect` takes a product spec and produces a multi-domain plan (auth + RBAC + buffs + rules + RAG).
+- [ ] `@agentstack-migrator` on a Supabase project emits a cutover plan with zero-downtime step order.
 
-## Part 2. Plugin testing
+## 7. Decision-first behaviour
 
-### 2.1 Install the plugin
+- [ ] Ask Cursor "add user login with password" — it calls `auth.create_user` / `auth.quick_auth` instead of installing NextAuth.
+- [ ] Ask "store theme preference" — it writes `user.data.prefs.theme` via 8DNA, not Prisma.
+- [ ] Ask "email users every Friday" — it creates a `scheduler.create_task` + `notifications.send`, not a custom cron.
 
-**Option A — locally (before publish):**
+## 8. Diagnostics
 
-- [ ] Plugin added from folder / repo per [Cursor Docs — Plugins](https://cursor.com/docs/plugins)
-- [ ] Cursor shows plugin name (AgentStack — Full Backend Ecosystem) and version
+- [ ] `/agentstack-diagnose` prints a single status table showing: MCP reachable, Bearer expiry, active project, scope list, recent errors (empty), hooks wired.
 
-**Option B — from Marketplace (after publish):**
+## 9. Re-auth and logout
 
-- [ ] Cursor → Settings → Plugins → search "AgentStack" → Install
-- [ ] Install completed without errors
+- [ ] `/agentstack-login --switch-project` starts a fresh Device Code flow and replaces the Bearer.
+- [ ] Deleting `~/.cursor/agentstack-refresh` + restarting Cursor prints a warning and suggests `/agentstack-login`.
 
-### 2.2 MCP setup
+## 10. E2E automation
 
-- [ ] API key obtained (anonymous project or from AgentStack dashboard). Steps: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
-- [ ] In Cursor: Settings → Features → Model Context Protocol (MCP) → Add Server
-- [ ] Filled: Name `agentstack`, Type `HTTP`, Base URL `https://agentstack.tech/mcp`
-- [ ] Headers include `X-API-Key` with the key
-- [ ] Cursor restarted if needed
+- [ ] `./scripts/test-device-code.ps1` completes successfully against a staging instance.
 
-### 2.3 MCP check (endpoint availability)
+## 11. Marketplace assets
 
-Optional — confirm MCP endpoint responds:
+- [ ] `assets/logo.svg` and `assets/logo-dark.svg` render correctly light/dark.
+- [ ] `assets/screenshots/*.png` are populated at 1920x1200.
+- [ ] `.cursor-plugin/marketplace.json` links to [pricing](https://agentstack.tech/pricing) and [support](https://agentstack.tech/support).
 
-```powershell
-# PowerShell: availability check (expect 401 without key or 200 with key)
-Invoke-WebRequest -Uri "https://agentstack.tech/mcp/tools" -Method GET -Headers @{"X-API-Key"="YOUR_KEY"} -UseBasicParsing | Select-Object StatusCode
-```
+## 12. Docs sync
 
-Or with curl (if installed):
+- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.9`.
+- [ ] `CHANGELOG.md` has a `[0.4.9]` entry with the breaking-change note.
 
-```bash
-curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: YOUR_KEY" https://agentstack.tech/mcp/tools
-```
+## 13. Design alignment
 
-- [ ] Endpoint returns 200 (service available; with key — full access; without key some servers return 200 for GET /tools or 401)
+- [ ] The `agentstack-prefer.mdc` rule is `alwaysApply: true` and lists at least 10 decision rules.
+- [ ] Every skill has a "live catalog" reference to `GET /mcp/actions` rather than a hard-coded action list.
 
-### 2.4 Chat scenarios in Cursor
+## 14. Security
 
-Run in Cursor chat and confirm the agent calls MCP tools and returns a sensible answer:
+- [ ] No real API keys or Bearers committed (validator enforces placeholders).
+- [ ] `pre-shell-scan.mjs` blocks `ask_*` and JWT Bearers in shell commands.
+- [ ] Device Code session TTL ≤ 10 min on the backend.
 
-| # | Chat request | Expected tool / result |
-|---|----------------|----------------------------|
-| 1 | "Create a project in AgentStack named Test Verification" | `projects.create_project_anonymous` or similar; response has project_id or key |
-| 2 | "Show my AgentStack projects" | `projects.get_projects`, project list (or empty) |
-| 3 | "Get stats for project &lt;project_id&gt;" (use ID from step 1) | `projects.get_stats`, project data |
+## 15. Performance
 
-- [ ] Scenario 1 done
-- [ ] Scenario 2 done
-- [ ] Scenario 3 done
+- [ ] `/agentstack-init` reaches "MCP connected" in < 30 s on a warm connection.
+- [ ] `GET /mcp/actions` responds in < 500 ms warm / < 2 s cold.
 
-### 2.5 Skills and Rules (quality check)
+## 16. Uninstall
 
-- [ ] For requests about "projects" or "AgentStack" the agent suggests MCP calls (projects.*), not its own HTTP client
-- [ ] When working with code (e.g. files under rules globs) recommendations match DNA patterns and use of `/api/*` (see [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md))
-
-### 2.6 Common issues
-
-| Symptom | Action |
-|--------|--------|
-| Agent does not call MCP | Check MCP in Settings (URL, X-API-Key header), restart Cursor |
-| 401 / 403 | Check API key validity, subscription limits |
-| "Tool not found" | Match tool name to docs; check list: `GET https://agentstack.tech/mcp/tools` with X-API-Key |
-| Skills not triggering | Plugin installed; skill description has trigger phrases (projects, 8DNA, rules) |
-
----
-
-## Part 3. After testing
-
-- [ ] All items in Part 1 and 2 checked
-- [ ] Version in `plugin.json` and CHANGELOG entry updated
-- [ ] For Marketplace submission: form filled per [CURSOR_MARKETPLACE_SUBMIT.md](../../../docs/plugins/CURSOR_MARKETPLACE_SUBMIT.md)
-- [ ] After publish: run [CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md](../../../docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md)
-
----
-
-**Links**
-
-- [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md) — plugin capabilities and verification details
-- [MCP_QUICKSTART.md](MCP_QUICKSTART.md) — API key and MCP setup in Cursor
-- [.cursor-plugin/VALIDATION.md](.cursor-plugin/VALIDATION.md) — structure alignment with Cursor plugin building docs
+- [ ] Removing the plugin from Cursor does not delete `~/.cursor/mcp.json` but does disable the `agentstack` entry safely (manual clean-up documented).
+- [ ] `/agentstack-login --revoke` deletes the refresh token and removes the Bearer from `~/.cursor/mcp.json`.
