@@ -66,7 +66,7 @@ async function maybeFlush(opts) {
     const res = await fetch(`${BASE_URL}/api/telemetry/plugin`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': auth },
-      body: JSON.stringify({ plugin: 'cursor-plugin', version: '0.4.9', events: lines }),
+      body: JSON.stringify({ plugin: 'cursor-plugin', version: '0.4.13', events: lines }),
     });
     if (res.ok) {
       await writeFile(BUFFER_PATH, '', 'utf8');
@@ -91,6 +91,9 @@ async function main() {
     duration_ms: event.duration_ms || null,
     trace_id: event.response_headers?.['x-trace-id'] || event.trace_id || null,
     error: event.error ? String(event.error).slice(0, 500) : null,
+    plugin_version: '0.4.13',
+    layer: 'hook',
+    gene_tag: 'repo.plugins.cursor.gen3',
   };
 
   await append(entry);

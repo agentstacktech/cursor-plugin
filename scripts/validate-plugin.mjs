@@ -12,9 +12,26 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  STALE_ACTIONS,
+  SECRET_PATTERNS,
+  SAFE_PLACEHOLDER,
+  HARD_CODED_ACTION_COUNT,
+  ACTION_COUNT_ALLOWLIST,
+  ROUTER_SKILLS_REQUIRED,
+  ROUTER_SKILLS_OPTIONAL,
+} from '../../scripts/lib/stale-actions.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(ROOT, '..', '..');
+const STRICT_SCREENSHOTS =
+  process.argv.includes('--strict-screenshots') ||
+  process.env.AGENTSTACK_STRICT_SCREENSHOTS === '1';
+const CAPABILITY_MATRIX_CANDIDATES = [
+  path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
+  path.join(REPO_ROOT, 'docs/plugins/CAPABILITY_MATRIX.md'),
+];
 
 const REQUIRED_FILES = [
   '.cursor-plugin/plugin.json',
@@ -36,9 +53,9 @@ const REQUIRED_FILES = [
 
 const REQUIRED_DIRS = ['rules', 'skills', 'commands', 'agents', 'hooks', 'hooks/scripts', 'assets'];
 
-const KEBAB_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.9';
+const TARGET_VERSION = '0.4.13';
 const MIN_TRIGGER_KEYWORDS = 3;
 
 let hasErrors = false;
@@ -100,7 +117,73 @@ function countWords(str) {
   return str.split(/[\s,./|]+/).filter(Boolean).length;
 }
 
+function walkTextFiles(dir, out = []) {
+  const skip = new Set(['.git', 'node_modules', 'out', 'dist', 'hooks/fixtures']);
+  const textExt = new Set(['.json', '.js', '.mjs', '.ts', '.md', '.mdc', '.yaml', '.yml', '.ps1', '.svg']);
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (skip.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkTextFiles(full, out);
+    else if (/^validate.*\.mjs$/.test(entry.name)) continue;
+    else if (textExt.has(path.extname(entry.name).toLowerCase())) out.push(full);
+  }
+  return out;
+}
+
+function parseCapabilityActions() {
+  for (const matrixPath of CAPABILITY_MATRIX_CANDIDATES) {
+    if (!fs.existsSync(matrixPath)) continue;
+    const content = fs.readFileSync(matrixPath, 'utf8');
+    const actions = new Set();
+    for (const match of content.matchAll(/\|\s+`([a-z0-9_.]+)`\s+\|/g)) {
+      actions.add(match[1]);
+    }
+    if (actions.size === 0) {
+      continue;
+    }
+    const total = content.match(/Total actions:\s+\*\*(\d+)\*\*/);
+    if (!total) fail(`${path.relative(REPO_ROOT, matrixPath)}: missing total action count`);
+    else ok(`${path.relative(REPO_ROOT, matrixPath)}: total actions = ${total[1]}`);
+    return actions;
+  }
+  fail('CAPABILITY_MATRIX.md: no action rows parsed in canonical or fallback matrix');
+  return new Set();
+}
+
+function checkTextSecurityAndDrift(liveActions) {
+  for (const filePath of walkTextFiles(ROOT)) {
+    const relative = path.relative(ROOT, filePath).replace(/\\/g, '/');
+    if (relative.startsWith('hooks/fixtures/')) continue;
+    const content = fs.readFileSync(filePath, 'utf8');
+    for (const [oldAction, newAction] of STALE_ACTIONS) {
+      if (content.includes(oldAction)) {
+        const severity = liveActions.has(newAction) ? fail : warn;
+        severity(`${relative}: stale action "${oldAction}" found; use "${newAction}" or runtime discovery`);
+      }
+    }
+    const repoRelative = path.relative(REPO_ROOT, filePath).replace(/\\/g, '/');
+    if (
+      HARD_CODED_ACTION_COUNT.test(content) &&
+      !ACTION_COUNT_ALLOWLIST.has(repoRelative) &&
+      !ACTION_COUNT_ALLOWLIST.has(relative)
+    ) {
+      fail(`${relative}: hard-coded action count; use GET /mcp/actions (see docs/plugins/CANONICAL_COPY.md)`);
+    }
+    for (const { name, regex } of SECRET_PATTERNS) {
+      for (const match of content.matchAll(regex)) {
+        const start = Math.max(0, match.index - 40);
+        const end = Math.min(content.length, match.index + match[0].length + 40);
+        if (!SAFE_PLACEHOLDER.test(content.slice(start, end))) {
+          fail(`${relative}: possible committed secret (${name})`);
+        }
+      }
+    }
+  }
+}
+
 console.log(`Validating Cursor plugin structure (root: ${ROOT})\n`);
+
+const LIVE_ACTIONS = parseCapabilityActions();
 
 // 1. Required files
 for (const f of REQUIRED_FILES) checkFile(f);
@@ -113,21 +196,52 @@ let plugin = null;
 if (fs.existsSync(pluginPath)) {
   plugin = loadJson(pluginPath);
   if (plugin) {
-    const required = ['name', 'displayName', 'version', 'description', 'author', 'license', 'keywords', 'icon', 'engines'];
+    const required = ['name', 'displayName', 'version', 'description', 'author', 'license', 'keywords', 'logo', 'engines'];
     for (const key of required) {
       if (plugin[key] === undefined || plugin[key] === '') fail(`plugin.json: missing or empty "${key}"`);
     }
-    if (plugin.name && !KEBAB_REGEX.test(plugin.name)) fail(`plugin.json: "name" must be kebab-case, got: ${plugin.name}`);
-    else if (plugin.name) ok('plugin.json: name is kebab-case');
+    if (plugin.name && !KEBAB_REGEX.test(plugin.name)) fail(`plugin.json: "name" must be lowercase alphanumeric/kebab/dotted, got: ${plugin.name}`);
+    else if (plugin.name) ok('plugin.json: name format is Cursor-compatible');
     if (plugin.version && !SEMVER_REGEX.test(plugin.version)) fail(`plugin.json: version is not semver: ${plugin.version}`);
     else if (plugin.version === TARGET_VERSION) ok(`plugin.json: version ${plugin.version}`);
     else if (plugin.version) warn(`plugin.json: version ${plugin.version} (expected ${TARGET_VERSION})`);
     if (plugin.engines && plugin.engines.cursor) ok(`plugin.json: engines.cursor = ${plugin.engines.cursor}`);
     else fail('plugin.json: engines.cursor is required (e.g. ">=0.45.0")');
-    if (plugin.icon && !plugin.icon.endsWith('.svg')) warn('plugin.json: icon should be SVG for crisp retina');
+    const logoPath = plugin.logo || plugin.icon;
+    if (!logoPath) fail('plugin.json: logo is required by current Cursor plugin docs');
+    else if (!fs.existsSync(path.join(ROOT, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
+    else ok(`plugin.json: logo path exists (${logoPath})`);
+    if (plugin.logoDark && !fs.existsSync(path.join(ROOT, plugin.logoDark))) fail(`plugin.json: logoDark path does not exist: ${plugin.logoDark}`);
+    if (plugin.icon && !plugin.logo) warn('plugin.json: icon is legacy; prefer logo');
+    if (logoPath && !logoPath.endsWith('.svg')) warn('plugin.json: logo should be SVG for crisp retina');
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);
+  }
+}
+
+// 3b. marketplace.json
+const marketplacePath = path.join(ROOT, '.cursor-plugin/marketplace.json');
+if (fs.existsSync(marketplacePath)) {
+  const marketplace = loadJson(marketplacePath);
+  if (marketplace) {
+    if (!marketplace.publisher) fail('marketplace.json: publisher is required');
+    const listing = marketplace.listing || {};
+    if (!listing.name) fail('marketplace.json: listing.name is required');
+    if (!listing.tagline || listing.tagline.length > 80) fail('marketplace.json: listing.tagline missing or longer than 80 chars');
+    if (!listing.description || listing.description.length < 80) fail('marketplace.json: listing.description too short for marketplace review');
+    if (!Array.isArray(listing.categories) || listing.categories.length === 0) fail('marketplace.json: listing.categories required');
+    if (!listing.privacy || !/^https:\/\//.test(listing.privacy)) fail('marketplace.json: listing.privacy must be an https URL');
+    if (!listing.terms || !/^https:\/\//.test(listing.terms)) fail('marketplace.json: listing.terms must be an https URL');
+    for (const screenshot of listing.screenshots || []) {
+      const full = path.join(ROOT, screenshot);
+      if (!fs.existsSync(full)) {
+        const msg = `marketplace.json: screenshot missing: ${screenshot}`;
+        if (STRICT_SCREENSHOTS) fail(msg);
+        else warn(msg);
+      } else ok(`marketplace.json: screenshot exists (${screenshot})`);
+    }
+    ok('marketplace.json: listing metadata checked');
   }
 }
 
@@ -193,6 +307,32 @@ if (fs.existsSync(rulesDir)) {
   }
 }
 
+// 6b. Router ↔ skills registry
+const backendSkillPath = path.join(ROOT, 'skills/agentstack-backend/SKILL.md');
+if (fs.existsSync(backendSkillPath)) {
+  const backendBody = fs.readFileSync(backendSkillPath, 'utf8');
+  for (const skill of ROUTER_SKILLS_REQUIRED) {
+    if (!backendBody.includes(`\`${skill}\``)) {
+      fail(`skills/agentstack-backend/SKILL.md: missing router row for ${skill}`);
+    }
+  }
+  ok('skills/agentstack-backend: router covers required skills');
+}
+if (fs.existsSync(path.join(ROOT, 'skills/agentstack-support-storage'))) {
+  fail('skills/agentstack-support-storage/: removed in gen3 — use hosting, support, storage');
+}
+
+// 6c. alwaysApply rule budget (T0)
+let alwaysApplyCount = 0;
+if (fs.existsSync(rulesDir)) {
+  for (const f of fs.readdirSync(rulesDir).filter((x) => x.endsWith('.mdc'))) {
+    const body = fs.readFileSync(path.join(rulesDir, f), 'utf8');
+    if (/alwaysApply:\s*true/i.test(body)) alwaysApplyCount += 1;
+  }
+  if (alwaysApplyCount > 2) fail(`rules/: ${alwaysApplyCount} alwaysApply rules (max 2 T0 recommended)`);
+  else ok(`rules/: ${alwaysApplyCount} alwaysApply rule(s)`);
+}
+
 // 7. Commands — frontmatter required
 const cmdDir = path.join(ROOT, 'commands');
 if (fs.existsSync(cmdDir)) {
@@ -206,6 +346,15 @@ if (fs.existsSync(cmdDir)) {
     else if (!fm.name || !fm.description) fail(`commands/${f}: frontmatter needs name + description`);
     else ok(`commands/${f}`);
   }
+}
+
+// 7b. agentstack-init step title (OAuth primary)
+const initPath = path.join(ROOT, 'commands/agentstack-init.md');
+if (fs.existsSync(initPath)) {
+  const initBody = fs.readFileSync(initPath, 'utf8');
+  if (/##\s*3\.\s*Persist scoped API key/i.test(initBody)) {
+    fail('commands/agentstack-init.md: rename step 3 to Persist tokens (OAuth primary)');
+  } else ok('commands/agentstack-init.md: step 3 title OK');
 }
 
 // 8. Agents — frontmatter required
@@ -255,6 +404,9 @@ if (fs.existsSync(chPath)) {
   if (ch.includes(`[${TARGET_VERSION}]`) || ch.includes(`## ${TARGET_VERSION}`)) ok(`CHANGELOG.md mentions ${TARGET_VERSION}`);
   else warn(`CHANGELOG.md does not mention version ${TARGET_VERSION}`);
 }
+
+// 10b. Cross-file drift/security.
+checkTextSecurityAndDrift(LIVE_ACTIONS);
 
 // 11. Logo contract.
 // Canonical AgentStack mark (single <path>) — same geometry as the official

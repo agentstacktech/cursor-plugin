@@ -7,6 +7,7 @@ import { writeFile, readFile, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -16,9 +17,17 @@ const DEFAULT_SCOPES = [
   '8dna:read', '8dna:write',
   'logic:write', 'logic:dry_run',
   'rag:read', 'rag:write',
+  'storage:read', 'storage:write',
+  'agents:run',
+  'support:read',
   'buffs:read',
   'apikeys:write',
 ].join(' ');
+const SCOPE_PRESETS = {
+  readonly: ['mcp:execute', 'projects:read', '8dna:read', 'rag:read', 'storage:read', 'buffs:read'].join(' '),
+  builder: ['mcp:execute', 'projects:read', 'projects:write', '8dna:read', '8dna:write', 'logic:write', 'logic:dry_run', 'rag:read', 'rag:write', 'storage:read', 'storage:write'].join(' '),
+  full: DEFAULT_SCOPES,
+};
 
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
@@ -28,6 +37,11 @@ function parseArgs(argv) {
   const out = { scopes: DEFAULT_SCOPES };
   for (const a of argv.slice(2)) {
     if (a.startsWith('--scopes=')) out.scopes = a.slice('--scopes='.length).replace(/^"|"$/g, '');
+    else if (a.startsWith('--scope-preset=')) {
+      const preset = a.slice('--scope-preset='.length);
+      if (!SCOPE_PRESETS[preset]) throw new Error(`Unknown scope preset "${preset}". Use readonly, builder, or full.`);
+      out.scopes = SCOPE_PRESETS[preset];
+    }
     else if (a === '--headless') out.headless = true;
   }
   return out;
@@ -38,27 +52,27 @@ async function openBrowser(url) {
   try { exec(cmd); } catch { /* best effort */ }
 }
 
-async function authorize(scopes) {
+async function authorize(scopes, traceId) {
   const res = await fetch(`${BASE_URL}/api/oauth2/device/authorize`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
     body: new URLSearchParams({ client_id: CLIENT_ID, scope: scopes }),
   });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`device/authorize failed: HTTP ${res.status} — ${body}`);
+    throw new Error(`device/authorize failed: HTTP ${res.status} — ${body} (trace ${traceId})`);
   }
   return res.json();
 }
 
-async function pollToken({ device_code, interval, expires_in }) {
+async function pollToken({ device_code, interval, expires_in }, traceId) {
   const deadline = Date.now() + expires_in * 1000;
   let waitMs = Math.max(1, interval) * 1000;
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, waitMs));
     const res = await fetch(`${BASE_URL}/api/oauth2/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
       body: new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
         device_code,
@@ -71,7 +85,7 @@ async function pollToken({ device_code, interval, expires_in }) {
     if (data.error === 'slow_down') { waitMs += 5000; continue; }
     if (data.error === 'access_denied') throw new Error('User denied the authorization request.');
     if (data.error === 'expired_token') throw new Error('Device code expired — restart /agentstack-login.');
-    throw new Error(`token exchange failed: ${data.error_description || data.error || `HTTP ${res.status}`}`);
+    throw new Error(`token exchange failed: ${data.error_description || data.error || `HTTP ${res.status}`} (trace ${traceId})`);
   }
   throw new Error('Device code expired without response — restart /agentstack-login.');
 }
@@ -100,20 +114,36 @@ async function writeMcpJson(accessToken) {
   await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
-async function writeRefreshToken(refreshToken) {
+async function writeRefreshToken(refreshToken, token) {
   if (!refreshToken) return;
-  // Best-effort fallback: plaintext file with restrictive perms.
+  // Best-effort fallback: local-only metadata file with restrictive perms.
   // Integrations that can use OS keyring should override this path.
   await mkdir(CURSOR_DIR, { recursive: true });
-  await writeFile(REFRESH_PATH, refreshToken, 'utf8');
+  await writeFile(REFRESH_PATH, JSON.stringify({
+    refresh_token: refreshToken,
+    scope: token.scope || null,
+    token_type: token.token_type || 'Bearer',
+    obtained_at: new Date().toISOString(),
+  }, null, 2), 'utf8');
   try { await chmod(REFRESH_PATH, 0o600); } catch { /* Windows: ignore */ }
+}
+
+async function clearMcpCache(accessToken, traceId) {
+  try {
+    await fetch(`${BASE_URL}/mcp/cache/clear`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'X-Trace-Id': traceId },
+    });
+  } catch { /* best effort */ }
 }
 
 async function main() {
   const { scopes, headless } = parseArgs(process.argv);
+  const traceId = randomUUID();
 
   console.log('\nRequesting device code from AgentStack...');
-  const init = await authorize(scopes);
+  console.log('  Trace: ' + traceId);
+  const init = await authorize(scopes, traceId);
 
   console.log('\n  Open: ' + (init.verification_uri_complete || init.verification_uri));
   console.log('  Code: ' + init.user_code + '\n');
@@ -121,15 +151,17 @@ async function main() {
 
   if (!headless) await openBrowser(init.verification_uri_complete || init.verification_uri);
 
-  const token = await pollToken(init);
+  const token = await pollToken(init, traceId);
 
   await writeMcpJson(token.access_token);
-  await writeRefreshToken(token.refresh_token);
+  await writeRefreshToken(token.refresh_token, token);
+  await clearMcpCache(token.access_token, traceId);
 
   const scope = token.scope || scopes;
   const expiresIn = token.expires_in || 'unknown';
   console.log(`\n  AgentStack MCP connected.`);
   console.log(`  Scope:   ${scope}`);
+  console.log(`  Trace:   ${traceId}`);
   console.log(`  Expires: in ${expiresIn}s (hook 'session-start.mjs' refreshes automatically)`);
   console.log(`  Config:  ${MCP_PATH}\n`);
   console.log('  Restart Cursor if the MCP server does not auto-reload.\n');

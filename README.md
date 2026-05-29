@@ -1,6 +1,6 @@
 # AgentStack Cursor Plugin
 
-> Turn every Cursor agent into an AgentStack-native engineer. v0.4.9 · one-click install.
+> Turn every Cursor agent into an AgentStack-native engineer. v0.4.13 (gen3) · one-click install.
 
 ---
 
@@ -14,6 +14,8 @@
 The plugin prints a short code, opens a browser tab to `https://agentstack.tech/activate`, and — after you confirm — writes a scoped Bearer token straight into `~/.cursor/mcp.json`. No copy-pasting API keys.
 
 Behind the scenes: OAuth 2.1 Device Authorization Grant (RFC 8628).
+
+MCP tools/list advertises **`agentstack.execute`** and the Cursor-safe alias **`agentstack_execute`** (same JSON-RPC `tools/call` batch arguments). Use **`safe_action`** from `GET /mcp/actions` when a client forbids dots in action ids.
 
 ---
 
@@ -37,7 +39,7 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 ## 5-layer architecture
 
 ```
-.cursor-plugin/plugin.json   ← manifest (v0.4.9, engines.cursor >=0.45.0)
+.cursor-plugin/plugin.json   ← manifest (v0.4.13, engines.cursor >=0.45.0)
 rules/                       ← alwaysApply guidance (prefer-first, DNA patterns, routing)
 skills/                      ← decision-first router per domain (auth, data, commerce, rag, …)
 commands/                    ← user-initiated flows (/agentstack-init, -scaffold-auth, …)
@@ -87,6 +89,16 @@ The full, always-up-to-date catalogue: `GET https://agentstack.tech/mcp/actions`
 
 ---
 
+## Test locally (Cursor)
+
+1. Copy or symlink this folder to `~/.cursor/plugins/local/agentstack/`
+2. Reload Cursor window
+3. Run `node scripts/validate-plugin.mjs` and `pwsh scripts/smoke-local.ps1`
+
+From monorepo root: `node provided_plugins/scripts/audit-cursor-plugin.mjs`
+
+---
+
 ## Project structure
 
 ```
@@ -99,7 +111,7 @@ provided_plugins/cursor-plugin/
 │   ├── logo-dark.svg
 │   └── screenshots/
 ├── rules/                    # 5 mdc rules (prefer-over, dna-patterns, api-routing, cache, genes)
-├── skills/                   # 8 domain skills: backend, auth-rbac, data, logic, commerce, rag, signals, projects
+├── skills/                   # 10 domain skills: backend, auth-rbac, data, logic, commerce, rag, signals, projects, agents-ai, support-storage
 ├── commands/                 # 8 slash commands
 ├── agents/                   # 2 long-running presets (architect, migrator)
 ├── hooks/
@@ -170,6 +182,19 @@ See `VERIFICATION_CHECKLIST.md` for the full 16-point release gate and `MCP_QUIC
 Telemetry is **opt-in**. Set `agentstack.sendTelemetry: true` in your Cursor settings to let the plugin post usage events to `POST /api/telemetry/plugin`. Data is aggregated daily under the ecosystem project's 8DNA so the team can measure the north-star metric: **how often the agent picks an MCP action versus writing custom code**.
 
 Source: `hooks/scripts/post-tool-telemetry.mjs`. The backend endpoint is documented via `GET https://agentstack.tech/mcp/actions` (see `telemetry.*` if exposed, otherwise the raw REST URL above).
+
+---
+
+## Git (AgentStack monorepo workspace)
+
+The folder `AgentStack/` opened in Cursor is often **not** a Git repository (empty or missing `.git` at the workspace root). **Commit and push from this plugin directory:**
+
+```bash
+cd provided_plugins/cursor-plugin   # or open this folder as the Cursor workspace root
+git status && git commit && git push
+```
+
+Marketplace publish uses a copy-only sibling repo — see `https://github.com/agentstacktech/cursor-plugin` and the monorepo doc `docs/plugins/CURSOR_PLUGIN_PUBLISH.md` when your checkout includes it.
 
 ---
 

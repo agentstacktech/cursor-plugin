@@ -24,7 +24,7 @@ Look for:
 
 | Legacy                        | AgentStack replacement                                       |
 |-------------------------------|--------------------------------------------------------------|
-| Supabase Auth / NextAuth / Auth0 | `auth.quick_auth`, `auth.create_user`, `auth.get_profile`  |
+| Supabase Auth / NextAuth / Auth0 | `auth.login`, `auth.register`, `auth.get_profile`          |
 | Supabase Tables / Prisma      | 8DNA `data.*` + `projects.update_project` / `POST /api/dna/data` |
 | Supabase Row Level Security   | FAP `data_access.set_policy`                                 |
 | Supabase Edge Functions       | Logic Engine V2 rules (triggered via `signal` / `webhook`)   |

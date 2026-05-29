@@ -1,9 +1,13 @@
 # Marketplace screenshots
 
-Populate before publishing to Cursor Marketplace:
+Replace 1×1 placeholders with **1920×1200** captures before marketplace submit:
 
-- `01-install.png` — output of `/agentstack-init` after Device Code approve.
-- `02-capability-matrix.png` — output of `/agentstack-capability-matrix`.
-- `03-scaffold-auth.png` — diff view after `/agentstack-scaffold-auth`.
+- `01-install.png` — `/agentstack-init` after Device Code approve
+- `02-capability-matrix.png` — `/agentstack-capability-matrix`
+- `03-scaffold-auth.png` — `/agentstack-scaffold-auth` diff
+- `04-host-site.png` — `/agentstack-host-site` URL output
+- `05-sites-url-card.png` — hosted site card
 
-Target resolution: 1920x1200. Attribution: AgentStack brand kit (see `assets/logo.svg`).
+Generate placeholders: `node scripts/generate-screenshot-placeholders.mjs`
+
+Release gate: `node scripts/validate-plugin.mjs --strict-screenshots`

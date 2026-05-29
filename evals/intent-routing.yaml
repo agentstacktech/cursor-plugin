@@ -1,0 +1,120 @@
+# Golden prompts — run: node scripts/run-intent-eval.mjs
+
+- prompt: "add user login with email and password"
+
+  expect_skill: agentstack-auth-rbac
+
+  forbid: ["nextauth", "prisma"]
+
+- prompt: "publish my landing page to a URL"
+
+  expect_skill: agentstack-hosting
+
+- prompt: "open a support ticket for my project"
+
+  expect_skill: agentstack-support
+
+- prompt: "upload user avatar"
+
+  expect_skill: agentstack-storage
+
+- prompt: "DM message ordering is wrong"
+
+  expect_skill: agentstack-messenger
+
+- prompt: "connect Slack webhook"
+
+  expect_skill: agentstack-integrations
+
+- prompt: "where is the discover page in the UI"
+
+  expect_skill: agentstack-discovery
+
+- prompt: "use TypeScript SDK for AgentStack"
+
+  expect_skill: agentstack-sdk
+
+- prompt: "when user signs up give 7 day trial"
+
+  expect_skill: agentstack-logic
+
+- prompt: "semantic search over our docs"
+
+  expect_skill: agentstack-rag
+
+- prompt: "create a new project and API key"
+
+  expect_skill: agentstack-projects
+
+- prompt: "store feature flags in project config"
+
+  expect_skill: agentstack-data
+
+- prompt: "charge wallet for in-app purchase"
+
+  expect_skill: agentstack-commerce
+
+- prompt: "list digital goods in marketplace wizard"
+
+  expect_skill: agentstack-commerce-assets
+
+- prompt: "schedule cron to send digest email"
+
+  expect_skill: agentstack-signals
+
+- prompt: "deploy an AI agent to handle tickets"
+
+  expect_skill: agentstack-agents-ai
+
+- prompt: "hub comfort task for onboarding checklist"
+
+  expect_skill: agentstack-capability-tasks
+
+- prompt: "which MCP action for hosting quick start"
+
+  expect_skill: agentstack-hosting
+
+- prompt: "staff support inbox binding for AI"
+
+  expect_skill: agentstack-support
+
+- prompt: "file quota exceeded on upload"
+
+  expect_skill: agentstack-storage
+
+- prompt: "channel feed pagination broken"
+
+  expect_skill: agentstack-messenger
+
+- prompt: "integration recipe for Stripe webhook"
+
+  expect_skill: agentstack-integrations
+
+- prompt: "Cmd+K platform compass shortcut"
+
+  expect_skill: agentstack-discovery
+
+- prompt: "invalidate react query after mutation"
+
+  expect_skill: agentstack-sdk
+
+- prompt: "logic rule when order paid ship buff"
+
+  expect_skill: agentstack-logic
+
+- prompt: "ingest PDF into RAG collection"
+
+  expect_skill: agentstack-rag
+
+- prompt: "assign admin role to teammate"
+
+  expect_skill: agentstack-auth-rbac
+
+- prompt: "Solana grant scoped MCP actions only"
+
+  expect_skill: solana
+
+- prompt: "8DNA sandbox variant for experiment"
+
+  expect_skill: agentstack-data
+

@@ -3,13 +3,18 @@
   "publisher": "agentstacktech",
   "listing": {
     "name": "agentstack",
-    "tagline": "Full backend for AI agents — one MCP, 80+ actions, 30-second install",
-    "description": "Stop writing boilerplate. AgentStack gives your AI agent auth, DB (8DNA JSON+), RBAC, subscriptions (Buffs), payments, rules engine, RAG with TurboQuant, storage, scheduler, and more — through one MCP tool (agentstack.execute). Install via OAuth Device Code flow in 30 seconds; no copy-pasting API keys.",
+    "tagline": "Backend + static hosting for AI — one MCP, live action catalog",
+    "description": "AgentStack gives your AI agent a full backend and on-platform hosting: publish HTML or ZIP to a live /s/ URL, store project files, and run the live MCP catalog (discover via GET /mcp/actions) through agentstack.execute. OAuth Device Code install in ~30 seconds. Scale reference: docs/publication/PLATFORM_SCALE.md.",
     "categories": ["Backend", "AI", "Productivity"],
+    "keywords": ["mcp", "backend", "hosting", "static-site", "8dna", "rules-engine", "payments", "rag", "ai-agents", "storage", "publish"],
+    "privacy": "https://agentstack.tech/privacy",
+    "terms": "https://agentstack.tech/terms",
     "screenshots": [
       "assets/screenshots/01-install.png",
       "assets/screenshots/02-capability-matrix.png",
-      "assets/screenshots/03-scaffold-auth.png"
+      "assets/screenshots/03-scaffold-auth.png",
+      "assets/screenshots/04-host-site.png",
+      "assets/screenshots/05-sites-url-card.png"
     ]
   },
   "pricing": { "model": "freemium", "details": "https://agentstack.tech/pricing" },

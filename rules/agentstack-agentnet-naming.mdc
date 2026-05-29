@@ -1,0 +1,14 @@
+---
+description: AgentNet economy naming — AGNT/agUSD only; never add on-chain ticker 8DNA or a second governance fungible without ADR.
+globs: ["**/*"]
+alwaysApply: false
+---
+
+# AgentNet naming guardrail
+
+- Platform **8DNA** = data model (`data_projects_8dna`), not a money ticker.
+- Money v1: **AGNT** / **agUSD** only.
+- Do not introduce **8DNA** as a fungible token or duplicate governance ticker in copy or code.
+
+CI: `agentstack-core/scripts/check_agentnet_naming.py`  
+ADR: `docs/adr/AGENTNET_TOKEN_NAMING_AUDIT.md`

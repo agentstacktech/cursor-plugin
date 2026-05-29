@@ -14,8 +14,11 @@ Use when:
 
 ## Steps
 
-1. Ask the user which scopes to request (default: the same set as `/agentstack-init`). Allow narrower sets for read-only sessions.
-2. Run `node ./hooks/scripts/device-code.mjs --scopes="<space-separated>"`.
+1. Ask the user which scopes to request. Prefer presets:
+   - `--scope-preset=readonly` for inspection.
+   - `--scope-preset=builder` for app/data/rules/RAG/storage work.
+   - `--scope-preset=full` for full platform work including Agents Fleet/support.
+2. Run `node ./hooks/scripts/device-code.mjs --scope-preset=builder` or `node ./hooks/scripts/device-code.mjs --scopes="<space-separated>"`.
 3. After success, if the token grants access to more than one project, ask the user to pick one:
    - Call `projects.list` via MCP.
    - Persist the picked project id to `~/.cursor/agentstack-project` (plain text, 0600).
@@ -27,6 +30,7 @@ Use when:
 - **`invalid_grant`** — refresh token was revoked; clear `~/.cursor/agentstack-refresh` and restart.
 - **`invalid_scope`** — the requested scope is not allowed for `cursor-plugin` client; remove it.
 - **Browser did not open** — print the URL + code and ask the user to open manually.
+- **Support asks for diagnostics** — include the printed trace id from the login flow.
 
 ## Related
 

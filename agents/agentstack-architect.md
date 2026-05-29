@@ -50,4 +50,4 @@ You are an architect specialized in the AgentStack ecosystem. You receive a prod
 ## Related
 
 - `agents/agentstack-migrator.md` — if the user has an existing Supabase/Firebase/Stripe stack, start there.
-- Skills: `agentstack-backend`, `agentstack-data`, `agentstack-auth-rbac`, `agentstack-logic`, `agentstack-commerce`, `agentstack-rag`, `agentstack-signals`.
+- Skills: `agentstack-backend`, `agentstack-data`, `agentstack-auth-rbac`, `agentstack-logic`, `agentstack-commerce`, `agentstack-rag`, `agentstack-signals`, `agentstack-agents-ai`, `agentstack-support-storage`.

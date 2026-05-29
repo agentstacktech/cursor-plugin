@@ -7,6 +7,10 @@ description: Use for project / workspace / tenant management, scoped API keys fo
 
 Everything in AgentStack is project-scoped. Projects are also the unit for billing, limits, telemetry.
 
+## UI discovery
+
+When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFACE_REGISTRY_FOR_AGENTS.md` and `docs/dual-shell/PAGES_MAP.md` — do not invent `/dev` routes. Gene: `frontend.spa.ui_surface_registry.gen1`.
+
 ## Decision matrix
 
 | User says                                           | MCP action                                                         |

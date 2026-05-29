@@ -10,7 +10,7 @@ Fetch and render the current capability matrix.
 ## Steps
 
 1. `GET https://agentstack.tech/mcp/actions` with the current Bearer.
-2. Group by `category` (auth, rbac, projects, apikeys, 8dna, logic, rag, storage, buffs, payments, wallets, assets, scheduler, webhooks, notifications, data_access, commands, discovery).
+2. Group by the `category` value returned by the live catalog. Do not keep a hard-coded category allowlist; new domains such as agents, support, storage, generation, AI Builder, and social appear as the platform grows.
 3. Render a Markdown table per category:
 
 ```
@@ -18,8 +18,8 @@ Fetch and render the current capability matrix.
 
 | Action             | Required cap     | Summary                          |
 |--------------------|------------------|----------------------------------|
-| auth.quick_auth    | —                | Email+password login, returns token |
-| auth.create_user   | —                | Register a new user              |
+| auth.login         | —                | Login, returns auth/session data |
+| auth.register      | —                | Register a new user              |
 | ...                |                  |                                  |
 ```
 

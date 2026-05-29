@@ -1,4 +1,4 @@
-# Verification Checklist — AgentStack Cursor Plugin v0.4.9
+# Verification Checklist — AgentStack Cursor Plugin v0.4.13 (gen3)
 
 End-to-end scenario that exercises every layer of the plugin. Run before publishing to Cursor Marketplace.
 
@@ -26,7 +26,7 @@ End-to-end scenario that exercises every layer of the plugin. Run before publish
 ## 3. MCP connectivity
 
 - [ ] Cursor discovers the `agentstack` server — the side panel lists tools.
-- [ ] `/agentstack-capability-matrix` prints ~80 actions grouped by domain.
+- [ ] `/agentstack-capability-matrix` prints **≥280** actions grouped by domain (May 2026 baseline: **332** catalog actions).
 - [ ] The live list from `GET https://agentstack.tech/mcp/actions` matches what the command prints.
 
 ## 4. Scaffolding
@@ -50,7 +50,7 @@ End-to-end scenario that exercises every layer of the plugin. Run before publish
 
 ## 7. Decision-first behaviour
 
-- [ ] Ask Cursor "add user login with password" — it calls `auth.create_user` / `auth.quick_auth` instead of installing NextAuth.
+- [ ] Ask Cursor "add user login with password" — it calls `auth.register` / `auth.login` instead of installing NextAuth.
 - [ ] Ask "store theme preference" — it writes `user.data.prefs.theme` via 8DNA, not Prisma.
 - [ ] Ask "email users every Friday" — it creates a `scheduler.create_task` + `notifications.send`, not a custom cron.
 

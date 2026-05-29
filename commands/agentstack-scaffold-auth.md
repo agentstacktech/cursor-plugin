@@ -38,7 +38,7 @@ Show the user a preview of each file, ask for approval, then write.
 
 ## Express backend (no frontend)
 
-- `routes/auth.ts` — thin proxy: `POST /auth/login` → `auth.quick_auth`, `POST /auth/register` → `auth.create_user`, `GET /auth/whoami` → `auth.get_profile`.
+- `routes/auth.ts` — thin proxy: `POST /auth/login` → `auth.login`, `POST /auth/register` → `auth.register`, `GET /auth/whoami` → `auth.get_profile`.
 - `middleware/requireAgentStackUser.ts` — reads `Authorization: Bearer <token>`, calls `auth.get_profile`, attaches to `req.user`.
 
 ## Post-generation verification

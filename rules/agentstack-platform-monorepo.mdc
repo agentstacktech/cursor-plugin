@@ -1,0 +1,23 @@
+---
+description: When editing AgentStack monorepo platform paths, ship final code in one path — no default tenant canary or legacy+gated duplication unless explicitly requested.
+globs:
+  - "agentstack-core/**"
+  - "agentstack-frontend/**"
+  - "shared/**"
+  - "philosophy/**"
+  - "agentstack-unified-sdk/**"
+  - "widget-frontend/**"
+  - "superservice_frontend/**"
+  - "provided_plugins/**"
+alwaysApply: false
+---
+
+# Platform monorepo (founder direct ship)
+
+You are editing the **AgentStack platform**, not a tenant app hosted on it.
+
+- **Do not** add `rollout_steps`, messenger percent-canary flags, or sandbox forks unless the user names rollout, canary, sandbox, or a specific gene/ADR.
+- **Do** ship one clear code path per feature (`repo.engineering.founder_direct_ship.gen1`).
+- Tenant-facing canary guidance lives in `agentstack-prefer.mdc` rule 9 for **consumer projects** only.
+
+See `.cursor/rules/platform-vs-tenant-canary.mdc` in this repository.

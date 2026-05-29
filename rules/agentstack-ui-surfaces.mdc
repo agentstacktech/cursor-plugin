@@ -1,0 +1,13 @@
+---
+description: When the user asks where a UI feature lives, use the UI surface registry and pages map — do not invent /dev or /user routes.
+globs: ["agentstack-frontend/**", "**/*.tsx", "**/*.ts"]
+alwaysApply: false
+---
+
+# UI surface discovery
+
+1. Read `docs/plugins/UI_SURFACE_REGISTRY_FOR_AGENTS.md`
+2. Cross-check `docs/dual-shell/PAGES_MAP.md` and `docs/dual-shell/UI_SURFACE_REGISTRY.md`
+3. Regenerate snapshot when adding routes: `cd agentstack-frontend && npm run generate:ui-registry`
+
+Gene: `frontend.spa.ui_surface_registry.gen1`

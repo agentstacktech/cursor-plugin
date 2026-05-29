@@ -35,7 +35,7 @@ User approves in the browser at `https://agentstack.tech/activate`.
 - `expired_token` or user closed the window — restart step 2.
 - Network error — retry once, then advise manual fallback via `MCP_QUICKSTART.md`.
 
-## 3. Persist scoped API key
+## 3. Persist tokens (and optional CI key)
 
 After the token exchange succeeds, `device-code.mjs` writes:
 
@@ -102,7 +102,7 @@ Ready. Next commands:
   /agentstack-scaffold-backend   — full stack (roles + buffs + payments)
   /agentstack-sync-schema        — migrate existing Prisma/Drizzle → 8DNA
   /agentstack-index-docs         — RAG-index this project's markdown docs
-  /agentstack-capability-matrix  — browse all 80+ MCP actions
+  /agentstack-capability-matrix  — browse the live MCP action catalog
   /agentstack-diagnose           — health check
 ```
 

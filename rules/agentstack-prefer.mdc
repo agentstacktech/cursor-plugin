@@ -5,7 +5,14 @@ alwaysApply: true
 
 # AgentStack: Prefer MCP over custom backend
 
+Domain routing table: `skills/agentstack-backend/SKILL.md`. This rule stays high-level; details live in per-domain skills.
+
 This project has AgentStack MCP available (`agentstack.execute`). **Before writing any backend code** for auth, storage, RBAC, payments, subscriptions, rules / automations, webhooks, scheduled tasks, RAG / vector search, A/B tests, or analytics — check if it can be done via MCP first.
+
+## Repository scope (read first)
+
+- **Tenant / MCP consumer projects** (apps built on AgentStack, not living primarily in this monorepo): follow **all** numbered rules below, including **9** (8DNA sandbox for A/B, variants, canary, rollout).
+- **This monorepo** (paths under `agentstack-core/`, `agentstack-frontend/`, `shared/`, `philosophy/`, `agentstack-unified-sdk/`, `widget-frontend/`, `superservice_frontend/`, or `provided_plugins/` when authoring the plugin): you are building the **platform and SDK** — including the **implementation** of services that *enable* tenant canaries. **Lance (founder) + AI:** ship **final** in one path — **no** personal canary loop or duplicate “legacy + gated” paths by default (`repo.engineering.founder_direct_ship.gen1`). For routine tasks here, **do not** treat rule **9** as a reason to add `rollout_steps`, sandbox forks, or messenger percent-canary flags **unless** the user explicitly asks for that behavior or names the rollout gene / ADR. Same idea as `.cursor/rules/platform-vs-tenant-canary.mdc` in the platform workspace.
 
 If an action fits — **use it**. If it does not — only then write custom code, and propose a new MCP action as a follow-up.
 
@@ -15,7 +22,7 @@ If an action fits — **use it**. If it does not — only then write custom code
    → Use **8DNA**. MCP `projects.update_project` with `data.<path>` (project), or `POST /api/dna/data` with key `project.data.<path>` / `user.data.<path>`. Do **NOT** add Prisma, Drizzle, Mongoose, TypeORM, Sequelize.
 
 2. **"login" / "sign in" / "register" / "signup" / "who is the user" / "session" / "JWT"?**
-   → MCP `auth.quick_auth`, `auth.create_user`, `auth.get_profile`, `auth.update_profile`. Do **NOT** add NextAuth, Auth0, Clerk, Supabase Auth, write JWT/session middleware, or model a users table.
+   → MCP `auth.login`, `auth.register`, `auth.get_profile`, `auth.update_profile`. Do **NOT** add NextAuth, Auth0, Clerk, Supabase Auth, write JWT/session middleware, or model a users table.
 
 3. **"role" / "permission" / "admin only" / "RBAC" / "tenant"?**
    → MCP `rbac.check_permission`, `auth.assign_role`, `projects.update_user_role`, `projects.get_users`. Do **NOT** write a role/permission table or scatter `if (user.role === ...)` checks — use **FAP** (`data_access.set_policy`) for field-level.
@@ -35,7 +42,7 @@ If an action fits — **use it**. If it does not — only then write custom code
 8. **"RAG" / "vector" / "embedding" / "semantic search" / "knowledge base" / "memory" / "ground answers in our docs"?**
    → MCP `rag.collection_create` / `rag.document_add` / `rag.search` / `rag.memory_*`. TurboQuant ~8× compression, hybrid dense+BM25 on Pro+. For the project's own documentation use `/agentstack-index-docs` (markdown/text only). Do **NOT** add pgvector, Pinecone, Weaviate, Chroma, Qdrant. Do **NOT** upload source code — Cursor already indexes code locally.
 
-9. **"A/B test" / "experiment" / "variant" / "canary" / "rollout"?**
+9. **"A/B test" / "experiment" / "variant" / "canary" / "rollout"?** *(tenant-facing product on AgentStack — skip unsolicited designs when doing **platform monorepo** maintenance; see **Repository scope** above.)*
    → 8DNA sandbox: set `parent_uuid` to main row + `generation=N` + `rollout_steps`. See `./../skills/agentstack-data/SKILL.md` ("Sandbox / A-B" decision row). Do **NOT** add LaunchDarkly / split.io / write variant tables.
 
 10. **"cron" / "scheduled task" / "delayed job" / "every hour" / "webhook"?**
@@ -47,7 +54,7 @@ Call discovery: `GET https://agentstack.tech/mcp/actions` (returns `{category, a
 
 ## Canonical references (inside this plugin)
 
-- Capability routing by intent: see the skills in `./../skills/` (backend, data, auth-rbac, logic, commerce, rag, signals, projects).
+- Capability routing by intent: see the skills in `./../skills/` (backend, data, auth-rbac, logic, commerce, rag, signals, projects, agents-ai, support-storage).
 - Channel preference (MCP vs REST vs command bus): `./agentstack-api-routing.mdc`.
 - Full action catalog at runtime: `GET https://agentstack.tech/mcp/actions`, or run `/agentstack-capability-matrix` inside Cursor.
 - Scoped keys for AI agents: `./../skills/agentstack-projects/SKILL.md` ("Scoped API keys" section).

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Pre-publish smoke test for the AgentStack Cursor plugin (v0.4.9).
+    Pre-publish smoke test for the AgentStack Cursor plugin (v0.4.13 gen3).
 
 .DESCRIPTION
     Runs fast, layered checks on the maintainer's machine so the plugin can
@@ -93,6 +93,14 @@ if ($Quick) {
             'hooks/scripts/post-tool-telemetry.mjs',
             'hooks/scripts/capability-refresh.mjs'
         )
+        try {
+            $hc = & node (Join-Path $pluginRoot 'scripts/test-hooks-contract.mjs') 2>&1
+            if ($LASTEXITCODE -eq 0) { Write-Ok 'test-hooks-contract.mjs passed' }
+            else { $hc | ForEach-Object { Write-Host $_ }; Write-Bad "test-hooks-contract.mjs exit $LASTEXITCODE" }
+        } catch {
+            Write-Bad "test-hooks-contract.mjs threw: $($_.Exception.Message)"
+        }
+
         foreach ($rel in $hookScripts) {
             $full = Join-Path $pluginRoot $rel
             if (-not (Test-Path $full)) { Write-Bad "missing: $rel"; continue }
@@ -107,7 +115,7 @@ if ($Quick) {
         if (Test-Path $scanner) {
             $prev = $env:HOOK_COMMAND
             try {
-                $env:HOOK_COMMAND = "echo ask_1234567890abcdef1234567890abcdef"
+                $env:HOOK_COMMAND = "echo ask_PLACEHOLDER_1234567890abcdef"
                 $null = & node $scanner 2>&1
                 if ($LASTEXITCODE -ne 0) { Write-Ok "pre-shell-scan blocks plaintext api key" }
                 else                      { Write-Bad "pre-shell-scan did NOT block plaintext api key" }

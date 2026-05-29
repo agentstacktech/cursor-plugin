@@ -17,7 +17,7 @@
     "afterFileEdit": [
       {
         "command": "node ./hooks/scripts/capability-refresh.mjs",
-        "matcher": "\\.cursor/mcp\\.json$|provided_plugins/cursor-plugin/mcp\\.json$"
+        "matcher": "mcp\\.json$"
       }
     ]
   }

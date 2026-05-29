@@ -1,13 +1,15 @@
 {
   "$schema": "https://cursor.com/schemas/plugin.json",
   "name": "agentstack",
-  "displayName": "AgentStack — Backend Ecosystem for AI Agents",
-  "version": "0.4.9",
-  "description": "One MCP with 80+ actions (Auth, 8DNA, RBAC, Logic Engine V2, Storage, RAG, Payments, Scheduler, Social, FAP). Rules + skills + commands + hooks + agents route AI to AgentStack instead of writing custom backend.",
-  "author": { "name": "AgentStack", "url": "https://agentstack.tech" },
+  "displayName": "AgentStack — Backend, Hosting & AI MCP",
+  "version": "0.4.13",
+  "description": "One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, agents fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code install; rules, skills, commands, hooks, and agents route AI to the platform instead of custom backend glue.",
+  "author": { "name": "AgentStack", "email": "support@agentstack.tech", "url": "https://agentstack.tech" },
   "license": "MIT",
   "repository": "https://github.com/agentstacktech/cursor-plugin",
   "homepage": "https://agentstack.tech",
+  "logo": "assets/logo.svg",
+  "logoDark": "assets/logo-dark.svg",
   "icon": "assets/logo.svg",
   "iconDark": "assets/logo-dark.svg",
   "keywords": [
@@ -20,6 +22,8 @@
     "rbac",
     "payments",
     "storage",
+    "hosting",
+    "publish",
     "agentstack",
     "agent",
     "boilerplate-free"
