@@ -20,7 +20,7 @@ Use when:
    - `--scope-preset=full` for full platform work including Agents Fleet/support.
 2. Run `node ./hooks/scripts/device-code.mjs --scope-preset=builder` or `node ./hooks/scripts/device-code.mjs --scopes="<space-separated>"`.
 3. After success, if the token grants access to more than one project, ask the user to pick one:
-   - Call `projects.list` via MCP.
+   - Call `projects.get_projects` via MCP (alias `projects.list`).
    - Persist the picked project id to `~/.cursor/agentstack-project` (plain text, 0600).
 4. Call `POST /mcp/cache/clear` to refresh discovery for the new scope set.
 5. Show the new effective capabilities: `agentstack.execute` with `{action: "discovery.list"}` grouped by cap.

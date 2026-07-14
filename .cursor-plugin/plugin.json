@@ -2,9 +2,13 @@
   "$schema": "https://cursor.com/schemas/plugin.json",
   "name": "agentstack",
   "displayName": "AgentStack — Backend, Hosting & AI MCP",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "description": "One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, agents fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code install; rules, skills, commands, hooks, and agents route AI to the platform instead of custom backend glue.",
-  "author": { "name": "AgentStack", "email": "support@agentstack.tech", "url": "https://agentstack.tech" },
+  "author": {
+    "name": "AgentStack",
+    "email": "support@agentstack.tech",
+    "url": "https://agentstack.tech"
+  },
   "license": "MIT",
   "repository": "https://github.com/agentstacktech/cursor-plugin",
   "homepage": "https://agentstack.tech",
@@ -28,12 +32,18 @@
     "agent",
     "boilerplate-free"
   ],
-  "categories": ["Backend", "AI", "Productivity"],
+  "categories": [
+    "Backend",
+    "AI",
+    "Productivity"
+  ],
   "rules": "rules/",
   "skills": "skills/",
   "commands": "commands/",
   "agents": "agents/",
   "hooks": "hooks/hooks.json",
   "mcpServers": "mcp.json",
-  "engines": { "cursor": ">=0.45.0" }
+  "engines": {
+    "cursor": ">=0.45.0"
+  }
 }

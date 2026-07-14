@@ -1,6 +1,6 @@
 # AgentStack Cursor Plugin
 
-> Turn every Cursor agent into an AgentStack-native engineer. v0.4.13 (gen3) · one-click install.
+> Turn every Cursor agent into an AgentStack-native engineer. v0.4.14 (gen3) · one-click install.
 
 ---
 
@@ -39,7 +39,7 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 ## 5-layer architecture
 
 ```
-.cursor-plugin/plugin.json   ← manifest (v0.4.13, engines.cursor >=0.45.0)
+.cursor-plugin/plugin.json   ← manifest (v0.4.14, engines.cursor >=0.45.0)
 rules/                       ← alwaysApply guidance (prefer-first, DNA patterns, routing)
 skills/                      ← decision-first router per domain (auth, data, commerce, rag, …)
 commands/                    ← user-initiated flows (/agentstack-init, -scaffold-auth, …)
@@ -111,9 +111,9 @@ provided_plugins/cursor-plugin/
 │   ├── logo-dark.svg
 │   └── screenshots/
 ├── rules/                    # 5 mdc rules (prefer-over, dna-patterns, api-routing, cache, genes)
-├── skills/                   # 10 domain skills: backend, auth-rbac, data, logic, commerce, rag, signals, projects, agents-ai, support-storage
-├── commands/                 # 8 slash commands
-├── agents/                   # 2 long-running presets (architect, migrator)
+├── skills/                   # 24 domain skills (backend router + auth, data, crm, agentnet, commerce, …)
+├── commands/                 # 13 slash commands
+├── agents/                   # 5 long-running presets
 ├── hooks/
 │   ├── hooks.json
 │   └── scripts/              # 5 Node scripts: device-code, session-start, pre-shell-scan, post-tool-telemetry, capability-refresh

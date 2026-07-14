@@ -16,11 +16,11 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 | User says                                           | MCP action                                                         |
 |-----------------------------------------------------|--------------------------------------------------------------------|
 | "create a new workspace / tenant"                   | `projects.create`                                                  |
-| "migrate this anonymous project to my account"     | `projects.attach_to_user`                                          |
+| "migrate this anonymous project to my account"     | REST `POST /api/auth/convert-anonymous` (no MCP `attach_to_user` yet) |
 | "show usage / activity / stats"                    | `projects.get_stats`                                               |
-| "list projects I own"                              | `projects.list`                                                    |
+| "list projects I own"                              | `projects.get_projects` (alias: `projects.list`)                   |
 | "create an API key for my CI job"                  | `apikeys.create` with narrow `service_caps`                        |
-| "rotate / revoke an API key"                       | `apikeys.rotate`, `apikeys.delete`                                 |
+| "rotate / revoke an API key"                       | `apikeys.delete` (create a replacement with `apikeys.create`)      |
 | "give AI agent a limited key"                      | `apikeys.create` with e.g. `service_caps=["rag.read","logic.dry_run"]` |
 
 ## Scoped API keys — the canonical pattern for AI agents
@@ -68,8 +68,8 @@ The response contains `{ "key": "ask_...", "prefix": "ask_...", "service_caps": 
 ## Pitfalls
 
 - `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand.
-- `apikeys.create` requires the current session to already have `apikeys.write` cap — the OAuth Device Code flow grants this as part of approved scopes.
-- `projects.attach_to_user` only works if the project is currently anonymous (`owner_id=null`).
+- `apikeys.create` requires the current session to already have the apikeys write capability — the OAuth Device Code flow grants this as part of approved scopes.
+- Anonymous project attach uses REST convert-anonymous (no MCP attach_to_user yet).
 
 ## References
 

@@ -11,6 +11,11 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 
 | User intent signals | Sub-skill | Primary MCP |
 |---------------------|-----------|-------------|
+| CRM / pipeline / contact | `agentstack-crm` | `crm.*` |
+| AGNT / agUSD / AgentNet | `agentstack-agentnet` | `agentnet.*` |
+| storefront studio / merchant | `agentstack-storefront-studio` | `commerce.storefront.*` |
+| project wallet / treasury | `agentstack-project-wallet` | wallets + project wallet REST |
+| where in UI / next step | `agentstack-guidance` | `guidance.*`, discovery |
 | store, data, config, A/B sandbox | `agentstack-data` | `projects.update_project`, `data_access.*` |
 | publish site, /s/ URL, ZIP deploy | `agentstack-hosting` | `hosting.*` |
 | support ticket, staff inbox, psup | `agentstack-support` | `social.support.*` |

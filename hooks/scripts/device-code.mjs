@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { pollDeviceToken } from '../../../shared/plugin-kernel/deviceCodeClient.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -66,28 +67,14 @@ async function authorize(scopes, traceId) {
 }
 
 async function pollToken({ device_code, interval, expires_in }, traceId) {
-  const deadline = Date.now() + expires_in * 1000;
-  let waitMs = Math.max(1, interval) * 1000;
-  while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, waitMs));
-    const res = await fetch(`${BASE_URL}/api/oauth2/token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-        device_code,
-        client_id: CLIENT_ID,
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok && data.access_token) return data;
-    if (data.error === 'authorization_pending') continue;
-    if (data.error === 'slow_down') { waitMs += 5000; continue; }
-    if (data.error === 'access_denied') throw new Error('User denied the authorization request.');
-    if (data.error === 'expired_token') throw new Error('Device code expired — restart /agentstack-login.');
-    throw new Error(`token exchange failed: ${data.error_description || data.error || `HTTP ${res.status}`} (trace ${traceId})`);
-  }
-  throw new Error('Device code expired without response — restart /agentstack-login.');
+  return pollDeviceToken({
+    tokenUrl: `${BASE_URL}/api/oauth2/token`,
+    clientId: CLIENT_ID,
+    deviceCode: device_code,
+    intervalSec: interval,
+    expiresInSec: expires_in,
+    traceId,
+  });
 }
 
 async function writeMcpJson(accessToken) {

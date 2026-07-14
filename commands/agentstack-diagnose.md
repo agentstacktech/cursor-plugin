@@ -24,7 +24,7 @@ Run these in order and present results as a single Markdown table.
 ```
 | Check          | Status | Detail                                   |
 |----------------|--------|------------------------------------------|
-| Health         | OK     | api.agentstack.tech v0.4.9               |
+| Health         | OK     | agentstack.tech/api v0.4.9               |
 | Discovery      | OK     | N actions across M domains (from live GET) |
 | Token          | OK     | expires in 742s, scope=mcp:execute 8dna:write ... |
 | Whoami         | OK     | user_id=42, email=...                    |

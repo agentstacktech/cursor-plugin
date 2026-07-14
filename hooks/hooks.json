@@ -20,5 +20,6 @@
         "matcher": "mcp\\.json$"
       }
     ]
-  }
+  },
+  "_comment_preMcpCapCheck": "Wire pre-mcp-cap-check.mjs to beforeMCPExecution when Cursor supports that hook (capability lockfile gate)."
 }

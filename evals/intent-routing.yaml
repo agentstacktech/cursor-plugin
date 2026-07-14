@@ -118,3 +118,23 @@
 
   expect_skill: agentstack-data
 
+- prompt: "move deal to negotiation stage in CRM"
+
+  expect_skill: agentstack-crm
+
+- prompt: "purchase compute credits with AGNT"
+
+  expect_skill: agentstack-agentnet
+
+- prompt: "open storefront studio for my shop"
+
+  expect_skill: agentstack-storefront-studio
+
+- prompt: "project wallet payout settings"
+
+  expect_skill: agentstack-project-wallet
+
+- prompt: "where do I find CRM in the UI"
+
+  expect_skill: agentstack-guidance
+
