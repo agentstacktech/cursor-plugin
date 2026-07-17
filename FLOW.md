@@ -57,3 +57,12 @@ Live `GET /mcp/actions` returns `{ domains: { [name]: Entry[] }, total_actions }
 Local snapshot always stores **flat** `actions: Entry[]` via `flattenMcpActionsCatalog`.
 
 Validate / CI uses vendored `docs/CAPABILITY_MATRIX.md` plus `scripts/lib/stale-actions.mjs` — **no monorepo-only imports** in the publish repo.
+
+## Local health
+
+```bash
+node scripts/diagnose-local.mjs
+node scripts/diagnose-local.mjs --fix --seed-snapshot
+```
+
+`sessionStart` normalizes lean `mcpServers.agentstack` and refreshes the flat capability snapshot using Bearer **or** `X-API-Key`.

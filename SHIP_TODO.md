@@ -1,60 +1,71 @@
-# Marketplace ship — detailed task list (0.4.14)
+# Marketplace / local ship — detailed task list (0.4.14)
 
 **Gene:** `repo.plugins.cursor.gen3` · `repo.plugins.publication_gates.gen1`  
-**Status legend:** `[x]` done in tree · `[ ]` human / credentials · `[~]` optional polish
+**Status:** `[x]` done · `[ ]` human · `[~]` optional
 
 ---
 
-## A. Cursor install layout (P0 — marketplace.json)
+## A. Install layout
 
-- [x] Restore schema-valid `.cursor-plugin/marketplace.json` (`pluginRoot: plugins`, `source: agentstack`)
-- [x] Nest runtime under `plugins/agentstack/` (Cursor 2.6+ — bare source, not `.`)
-- [x] Keep `.cursor-plugin/listing.json` as AgentStack publisher SoT (screenshots/support)
-- [x] Point local install / validators / CI at nested package
-- [ ] Reload Cursor → **Add marketplace** from `https://github.com/agentstacktech/cursor-plugin` **or** re-run `node scripts/install-local.mjs --force`
-- [ ] Confirm plugin appears (rules/skills/commands)
+- [x] `.cursor-plugin/marketplace.json` + `plugins/agentstack/` (Cursor 2.6+)
+- [x] Local junction → `plugins/agentstack` (`install-local.mjs`)
+- [x] Local link verified OK on this machine
+- [ ] Reload Window after latest hook/mcpConfig changes
 
 ---
 
-## B. Copy & marketplace form
-
-- [x] Ready-to-paste **Description** in [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
-- [ ] Submit at https://cursor.com/marketplace/publish (paste SUBMIT_FORM; attach screenshots under `plugins/agentstack/assets/screenshots/`)
-
----
-
-## C. Call / data flow
+## B. Call / data flow (verified)
 
 | Step | Contract | Status |
 |------|----------|--------|
-| Marketplace resolve | `marketplace.json` → `plugins/agentstack/.cursor-plugin/plugin.json` | [x] |
-| Device Code authorize | `POST /api/oauth2/device/authorize` | [x] |
-| Token poll | HTTP **400** + `authorization_pending` → continue | [x] |
-| Write MCP Bearer | `applyAgentstackMcpBearer` | [x] |
-| Catalog snapshot | flat `actions[]` | [x] |
-| Cap hint | `beforeMCPExecution` | [x] |
-| Local install | junction → `plugins/agentstack` | [x] scripts |
+| Marketplace → package | `pluginRoot=plugins` / `source=agentstack` | [x] |
+| Local package load | `~/.cursor/plugins/local/agentstack` → SoT | [x] |
+| Device Code | authorize → poll 400+pending → tokens | [x] code |
+| MCP write | lean `streamable-http` + Bearer (strips `tools`, drops API key on OAuth) | [x] |
+| MCP normalize | `--fix` / sessionStart strips non-lean keys | [x] |
+| Snapshot | flat `actions[]` from `GET /mcp/actions` | [x] seeded via API key |
+| Cap hint | `beforeMCPExecution` reads flat snapshot | [x] |
+| Session start | auth via Bearer **or** X-API-Key for catalog; Bearer refresh only | [x] |
 
-**Human e2e:**
+**This machine (diagnose):**
 
-- [ ] `/agentstack-init` → approve `/activate`
-- [ ] `whoami` / `/agentstack-capability-matrix`
-- [ ] Tick [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md)
+- [x] Plugin linked
+- [x] mcp lean after `--fix`
+- [x] Snapshot flat (live catalog via `--seed-snapshot`)
+- [ ] Auth still **X-API-Key** — run `/agentstack-init` for Device Code + refresh file
+- [ ] `/agentstack-diagnose` + `/agentstack-capability-matrix` in Cursor
 
 ---
 
-## D. Gates & push
-
-- [x] `validate-plugin --strict-screenshots` / hooks / kernel (re-run after layout change)
-- [ ] `git push origin master` + `git push origin v0.4.14` (`agentstacktech` auth)
+## C. Commands for Lance (now)
 
 ```bash
-node provided_plugins/scripts/sync-plugin-kernel.mjs --check
-cd provided_plugins/cursor-plugin && node scripts/smoke-local.mjs --install
+cd provided_plugins/cursor-plugin
+node scripts/diagnose-local.mjs              # status
+node scripts/diagnose-local.mjs --fix        # lean mcp.json
+node scripts/diagnose-local.mjs --seed-snapshot
 ```
+
+In Cursor after Reload:
+
+1. `/agentstack-init` (upgrade to Device Code)
+2. `/agentstack-diagnose`
+3. `/agentstack-capability-matrix`
+4. Optional `/agentstack-host-site`
+
+Form paste: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 
 ---
 
-## E. After approval
+## D. Publish
 
-- [ ] Post-release checklist (monorepo `docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md`)
+- [ ] `git push origin master` + `v0.4.14` (`agentstacktech`)
+- [ ] https://cursor.com/marketplace/publish
+- [ ] Post-release checklist (monorepo)
+
+---
+
+## E. Optional
+
+- [~] Live screenshots replace mocks
+- [~] Prefer Device Code over long-lived API key in local mcp.json

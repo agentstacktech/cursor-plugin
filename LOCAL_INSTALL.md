@@ -35,11 +35,13 @@ node scripts/uninstall-local.mjs
 
 ## Verify in Cursor (5 minutes)
 
+0. Optional offline health: `node scripts/diagnose-local.mjs` (add `--fix` to strip stale `tools` on mcp entry; `--seed-snapshot` to pull flat catalog with current auth).
 1. **Reload:** Command Palette → `Developer: Reload Window`
 2. Confirm plugin loads (rules/skills appear; or run a slash command).
 3. **Auth:** `/agentstack-init`  
    - Requires **Node on PATH**  
    - Browser → `https://agentstack.tech/activate`  
+   - Prefer Device Code over a lone `X-API-Key` (refresh + snapshot stay in sync).
    - Writes Bearer → `~/.cursor/mcp.json`
 4. **Smoke:** `/agentstack-diagnose` then `/agentstack-capability-matrix`
 5. Optional host: `/agentstack-host-site`

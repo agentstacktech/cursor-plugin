@@ -1,0 +1,187 @@
+#!/usr/bin/env node
+/**
+ * Post-install / pre-auth health for local Cursor plugin.
+ *
+ * Usage:
+ *   node scripts/diagnose-local.mjs
+ *   node scripts/diagnose-local.mjs --fix   # strip mcpServers.agentstack.tools extras
+ *   node scripts/diagnose-local.mjs --seed-snapshot  # GET /mcp/actions with current auth
+ */
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { fileURLToPath } from 'url';
+import { spawnSync } from 'child_process';
+import {
+  normalizeAgentstackMcpConfig,
+  agentstackAuthHeaders,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import { flattenMcpActionsCatalog } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
+const LINK = path.join(os.homedir(), '.cursor', 'plugins', 'local', 'agentstack');
+const MCP = path.join(os.homedir(), '.cursor', 'mcp.json');
+const SNAP = path.join(os.homedir(), '.cursor', 'agentstack-capabilities.json');
+const REFRESH = path.join(os.homedir(), '.cursor', 'agentstack-refresh');
+const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
+const wantFix = process.argv.includes('--fix');
+const wantSeed = process.argv.includes('--seed-snapshot');
+
+let fails = 0;
+function ok(msg) {
+  console.log(`OK   ${msg}`);
+}
+function warn(msg) {
+  console.warn(`WARN ${msg}`);
+}
+function fail(msg) {
+  console.error(`FAIL ${msg}`);
+  fails += 1;
+}
+
+function resolveLink(p) {
+  try {
+    if (!fs.existsSync(p)) return null;
+    try {
+      return path.resolve(path.dirname(p), fs.readlinkSync(p));
+    } catch {
+      return path.resolve(p);
+    }
+  } catch {
+    return null;
+  }
+}
+
+console.log('AgentStack Cursor plugin — local diagnose\n');
+
+// Layout
+if (!fs.existsSync(path.join(ROOT, '.cursor-plugin/marketplace.json'))) {
+  fail('repo missing .cursor-plugin/marketplace.json');
+} else {
+  ok('marketplace.json present (GitHub Add marketplace)');
+}
+if (!fs.existsSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'))) {
+  fail('plugins/agentstack/.cursor-plugin/plugin.json missing');
+} else {
+  ok('plugin package plugin.json present');
+}
+
+const target = resolveLink(LINK);
+if (!target) {
+  fail(`local link missing: ${LINK} — run: node scripts/install-local.mjs --force`);
+} else {
+  const norm = (p) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
+  if (norm(target) === norm(PLUGIN)) ok(`local link → plugins/agentstack`);
+  else fail(`local link points elsewhere: ${target}`);
+}
+
+for (const rel of [
+  'hooks/hooks.json',
+  'hooks/scripts/device-code.mjs',
+  'hooks/scripts/session-start.mjs',
+  'lib/plugin-kernel/deviceCodeClient.mjs',
+  'mcp.json',
+]) {
+  if (fs.existsSync(path.join(LINK, rel))) ok(`linked ${rel}`);
+  else fail(`linked missing ${rel}`);
+}
+
+// mcp.json
+if (!fs.existsSync(MCP)) {
+  fail('~/.cursor/mcp.json missing — run /agentstack-init');
+} else {
+  let cfg = JSON.parse(fs.readFileSync(MCP, 'utf8'));
+  const entry = cfg.mcpServers?.agentstack;
+  if (!entry) fail('mcpServers.agentstack missing');
+  else {
+    if (wantFix) {
+      const { cfg: next, changed } = normalizeAgentstackMcpConfig(cfg, { baseUrl: BASE_URL });
+      if (changed) {
+        fs.writeFileSync(MCP, JSON.stringify(next, null, 2), 'utf8');
+        ok('wrote lean mcpServers.agentstack (--fix)');
+        cfg = next;
+      } else {
+        ok('mcp already lean (--fix no-op)');
+      }
+    }
+    const cur = cfg.mcpServers.agentstack;
+    ok(`mcp type=${cur.type} url=${cur.url}`);
+    if (cur.tools !== undefined) {
+      warn('mcpServers.agentstack.tools present (non-lean) — run with --fix');
+    } else {
+      ok('mcp entry lean (no tools key)');
+    }
+    const auth = agentstackAuthHeaders(cfg);
+    if (!auth) fail('no Bearer and no X-API-Key — run /agentstack-init');
+    else if (auth.Authorization) ok('auth=Bearer (Device Code path)');
+    else ok('auth=X-API-Key (legacy/CI path; prefer /agentstack-init for Device Code)');
+  }
+}
+
+// refresh / snapshot
+if (fs.existsSync(REFRESH)) ok('refresh token file present');
+else warn('no ~/.cursor/agentstack-refresh — expected after Device Code login');
+
+if (fs.existsSync(SNAP)) {
+  const snap = JSON.parse(fs.readFileSync(SNAP, 'utf8'));
+  if (Array.isArray(snap.actions)) {
+    ok(`capability snapshot flat actions=${snap.actions.length} total=${snap.total_actions || '?'}`);
+  } else {
+    fail('capability snapshot is not flat actions[] — re-seed with --seed-snapshot');
+  }
+} else {
+  warn('no capability snapshot — sessionStart or --seed-snapshot');
+}
+
+if (wantSeed) {
+  const cfg = fs.existsSync(MCP) ? JSON.parse(fs.readFileSync(MCP, 'utf8')) : null;
+  const headers = agentstackAuthHeaders(cfg);
+  if (!headers) {
+    fail('cannot --seed-snapshot without auth');
+  } else {
+    const res = await fetch(`${BASE_URL}/mcp/actions`, { headers });
+    if (!res.ok) {
+      fail(`GET /mcp/actions HTTP ${res.status}`);
+    } else {
+      const catalog = await res.json();
+      const actions = flattenMcpActionsCatalog(catalog);
+      fs.writeFileSync(
+        SNAP,
+        JSON.stringify(
+          {
+            fetched_at: Date.now(),
+            total_actions: catalog.total_actions || actions.length,
+            actions,
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      ok(`seeded flat snapshot actions=${actions.length}`);
+    }
+  }
+}
+
+// offline gates
+const smoke = spawnSync(process.execPath, ['scripts/smoke-local.mjs'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+});
+if ((smoke.status ?? 1) !== 0) {
+  fail('smoke-local failed');
+  process.stderr.write(smoke.stderr || smoke.stdout || '');
+} else {
+  ok('smoke-local passed');
+}
+
+console.log(`\nsummary: failed=${fails}`);
+console.log(`
+Next (human):
+  1. Developer: Reload Window
+  2. /agentstack-init   (Device Code — recommended over X-API-Key alone)
+  3. /agentstack-diagnose
+  4. /agentstack-capability-matrix
+`);
+process.exit(fails ? 1 : 0);

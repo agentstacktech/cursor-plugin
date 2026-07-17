@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 // hooks/scripts/session-start.mjs
-// sessionStart: refresh Bearer near expiry + keep capability snapshot fresh.
+// sessionStart: lean mcp.json, refresh Bearer near expiry, keep capability snapshot fresh.
 
 import { readFile, writeFile, mkdir, chmod, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
-import { applyAgentstackMcpBearer } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import {
+  applyAgentstackMcpBearer,
+  agentstackAuthHeaders,
+  normalizeAgentstackMcpConfig,
+} from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -38,10 +42,14 @@ async function readMcp() {
   }
 }
 
-async function writeMcp(cfg, accessToken) {
-  applyAgentstackMcpBearer(cfg, { accessToken, baseUrl: BASE_URL });
+async function writeMcpFile(cfg) {
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+async function writeMcp(cfg, accessToken) {
+  applyAgentstackMcpBearer(cfg, { accessToken, baseUrl: BASE_URL });
+  await writeMcpFile(cfg);
 }
 
 function parseRefreshFile(raw) {
@@ -101,12 +109,11 @@ async function writeFlatSnapshot(catalog) {
   return actions.length;
 }
 
-async function maybeRefreshCapabilitySnapshot(authHeader) {
+async function maybeRefreshCapabilitySnapshot(authHeaders) {
   try {
     const st = await stat(SNAPSHOT_PATH);
     const ageMs = Date.now() - st.mtimeMs;
     if (ageMs < SNAPSHOT_MAX_AGE_MS) {
-      // Ensure legacy nested catalog snapshots are flattened
       try {
         const snap = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
         if (!Array.isArray(snap.actions)) {
@@ -124,9 +131,7 @@ async function maybeRefreshCapabilitySnapshot(authHeader) {
     /* missing */
   }
   try {
-    const res = await fetch(`${BASE_URL}/mcp/actions`, {
-      headers: { Authorization: authHeader },
-    });
+    const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: authHeaders });
     if (!res.ok) return;
     const catalog = await res.json();
     const n = await writeFlatSnapshot(catalog);
@@ -137,13 +142,25 @@ async function maybeRefreshCapabilitySnapshot(authHeader) {
 }
 
 async function main() {
-  const cfg = await readMcp();
-  const auth = cfg?.mcpServers?.agentstack?.headers?.Authorization;
-  if (!auth || !auth.startsWith('Bearer ')) return;
+  let cfg = await readMcp();
+  if (!cfg) return;
 
-  await maybeRefreshCapabilitySnapshot(auth);
+  const { cfg: normalized, changed } = normalizeAgentstackMcpConfig(cfg, { baseUrl: BASE_URL });
+  cfg = normalized;
+  if (changed) {
+    await writeMcpFile(cfg);
+    console.log('[agentstack] mcp.json agentstack entry normalized (lean streamable-http)');
+  }
 
-  const token = auth.slice('Bearer '.length).trim();
+  const authHeaders = agentstackAuthHeaders(cfg);
+  if (!authHeaders) return;
+
+  await maybeRefreshCapabilitySnapshot(authHeaders);
+
+  const bearer = cfg?.mcpServers?.agentstack?.headers?.Authorization;
+  if (!bearer || !bearer.startsWith('Bearer ')) return;
+
+  const token = bearer.slice('Bearer '.length).trim();
   const payload = decodeJwtPayload(token);
   if (!payload || typeof payload.exp !== 'number') return;
 
