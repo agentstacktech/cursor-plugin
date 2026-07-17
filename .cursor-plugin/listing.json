@@ -3,7 +3,7 @@
   "listing": {
     "name": "agentstack",
     "tagline": "Backend + static hosting for AI — one MCP, live action catalog",
-    "description": "AgentStack gives your AI agent a full backend and on-platform hosting: publish HTML or ZIP to a live /s/ URL, store project files, and run the live MCP catalog (discover via GET /mcp/actions) through agentstack.execute. OAuth Device Code install in about 30 seconds. Homepage https://agentstack.tech — privacy, terms, and freemium pricing linked from the listing.",
+    "description": "AgentStack gives your AI agent a full backend and on-platform hosting: publish HTML or ZIP to a live /s/ URL, store project files, and run the live MCP catalog (discover via GET /mcp/actions) through agentstack.execute. OAuth Device Code install in about 30 seconds. The Cursor Marketplace plugin is free; optional AgentStack platform account pricing is at https://agentstack.tech/pricing. Privacy and terms linked from the listing.",
     "categories": ["Backend", "AI", "Productivity"],
     "keywords": ["mcp", "backend", "hosting", "static-site", "8dna", "rules-engine", "payments", "rag", "ai-agents", "storage", "publish"],
     "privacy": "https://agentstack.tech/privacy",
@@ -16,7 +16,12 @@
       "plugins/agentstack/assets/screenshots/05-sites-url-card.png"
     ]
   },
-  "pricing": { "model": "freemium", "details": "https://agentstack.tech/pricing" },
+  "pricing": {
+    "model": "free_plugin_optional_platform",
+    "plugin": "free",
+    "details": "https://agentstack.tech/pricing",
+    "note": "Cursor Marketplace Plugin is free (Publisher Terms §3.1). AgentStack cloud/hosting is a separate freemium product account."
+  },
   "support": { "email": "support@agentstack.tech", "url": "https://agentstack.tech/support" },
   "_comment": "AgentStack publisher listing SoT (screenshots + support). Cursor install index is marketplace.json. Gene: repo.plugins.publication_gates.gen1"
 }

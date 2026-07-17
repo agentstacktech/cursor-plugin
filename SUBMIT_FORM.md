@@ -58,17 +58,18 @@ the live-catalog description above for the official listing text.
 | **Terms** | `https://agentstack.tech/terms` |
 | **Support email** | `support@agentstack.tech` |
 | **Support URL** | `https://agentstack.tech/support` |
-| **Pricing** | Freemium · `https://agentstack.tech/pricing` |
+| **Pricing** | `Plugin free on Cursor Marketplace. Optional AgentStack platform account (freemium): https://agentstack.tech/pricing` |
 | **License** | MIT |
-| **Screenshots** | `plugins/agentstack/assets/screenshots/01`–`05` (1920×1200); alts in that folder’s README |
+| **Screenshots** | `plugins/agentstack/assets/screenshots/01`–`05` (1920×1200); alts in that folder’s README — label mocks as illustrative if not live captures |
 | **Demo script** | [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md) |
+| **Publisher Terms** | https://cursor.com/marketplace-publisher-terms · internal check: [PUBLISHER_TERMS_CHECK.md](PUBLISHER_TERMS_CHECK.md) |
 
 ---
 
-## Do / Don't (reviewers)
+## Do / Don't (reviewers + Publisher Terms)
 
-**Do:** one MCP tool, Device Code install, hosting `/s/`, live `GET /mcp/actions`, freemium honesty.  
-**Don't:** “better than X”, Cursor endorsement, unverified SLA, “unlimited free hosting”, fixed action totals that go stale.
+**Do:** plugin free on Marketplace (§3.1); privacy/terms/support links (§4.2); accurate live-catalog copy (§4.5); say **“Cursor”** not “Cursor AI” (§4.6); opt-in telemetry only.  
+**Don't:** charge for the Marketplace plugin; imply Cursor/Anysphere endorsement; “better than X”; unverified SLA; “unlimited free hosting”; sell Plugin Data; train models on Plugin Data (§6.3).
 
 ---
 
