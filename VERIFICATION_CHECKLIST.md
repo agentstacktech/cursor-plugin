@@ -1,6 +1,9 @@
-# Verification Checklist — AgentStack Cursor Plugin v0.4.14 (gen3)
+## Staging operator log (G1)
 
-End-to-end scenario that exercises every layer of the plugin. Run before publishing to Cursor Marketplace.
+| Date | Operator | Environment | Result |
+|------|----------|-------------|--------|
+| 2026-07-17 | automated | local validate + smoke-local L1–L2 | PASS |
+| _pending_ | human | staging/prod Device Code e2e | _tick sections 2–10 below_ |
 
 ## 0. Prerequisites
 
