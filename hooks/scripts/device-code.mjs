@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { pollDeviceToken } from '../../../shared/plugin-kernel/deviceCodeClient.mjs';
+import { pollDeviceToken } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';

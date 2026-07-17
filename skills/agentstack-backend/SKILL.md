@@ -22,10 +22,10 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | upload, quota, attachment, media | `agentstack-storage` | `storage.*`, REST upload |
 | login, register, role, RBAC | `agentstack-auth-rbac` | `auth.*`, `rbac.*` |
 | when X then Y, automation, workflow | `agentstack-logic` | `logic.*`, `commands.*` |
-| payment, wallet, trial, buffs | `agentstack-commerce` | `payments.*`, `wallets.*`, `buffs.*` |
+| payment, wallet balance, checkout, buffs (not project treasury) | `agentstack-commerce` | `payments.*`, `wallets.*`, `buffs.*` |
 | digital goods, asset wizard | `agentstack-commerce-assets` | `assets.*` |
 | RAG, embedding, knowledge base | `agentstack-rag` | `rag.*` |
-| cron, webhook, notification | `agentstack-signals` | `scheduler.*`, `webhooks.*` |
+| cron, webhook, notification; Stripe *callback* (not Checkout SDK) | `agentstack-signals` | `scheduler.*`, `webhooks.*` |
 | project, API key, tenant | `agentstack-projects` | `projects.*`, `apikeys.*` |
 | agent fleet, AI Builder | `agentstack-agents-ai` | `agents.*`, `ai_builder.*` |
 | chat, DM, message ordering | `agentstack-messenger` | `social.*` |
@@ -36,6 +36,8 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | Solana grant tooling (optional) | `solana-agentstack-mcp` | grant-scoped actions only |
 
 Pick the **primary** bucket first; consult others by reference for multi-step flows.
+
+**Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-signals` / integrations (never `@stripe/stripe-js` for AgentStack checkout).
 
 ## Universal MCP contract
 

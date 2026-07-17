@@ -1,10 +1,10 @@
-# Verification Checklist — AgentStack Cursor Plugin v0.4.13 (gen3)
+# Verification Checklist — AgentStack Cursor Plugin v0.4.14 (gen3)
 
 End-to-end scenario that exercises every layer of the plugin. Run before publishing to Cursor Marketplace.
 
 ## 0. Prerequisites
 
-- [ ] Cursor ≥ 0.45.0 installed.
+- [ ] Recent Cursor build with plugin + hooks support installed.
 - [ ] Node 18+ on PATH (`node --version`).
 - [ ] Network access to the AgentStack cloud API (production `https://agentstack.tech` or a staging URL; override via `$env:AGENTSTACK_BASE_URL`). AgentStack is cloud-only — there is nothing to run locally.
 - [ ] Test user with a verified email on that environment.
@@ -71,12 +71,13 @@ End-to-end scenario that exercises every layer of the plugin. Run before publish
 
 - [ ] `assets/logo.svg` and `assets/logo-dark.svg` render correctly light/dark.
 - [ ] `assets/screenshots/*.png` are populated at 1920x1200.
-- [ ] `.cursor-plugin/marketplace.json` links to [pricing](https://agentstack.tech/pricing) and [support](https://agentstack.tech/support).
+- [ ] `.cursor-plugin/listing.json` links to [pricing](https://agentstack.tech/pricing) and [support](https://agentstack.tech/support).
 
 ## 12. Docs sync
 
-- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.9`.
-- [ ] `CHANGELOG.md` has a `[0.4.9]` entry with the breaking-change note.
+- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.14`.
+- [ ] `CHANGELOG.md` has a `[0.4.14]` entry.
+- [ ] `lib/plugin-kernel/` is present (self-contained Device Code).
 
 ## 13. Design alignment
 

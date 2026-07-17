@@ -15,11 +15,15 @@ If instead `X-API-Key` is present, ask the user: "Upgrade to OAuth Device Code (
 
 ## 2. Device Code login
 
-Run the helper hook:
+**Prerequisite:** Node.js on PATH (`node -v`). If missing, use the MCP deeplink fallback in `MCP_QUICKSTART.md` or set `AGENTSTACK_ACCESS_TOKEN` in the environment and map it into Cursor MCP settings.
+
+Resolve the plugin root (directory that contains `hooks/scripts/device-code.mjs` — often `~/.cursor/plugins/local/agentstack` or the marketplace install path). Then run:
 
 ```bash
 node ./hooks/scripts/device-code.mjs
 ```
+
+(If cwd is not the plugin root, pass an absolute path to the script.)
 
 The script will:
 
@@ -34,6 +38,7 @@ User approves in the browser at `https://agentstack.tech/activate`.
 - `authorization_pending` — keep polling (not an error).
 - `expired_token` or user closed the window — restart step 2.
 - Network error — retry once, then advise manual fallback via `MCP_QUICKSTART.md`.
+- Module not found for `lib/plugin-kernel` — reinstall/sync the plugin (self-contained vendor required).
 
 ## 3. Persist tokens (and optional CI key)
 
@@ -82,7 +87,15 @@ export const as = createSDK({
 
 - For Python projects — note the SDK is TS-only; Python clients use MCP directly via `agentstack.execute`.
 
-## 5. Print capability matrix summary
+## 5. Smoke (first 5 minutes)
+
+After auth is written, verify end-to-end:
+
+1. `GET https://agentstack.tech/api/auth/whoami` with the Bearer → expect 200.
+2. Prefer MCP: `agentstack.execute` with `{ "steps": [{ "action": "discovery.list", "params": {} }] }` (or live `GET /mcp/actions`).
+3. If either fails → `/agentstack-diagnose`.
+
+## 6. Print capability matrix summary
 
 Call discovery:
 
@@ -92,7 +105,7 @@ curl https://agentstack.tech/mcp/actions -H "Authorization: Bearer <token>"
 
 Group by category, show top 5 actions per category as a Markdown table. For the full list, suggest `/agentstack-capability-matrix`.
 
-## 6. Offer next commands
+## 7. Offer next commands
 
 Print:
 

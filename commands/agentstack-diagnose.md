@@ -16,29 +16,33 @@ Run these in order and present results as a single Markdown table.
 5. **Project** — `projects.get_stats` with the active project id (from `~/.cursor/agentstack-project`).
 6. **API keys** — `apikeys.list` (print label, prefix, scopes, ttl).
 7. **Recent errors** — last 20 lines from `~/.cursor/agentstack-telemetry.jsonl` where `success=false`; show `trace_id` + action.
-8. **Hooks** — verify `hooks/hooks.json` exists and its 4 scripts are executable.
-9. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
+8. **Hooks** — verify `hooks/hooks.json` lists sessionStart, beforeShellExecution, beforeMCPExecution, postToolUse, postToolUseFailure, sessionEnd, afterFileEdit; scripts under `hooks/scripts/` resolve from plugin root.
+9. **Capability snapshot** — age of `~/.cursor/agentstack-capabilities.json` (mtime); if missing or >24h, refresh via session-start or `GET /mcp/actions`.
+10. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
 
 ## Output
 
 ```
 | Check          | Status | Detail                                   |
 |----------------|--------|------------------------------------------|
-| Health         | OK     | agentstack.tech/api v0.4.9               |
+| Health         | OK     | agentstack.tech/api                      |
 | Discovery      | OK     | N actions across M domains (from live GET) |
-| Token          | OK     | expires in 742s, scope=mcp:execute 8dna:write ... |
+| Token          | OK     | expires in 742s, scope=mcp:execute ...   |
 | Whoami         | OK     | user_id=42, email=...                    |
 | Project        | WARN   | 9800/10000 API calls used today          |
 | API keys       | OK     | 2 keys                                   |
-| Recent errors  | OK     | 0 failures in last 20                    |
-| Hooks          | OK     | 4 scripts executable                     |
+| Recent errors  | OK     | 0 failures (opt-in telemetry only)       |
+| Hooks          | OK     | lifecycle scripts present                |
+| Snapshot       | OK     | age=12m                                  |
 | MCP cache      | OK     | cleared                                  |
 ```
 
 ## When something is wrong
 
 - **Token** expired → run `/agentstack-login`.
+- **HTTP 429** → honor `Retry-After`; backoff; do not tight-loop.
 - **Discovery** count unexpectedly low → key scoped too narrowly, prod lags behind `main`, or MCP modules failed to load; widen caps or re-login.
 - **Project** WARN (quota >90%) → suggest upgrading via `/agentstack-scaffold-backend` → AgentPay widget.
-- **Recent errors** — pick the most recent `trace_id` and correlate it with backend logs (the same id is emitted on every MCP response via the `X-Trace-Id` header).
+- **Recent errors** — pick the most recent `trace_id` and correlate it with backend logs (`X-Trace-Id`).
 - **Hooks** missing → re-install the plugin.
+- **Snapshot** stale → reload window (sessionStart) or clear MCP cache.

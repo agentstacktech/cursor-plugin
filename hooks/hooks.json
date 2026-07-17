@@ -1,9 +1,12 @@
 {
-  "$schema": "https://cursor.com/schemas/hooks.json",
+  "$schema": "https://raw.githubusercontent.com/cursor/plugins/main/schemas/hooks.schema.json",
   "version": 1,
   "hooks": {
     "sessionStart": [
       { "command": "node ./hooks/scripts/session-start.mjs" }
+    ],
+    "sessionEnd": [
+      { "command": "node ./hooks/scripts/session-end.mjs" }
     ],
     "beforeShellExecution": [
       {
@@ -11,8 +14,14 @@
         "matcher": "curl|wget|http|fetch|axios|Invoke-WebRequest|Invoke-RestMethod"
       }
     ],
+    "beforeMCPExecution": [
+      { "command": "node ./hooks/scripts/pre-mcp-cap-check.mjs" }
+    ],
     "postToolUse": [
       { "command": "node ./hooks/scripts/post-tool-telemetry.mjs" }
+    ],
+    "postToolUseFailure": [
+      { "command": "node ./hooks/scripts/post-tool-failure.mjs" }
     ],
     "afterFileEdit": [
       {
@@ -21,5 +30,5 @@
       }
     ]
   },
-  "_comment_preMcpCapCheck": "Wire pre-mcp-cap-check.mjs to beforeMCPExecution when Cursor supports that hook (capability lockfile gate)."
+  "_comment_layout": "Scripts live under hooks/scripts/ (intentional vs Cursor template root scripts/). Cwd must be plugin root."
 }

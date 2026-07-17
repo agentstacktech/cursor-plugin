@@ -1,5 +1,4 @@
 {
-  "$schema": "https://cursor.com/schemas/mcp.json",
   "mcpServers": {
     "agentstack": {
       "type": "streamable-http",
@@ -7,14 +6,6 @@
       "headers": {
         "Content-Type": "application/json",
         "Authorization": "Bearer ${AGENTSTACK_ACCESS_TOKEN}"
-      },
-      "tools": { "enabled": true, "autoDiscover": true },
-      "notes": {
-        "primary_auth": "OAuth 2.1 Bearer via Device Code flow — populated automatically by /agentstack-init (see hooks/scripts/device-code.mjs).",
-        "fallback_auth_apikey": "Manual fallback — replace headers.Authorization with 'X-API-Key': 'ask_...' from https://agentstack.tech/me/keys. See MCP_QUICKSTART.md.",
-        "fallback_deeplink": "For users without Node in PATH: cursor://anysphere.cursor-deeplink/mcp/install?name=agentstack&config=<base64-of-this-object>",
-        "discovery": "GET https://agentstack.tech/mcp/actions lists the live catalog (see docs/publication/PLATFORM_SCALE.md). POST /mcp/cache/clear refreshes discovery.",
-        "refresh": "hooks/scripts/session-start.mjs rotates the Bearer ~2 minutes before expiry."
       }
     }
   }

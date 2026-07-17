@@ -1,4 +1,4 @@
-# Testing & Capabilities — AgentStack Cursor Plugin v0.4.13 (gen3)
+# Testing & Capabilities — AgentStack Cursor Plugin v0.4.14 (gen3)
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
@@ -6,13 +6,15 @@ Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capabi
 
 | Layer | Path | Purpose |
 |-------|------|---------|
-| Manifest | `.cursor-plugin/plugin.json` | gen3 manifest |
-| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs |
-| Skills | `skills/<domain>/SKILL.md` | 18 domains + optional `solana` grant |
+| Manifest | `.cursor-plugin/plugin.json` | schema-valid gen3 manifest |
+| Listing | `.cursor-plugin/listing.json` | publisher copy + screenshots |
+| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs + T3 monorepo (9) |
+| Skills | `skills/<domain>/SKILL.md` | 24 domains + optional `solana` |
 | Commands | `commands/*.md` | 13 slash workflows |
-| Agents | `agents/*.md` | 5 presets |
-| Hooks | `hooks/hooks.json` + scripts | Lifecycle + contract tests |
-| MCP | `mcp.json` | streamable-http + Bearer |
+| Agents | `agents/*.md` | 5 presets (non-overlap below) |
+| Hooks | `hooks/hooks.json` + scripts | Lifecycle + policy + contract tests |
+| Kernel | `lib/plugin-kernel/` | Vendored Device Code client |
+| MCP | `mcp.json` | streamable-http + Bearer placeholder |
 
 ## Skills (gen3)
 
@@ -36,13 +38,29 @@ Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capabi
 | agentstack-discovery | UI + compass |
 | agentstack-capability-tasks | PTC |
 | agentstack-sdk | @agentstack/sdk |
+| agentstack-crm | crm.* |
+| agentstack-agentnet | AGNT / agUSD |
+| agentstack-guidance | guidance.* / where-to-click |
+| agentstack-project-wallet | project treasury |
+| agentstack-storefront-studio | storefront studio |
 | solana | Grant-only |
+
+## Agents (role matrix)
+
+| Agent | Owns | Does not own |
+|-------|------|--------------|
+| architect | Multi-domain greenfield from product spec | Day-2 ops runbooks |
+| migrator | Cutover from Supabase/Firebase/Auth0/etc. | Fleet promote/trace |
+| oncall | Diagnose → runbooks | Long greenfield builds |
+| fleet-operator | Agents Fleet run/promote/trace/caps | Tenant canary product UX |
+| tenant-builder | Tenant apps; sandbox/canary when user asks | Platform monorepo founder path |
 
 ## Automated checks
 
 ```bash
 node scripts/validate-plugin.mjs
+node scripts/validate-plugin.mjs --strict-screenshots
 node scripts/test-hooks-contract.mjs
-node ../../scripts/audit-cursor-plugin.mjs   # from repo root
-pwsh scripts/smoke-local.ps1
+node scripts/run-intent-eval.mjs
+node ../../scripts/audit-cursor-plugin.mjs
 ```

@@ -138,3 +138,31 @@
 
   expect_skill: agentstack-guidance
 
+- prompt: "Stripe sends a callback webhook when payment succeeds"
+
+  expect_skill: agentstack-signals
+
+  forbid: ["stripe sdk", "stripe checkout"]
+
+- prompt: "integrate Stripe Checkout SDK in my Next app"
+
+  expect_skill: agentstack-commerce
+
+  forbid: ["stripe.js", "@stripe/stripe-js"]
+
+- prompt: "show my personal wallet balance for in-app currency"
+
+  expect_skill: agentstack-commerce
+
+- prompt: "configure project treasury payout rails"
+
+  expect_skill: agentstack-project-wallet
+
+  forbid: ["wallets.get_balance personal"]
+
+- prompt: "bots fleet orchestrator for telegram"
+
+  expect_skill: agentstack-backend
+
+  forbid: ["agentstack-messenger"]
+

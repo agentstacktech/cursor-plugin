@@ -34,7 +34,10 @@ async function readMcp() {
 
 async function writeMcp(cfg, accessToken) {
   cfg.mcpServers = cfg.mcpServers || {};
-  cfg.mcpServers.agentstack = cfg.mcpServers.agentstack || { type: 'streamable-http', url: `${BASE_URL}/mcp`, tools: { enabled: true, autoDiscover: true } };
+  cfg.mcpServers.agentstack = cfg.mcpServers.agentstack || {
+    type: 'streamable-http',
+    url: `${BASE_URL}/mcp`,
+  };
   cfg.mcpServers.agentstack.headers = cfg.mcpServers.agentstack.headers || {};
   cfg.mcpServers.agentstack.headers['Authorization'] = `Bearer ${accessToken}`;
   delete cfg.mcpServers.agentstack.headers['X-API-Key'];
@@ -81,9 +84,14 @@ async function refresh(refreshToken, traceId) {
 }
 
 async function maybeRefreshCapabilitySnapshot(authHeader) {
+  let ageMs = null;
   try {
     const st = await stat(SNAPSHOT_PATH);
-    if (Date.now() - st.mtimeMs < SNAPSHOT_MAX_AGE_MS) return;
+    ageMs = Date.now() - st.mtimeMs;
+    if (ageMs < SNAPSHOT_MAX_AGE_MS) {
+      console.log(`[agentstack] capability snapshot age=${Math.round(ageMs / 60000)}m (fresh)`);
+      return;
+    }
   } catch { /* missing or stale */ }
   try {
     const res = await fetch(`${BASE_URL}/mcp/actions`, {
@@ -93,6 +101,7 @@ async function maybeRefreshCapabilitySnapshot(authHeader) {
     const actions = await res.json();
     await mkdir(CURSOR_DIR, { recursive: true });
     await writeFile(SNAPSHOT_PATH, JSON.stringify({ fetched_at: Date.now(), actions }, null, 2), 'utf8');
+    console.log('[agentstack] capability snapshot refreshed');
   } catch { /* best effort */ }
 }
 

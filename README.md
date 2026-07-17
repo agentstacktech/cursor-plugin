@@ -39,16 +39,25 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 ## 5-layer architecture
 
 ```
-.cursor-plugin/plugin.json   ← manifest (v0.4.14, engines.cursor >=0.45.0)
-rules/                       ← alwaysApply guidance (prefer-first, DNA patterns, routing)
-skills/                      ← decision-first router per domain (auth, data, commerce, rag, …)
-commands/                    ← user-initiated flows (/agentstack-init, -scaffold-auth, …)
-agents/                      ← long-running presets (architect, migrator)
-hooks/                       ← sessionStart / beforeShellExecution / postToolUse / afterFileEdit
-mcp.json                     ← streamable-http + Bearer token
+.cursor-plugin/plugin.json   ← manifest (v0.4.14, Cursor schema-valid)
+.cursor-plugin/listing.json  ← AgentStack publisher listing (not Cursor multi-plugin marketplace)
+rules/                       ← T0 prefer + T1 globs + T3 monorepo (9 mdc)
+skills/                      ← 24 domain routers + optional solana
+commands/                    ← slash flows (/agentstack-init, …)
+agents/                      ← 5 long-running presets
+hooks/                       ← lifecycle + policy (shell, MCP cap, telemetry)
+lib/plugin-kernel/           ← vendored Device Code client (self-contained)
+mcp.json                     ← streamable-http + Bearer placeholder
 ```
 
-Rationale for each layer is documented inline in the respective files (`rules/*.mdc` frontmatter, `skills/*/SKILL.md`, `commands/*.md`).
+## First 5 minutes
+
+1. Symlink or install plugin → reload Cursor  
+2. `/agentstack-init` (Node on PATH) → approve at `/activate`  
+3. Confirm whoami + `discovery.list` / `/agentstack-capability-matrix`  
+4. Optional: `/agentstack-host-site` for a live `/s/` URL  
+
+Auth notes: primary path is Device Code writing Bearer into `~/.cursor/mcp.json`. Fallback: set env `AGENTSTACK_ACCESS_TOKEN` and point MCP config at it, or API key via `MCP_QUICKSTART.md`. Dark logo assets: `assets/logo-dark.svg` (README/marketing; not schema fields).
 
 ---
 
@@ -105,19 +114,22 @@ From monorepo root: `node provided_plugins/scripts/audit-cursor-plugin.mjs`
 provided_plugins/cursor-plugin/
 ├── .cursor-plugin/
 │   ├── plugin.json
-│   └── marketplace.json
+│   └── listing.json
+├── .github/workflows/validate.yml
 ├── assets/
 │   ├── logo.svg
 │   ├── logo-dark.svg
 │   └── screenshots/
-├── rules/                    # 5 mdc rules (prefer-over, dna-patterns, api-routing, cache, genes)
-├── skills/                   # 24 domain skills (backend router + auth, data, crm, agentnet, commerce, …)
+├── lib/plugin-kernel/        # vendored OAuth helpers
+├── rules/                    # 9 mdc rules
+├── skills/                   # 24 domain skills
 ├── commands/                 # 13 slash commands
 ├── agents/                   # 5 long-running presets
 ├── hooks/
 │   ├── hooks.json
-│   └── scripts/              # 5 Node scripts: device-code, session-start, pre-shell-scan, post-tool-telemetry, capability-refresh
+│   └── scripts/              # device-code, session-*, pre-shell, pre-mcp, telemetry, failure, capability-refresh
 ├── scripts/
+```
 │   ├── validate-plugin.mjs   # structure validator
 │   ├── smoke-local.ps1       # 3-layer local smoke test (validator + node --check + curl)
 │   └── test-device-code.ps1  # e2e: Device Code + approve + Bearer write

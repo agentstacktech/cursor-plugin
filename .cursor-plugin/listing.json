@@ -1,5 +1,4 @@
 {
-  "$schema": "https://cursor.com/schemas/marketplace.json",
   "publisher": "agentstacktech",
   "listing": {
     "name": "agentstack",
@@ -18,5 +17,6 @@
     ]
   },
   "pricing": { "model": "freemium", "details": "https://agentstack.tech/pricing" },
-  "support": { "email": "support@agentstack.tech", "url": "https://agentstack.tech/support" }
+  "support": { "email": "support@agentstack.tech", "url": "https://agentstack.tech/support" },
+  "_comment": "AgentStack publisher listing SoT (not Cursor multi-plugin marketplace.json). Gene: repo.plugins.publication_gates.gen1"
 }

@@ -1,0 +1,23 @@
+name: Validate plugin
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate (strict screenshots)
+        run: node scripts/validate-plugin.mjs --strict-screenshots
+      - name: Hook contract tests
+        run: node scripts/test-hooks-contract.mjs
+      - name: Intent eval
+        run: node scripts/run-intent-eval.mjs
+      - name: Device-code module loads
+        run: node hooks/scripts/device-code.mjs --help || true

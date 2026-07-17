@@ -2,6 +2,31 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.14] - 2026-07-17
+
+> Marketplace ship wave — self-contained Device Code, schema-valid manifest, listing SoT, hooks lifecycle.
+
+### Added
+
+- Vendored `lib/plugin-kernel/` (self-contained publish artifact; `sync-plugin-kernel.mjs --check`).
+- `.cursor-plugin/listing.json` AgentStack publisher SoT (replaces false Cursor `marketplace.json` schema).
+- Hooks: `beforeMCPExecution`, `sessionEnd`, `postToolUseFailure`.
+- OSS: `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`; publish-repo `.github/workflows/validate.yml`.
+- Marketplace screenshots at 1920×1200 + alts; `generate-marketplace-screenshots.mjs`.
+- Intent-eval collisions (wallet / Stripe webhook vs SDK); expanded CRM/AgentNet/storefront/guidance coverage.
+
+### Changed
+
+- `plugin.json` sanitized to Cursor schema (`additionalProperties: false`); `$schema` pin to raw `plugin.schema.json`.
+- Telemetry: local buffer **only** when `agentstack.sendTelemetry` is true; version read from `plugin.json`.
+- T0 `agentstack-prefer` tenant-safe (monorepo/founder language stays in T3 `agentstack-platform-monorepo`).
+- Version line **0.4.14**; validators / checklists / diagnose aligned.
+
+### Security
+
+- Documented token storage threat model (Bearer in mcp.json; Windows ACL note).
+- Opt-in telemetry honesty for marketplace security review.
+
 ## [0.4.13] - 2026-05-29
 
 > **gen3** — catalog plane, skill split, publication CI, platform 0.4.13 alignment.

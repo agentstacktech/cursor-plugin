@@ -35,7 +35,7 @@ const CAPABILITY_MATRIX_CANDIDATES = [
 
 const REQUIRED_FILES = [
   '.cursor-plugin/plugin.json',
-  '.cursor-plugin/marketplace.json',
+  '.cursor-plugin/listing.json',
   'mcp.json',
   'README.md',
   'CHANGELOG.md',
@@ -46,16 +46,31 @@ const REQUIRED_FILES = [
   'hooks/scripts/pre-shell-scan.mjs',
   'hooks/scripts/post-tool-telemetry.mjs',
   'hooks/scripts/capability-refresh.mjs',
+  'hooks/scripts/pre-mcp-cap-check.mjs',
+  'hooks/scripts/session-end.mjs',
+  'hooks/scripts/post-tool-failure.mjs',
+  'lib/plugin-kernel/deviceCodeClient.mjs',
   'assets/logo.svg',
   'assets/logo-dark.svg',
   'assets/brand-mark.svg',
 ];
 
-const REQUIRED_DIRS = ['rules', 'skills', 'commands', 'agents', 'hooks', 'hooks/scripts', 'assets'];
+const REQUIRED_DIRS = [
+  'rules',
+  'skills',
+  'commands',
+  'agents',
+  'hooks',
+  'hooks/scripts',
+  'lib',
+  'lib/plugin-kernel',
+  'assets',
+];
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.13';
+const TARGET_VERSION = '0.4.14';
+const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
 let hasErrors = false;
@@ -69,6 +84,18 @@ function ok(msg) {
 }
 function warn(msg) {
   console.warn('WARN ' + msg);
+}
+
+/** Read PNG IHDR width/height (no deps). */
+function readPngSize(filePath) {
+  try {
+    const buf = fs.readFileSync(filePath);
+    if (buf.length < 24) return null;
+    if (buf.toString('ascii', 1, 4) !== 'PNG') return null;
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  } catch {
+    return null;
+  }
 }
 
 function checkFile(filePath, label = filePath) {
@@ -196,7 +223,7 @@ let plugin = null;
 if (fs.existsSync(pluginPath)) {
   plugin = loadJson(pluginPath);
   if (plugin) {
-    const required = ['name', 'displayName', 'version', 'description', 'author', 'license', 'keywords', 'logo', 'engines'];
+    const required = ['name', 'displayName', 'version', 'description', 'author', 'license', 'keywords', 'logo'];
     for (const key of required) {
       if (plugin[key] === undefined || plugin[key] === '') fail(`plugin.json: missing or empty "${key}"`);
     }
@@ -205,14 +232,17 @@ if (fs.existsSync(pluginPath)) {
     if (plugin.version && !SEMVER_REGEX.test(plugin.version)) fail(`plugin.json: version is not semver: ${plugin.version}`);
     else if (plugin.version === TARGET_VERSION) ok(`plugin.json: version ${plugin.version}`);
     else if (plugin.version) warn(`plugin.json: version ${plugin.version} (expected ${TARGET_VERSION})`);
-    if (plugin.engines && plugin.engines.cursor) ok(`plugin.json: engines.cursor = ${plugin.engines.cursor}`);
-    else fail('plugin.json: engines.cursor is required (e.g. ">=0.45.0")');
-    const logoPath = plugin.logo || plugin.icon;
+    // Schema-invalid keys (Cursor additionalProperties: false) — must not ship
+    for (const bad of ['logoDark', 'icon', 'iconDark', 'categories', 'engines']) {
+      if (plugin[bad] !== undefined) fail(`plugin.json: "${bad}" is not in Cursor plugin schema — move to README/listing.json`);
+    }
+    if (plugin.author && typeof plugin.author === 'object' && plugin.author.url) {
+      fail('plugin.json: author.url is not in Cursor schema — use homepage');
+    }
+    const logoPath = plugin.logo;
     if (!logoPath) fail('plugin.json: logo is required by current Cursor plugin docs');
     else if (!fs.existsSync(path.join(ROOT, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
     else ok(`plugin.json: logo path exists (${logoPath})`);
-    if (plugin.logoDark && !fs.existsSync(path.join(ROOT, plugin.logoDark))) fail(`plugin.json: logoDark path does not exist: ${plugin.logoDark}`);
-    if (plugin.icon && !plugin.logo) warn('plugin.json: icon is legacy; prefer logo');
     if (logoPath && !logoPath.endsWith('.svg')) warn('plugin.json: logo should be SVG for crisp retina');
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
@@ -220,29 +250,49 @@ if (fs.existsSync(pluginPath)) {
   }
 }
 
-// 3b. marketplace.json
-const marketplacePath = path.join(ROOT, '.cursor-plugin/marketplace.json');
-if (fs.existsSync(marketplacePath)) {
-  const marketplace = loadJson(marketplacePath);
+// 3b. listing.json (AgentStack publisher SoT — not Cursor multi-plugin marketplace.json)
+const listingPath = path.join(ROOT, '.cursor-plugin/listing.json');
+if (fs.existsSync(listingPath)) {
+  const marketplace = loadJson(listingPath);
   if (marketplace) {
-    if (!marketplace.publisher) fail('marketplace.json: publisher is required');
+    if (marketplace.$schema && String(marketplace.$schema).includes('cursor.com/schemas/marketplace')) {
+      fail('listing.json: must not claim Cursor marketplace.json $schema (multi-plugin format differs)');
+    }
+    if (!marketplace.publisher) fail('listing.json: publisher is required');
     const listing = marketplace.listing || {};
-    if (!listing.name) fail('marketplace.json: listing.name is required');
-    if (!listing.tagline || listing.tagline.length > 80) fail('marketplace.json: listing.tagline missing or longer than 80 chars');
-    if (!listing.description || listing.description.length < 80) fail('marketplace.json: listing.description too short for marketplace review');
-    if (!Array.isArray(listing.categories) || listing.categories.length === 0) fail('marketplace.json: listing.categories required');
-    if (!listing.privacy || !/^https:\/\//.test(listing.privacy)) fail('marketplace.json: listing.privacy must be an https URL');
-    if (!listing.terms || !/^https:\/\//.test(listing.terms)) fail('marketplace.json: listing.terms must be an https URL');
+    if (!listing.name) fail('listing.json: listing.name is required');
+    if (!listing.tagline || listing.tagline.length > 80) fail('listing.json: listing.tagline missing or longer than 80 chars');
+    if (!listing.description || listing.description.length < 80) fail('listing.json: listing.description too short for marketplace review');
+    if (!Array.isArray(listing.categories) || listing.categories.length === 0) fail('listing.json: listing.categories required');
+    if (!listing.privacy || !/^https:\/\//.test(listing.privacy)) fail('listing.json: listing.privacy must be an https URL');
+    if (!listing.terms || !/^https:\/\//.test(listing.terms)) fail('listing.json: listing.terms must be an https URL');
     for (const screenshot of listing.screenshots || []) {
       const full = path.join(ROOT, screenshot);
       if (!fs.existsSync(full)) {
-        const msg = `marketplace.json: screenshot missing: ${screenshot}`;
+        const msg = `listing.json: screenshot missing: ${screenshot}`;
         if (STRICT_SCREENSHOTS) fail(msg);
         else warn(msg);
-      } else ok(`marketplace.json: screenshot exists (${screenshot})`);
+      } else {
+        const size = fs.statSync(full).size;
+        if (STRICT_SCREENSHOTS) {
+          const dims = readPngSize(full);
+          if (!dims || dims.width !== 1920 || dims.height !== 1200) {
+            fail(`listing.json: screenshot ${screenshot} must be 1920×1200 PNG (got ${dims ? `${dims.width}×${dims.height}` : 'unreadable'})`);
+          } else if (size < PNG_MIN_BYTES) {
+            fail(`listing.json: screenshot ${screenshot} too small (${size} B) — replace 1×1 placeholder`);
+          } else {
+            ok(`listing.json: screenshot ${screenshot} ${dims.width}×${dims.height} (${size} B)`);
+          }
+        } else {
+          ok(`listing.json: screenshot exists (${screenshot})`);
+        }
+      }
     }
-    ok('marketplace.json: listing metadata checked');
+    ok('listing.json: listing metadata checked');
   }
+}
+if (fs.existsSync(path.join(ROOT, '.cursor-plugin/marketplace.json'))) {
+  fail('.cursor-plugin/marketplace.json must be removed — use listing.json (AgentStack SoT)');
 }
 
 // 4. mcp.json — streamable-http + OAuth primary

@@ -23,6 +23,26 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 | "rotate / revoke an API key"                       | `apikeys.delete` (create a replacement with `apikeys.create`)      |
 | "give AI agent a limited key"                      | `apikeys.create` with e.g. `service_caps=["rag.read","logic.dry_run"]` |
 
+## Working project under OAuth
+
+Cursor `/agentstack-init` issues a **user-scoped** Bearer (ecosystem `project_id=1`). For any session-scoped work on a tenant project, pass **`context.project_id`** on `agentstack.execute`:
+
+```json
+{
+  "tool": "agentstack_execute",
+  "arguments": {
+    "context": { "project_id": 2048 },
+    "steps": [
+      { "id": "1", "action": "projects.get_stats", "params": { "project_id": 2048 } }
+    ]
+  }
+}
+```
+
+- Use **`context.project_id`** so logic/list/write tools see the correct session project.
+- Still pass **`params.project_id`** when the action schema requires it (resource target).
+- Do **not** expect a project-bound API key to switch tenants via `context` unless it has `cross_project`.
+
 ## Scoped API keys — the canonical pattern for AI agents
 
 The agent must never be given a wide "master" key. Instead, `apikeys.create` emits a scoped key carrying `service_caps`:
@@ -67,6 +87,7 @@ The response contains `{ "key": "ask_...", "prefix": "ask_...", "service_caps": 
 
 ## Pitfalls
 
+- Under OAuth, forgetting `context.project_id` leaves the session on ecosystem project `1` — many tools then look like they “do nothing” or hit the wrong DNA slice.
 - `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand.
 - `apikeys.create` requires the current session to already have the apikeys write capability — the OAuth Device Code flow grants this as part of approved scopes.
 - Anonymous project attach uses REST convert-anonymous (no MCP attach_to_user yet).
