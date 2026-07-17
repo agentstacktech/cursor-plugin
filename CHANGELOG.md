@@ -13,6 +13,12 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 - `device-code.mjs --help` exits 0 without starting OAuth (safe smoke).
 - Lean MCP write path shared via `mcpConfig.mjs` (no `tools` extras).
 
+### Added (local verify)
+
+- `scripts/install-local.mjs` / `uninstall-local.mjs` — Windows junction / Unix symlink into `~/.cursor/plugins/local/agentstack`.
+- `LOCAL_INSTALL.md`, `FLOW.md`, cross-platform `scripts/smoke-local.mjs`.
+- `smoke-local.ps1 -Install` Layer 0.
+
 ### Added
 
 - Vendored `lib/plugin-kernel/` (self-contained publish artifact; `sync-plugin-kernel.mjs --check`).

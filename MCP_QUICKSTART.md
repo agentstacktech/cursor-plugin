@@ -1,3 +1,37 @@
-# MCP Quick start (redirect)
+# MCP Quick start — Cursor plugin
 
-**Canonical:** [../../docs/plugins/MCP_QUICKSTART.md](../../docs/plugins/MCP_QUICKSTART.md) → [../../docs/MCP_QUICKSTART.md](../../docs/MCP_QUICKSTART.md)
+**Endpoint:** `https://agentstack.tech/mcp`  
+**Tool:** `agentstack.execute` (alias `agentstack_execute`)  
+**Live catalog:** `GET https://agentstack.tech/mcp/actions`
+
+## Local plugin install (dev)
+
+```bash
+node scripts/install-local.mjs
+# Reload Cursor → /agentstack-init
+```
+
+See [LOCAL_INSTALL.md](LOCAL_INSTALL.md).
+
+## Auth (primary)
+
+OAuth 2.1 Device Code via `/agentstack-init` (writes Bearer into `~/.cursor/mcp.json`).
+
+Requires **Node.js** on PATH. Fallback: API key — set header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
+
+## Call shape
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "steps": [{ "action": "discovery.list", "params": {} }]
+  }
+}
+```
+
+## Diagnose
+
+`/agentstack-diagnose` · flow diagram: [FLOW.md](FLOW.md)
+
+Monorepo hub (if present): `docs/MCP_QUICKSTART.md`

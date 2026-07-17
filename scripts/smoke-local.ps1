@@ -1,49 +1,34 @@
 <#
 .SYNOPSIS
-    Pre-publish smoke test for the AgentStack Cursor plugin (v0.4.13 gen3).
+    Pre-publish smoke test for the AgentStack Cursor plugin (v0.4.14 gen3).
 
 .DESCRIPTION
-    Runs fast, layered checks on the maintainer's machine so the plugin can
-    be verified before installing it into Cursor or publishing it. AgentStack
-    itself is cloud-only (https://agentstack.tech) — there is no local
-    backend to spin up; Layer 3 hits the cloud API directly.
+    Layer 0 (optional -Install): junction/symlink into ~/.cursor/plugins/local/agentstack
+    Layer 1 (always): structural validator.
+    Layer 2 (always): hooks contract + node --check on all hook scripts.
+    Layer 3 (optional -BaseUrl): cloud API contract curls.
 
-    Layer 1 (always): structural validator. Takes ~2 seconds, fully offline.
-    Layer 2 (always): `node --check` on every hook script + a pre-shell-scan
-                      behavioural test. Still fully offline.
-    Layer 3 (optional): contract-level curl checks against the cloud API
-                      (pass -BaseUrl and, for approve, -TestCookie).
-
-    Exits non-zero on the first failure so the script is CI-friendly.
+.PARAMETER Install
+    Run node scripts/install-local.mjs before Layer 1.
 
 .PARAMETER BaseUrl
-    Base URL of the AgentStack cloud API to contract-check against. If
-    omitted, Layer 3 is skipped. Examples:
-      https://agentstack.tech            (production)
-      https://staging.agentstack.tech    (staging, if available)
+    Cloud API for Layer 3 (e.g. https://agentstack.tech).
 
 .PARAMETER TestCookie
-    Session cookie string from an authenticated browser session on the same
-    -BaseUrl, e.g. 'session=abc123'. Required only for the device/approve
-    curl step; other Layer 3 steps work without it.
+    Session cookie for device/approve Layer 3 steps.
 
 .PARAMETER Quick
-    Skip Layer 2 (node --check + pre-shell-scan behavioural test).
+    Skip Layer 2.
 
 .EXAMPLE
-    # Fast offline check
-    pwsh ./scripts/smoke-local.ps1
-
-.EXAMPLE
-    # Full contract check against the cloud API
-    pwsh ./scripts/smoke-local.ps1 -BaseUrl https://agentstack.tech -TestCookie 'session=...'
-
+    pwsh ./scripts/smoke-local.ps1 -Install
 #>
 [CmdletBinding()]
 param(
     [string]$BaseUrl = "",
     [string]$TestCookie = "",
-    [switch]$Quick
+    [switch]$Quick,
+    [switch]$Install
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,8 +42,29 @@ function Write-Info($msg)   { Write-Host "  [..]   $msg" -ForegroundColor DarkGr
 function Write-Skip($msg)   { Write-Host "  [skip] $msg" -ForegroundColor Yellow }
 
 $pluginRoot = Resolve-Path (Join-Path $PSScriptRoot '..') | Select-Object -ExpandProperty Path
-Write-Host "Cursor plugin smoke test" -ForegroundColor White
+Write-Host "Cursor plugin smoke test v0.4.14" -ForegroundColor White
 Write-Host "root: $pluginRoot"
+
+# ---------- Layer 0: local Cursor install ----------
+Write-Section "Layer 0 / local install (~/.cursor/plugins/local/agentstack)"
+if ($Install) {
+    try {
+        $out = & node (Join-Path $pluginRoot 'scripts/install-local.mjs') 2>&1
+        $out | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -eq 0) { Write-Ok "install-local.mjs" }
+        else { Write-Bad "install-local.mjs exit $LASTEXITCODE" }
+    } catch {
+        Write-Bad "install-local.mjs threw: $($_.Exception.Message)"
+    }
+}
+try {
+    $null = & node (Join-Path $pluginRoot 'scripts/install-local.mjs') --check 2>&1
+    if ($LASTEXITCODE -eq 0) { Write-Ok "local link points at this tree" }
+    elseif ($Install) { Write-Bad "local link missing after -Install" }
+    else { Write-Skip "not linked (pwsh scripts/smoke-local.ps1 -Install)" }
+} catch {
+    Write-Skip "install-local --check: $($_.Exception.Message)"
+}
 
 # ---------- Layer 1: structural validator ----------
 Write-Section "Layer 1 / structural validator"
@@ -75,22 +81,23 @@ try {
     Write-Bad "validate-plugin.mjs threw: $($_.Exception.Message)"
 }
 
-# ---------- Layer 2: script syntax + pre-shell-scan behaviour ----------
+# ---------- Layer 2: script syntax + hooks contract ----------
 if ($Quick) {
     Write-Section "Layer 2 / skipped (-Quick)"
 } else {
-    Write-Section "Layer 2 / script syntax + pre-shell-scan behaviour"
+    Write-Section "Layer 2 / hooks contract + node --check"
 
-    # Inside Layer 2 we allow external (node) stderr output without halting
-    # the script — we only care about exit codes for each subcommand.
     $prevEap = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
         $hookScripts = @(
             'hooks/scripts/device-code.mjs',
             'hooks/scripts/session-start.mjs',
+            'hooks/scripts/session-end.mjs',
             'hooks/scripts/pre-shell-scan.mjs',
+            'hooks/scripts/pre-mcp-cap-check.mjs',
             'hooks/scripts/post-tool-telemetry.mjs',
+            'hooks/scripts/post-tool-failure.mjs',
             'hooks/scripts/capability-refresh.mjs'
         )
         try {
@@ -101,6 +108,14 @@ if ($Quick) {
             Write-Bad "test-hooks-contract.mjs threw: $($_.Exception.Message)"
         }
 
+        try {
+            $kc = & node (Join-Path $pluginRoot 'scripts/test-kernel-catalog.mjs') 2>&1
+            if ($LASTEXITCODE -eq 0) { Write-Ok 'test-kernel-catalog.mjs passed' }
+            else { $kc | ForEach-Object { Write-Host $_ }; Write-Bad "test-kernel-catalog.mjs exit $LASTEXITCODE" }
+        } catch {
+            Write-Bad "test-kernel-catalog.mjs threw: $($_.Exception.Message)"
+        }
+
         foreach ($rel in $hookScripts) {
             $full = Join-Path $pluginRoot $rel
             if (-not (Test-Path $full)) { Write-Bad "missing: $rel"; continue }
@@ -109,8 +124,6 @@ if ($Quick) {
             else                      { Write-Bad "node --check failed: $rel" }
         }
 
-        # Behaviour: pre-shell-scan must block a fake api key and pass a clean command.
-        # The hook reads the proposed command from stdin (JSON) or from $env:HOOK_COMMAND.
         $scanner = Join-Path $pluginRoot 'hooks/scripts/pre-shell-scan.mjs'
         if (Test-Path $scanner) {
             $prev = $env:HOOK_COMMAND
@@ -205,7 +218,7 @@ if (-not $BaseUrl) {
         }
         $batch = @{
             plugin  = 'cursor-plugin'
-            version = '0.4.9'
+            version = '0.4.14'
             events  = @($event)
         } | ConvertTo-Json -Depth 5
         $resp = Invoke-RestMethod -Method Post `

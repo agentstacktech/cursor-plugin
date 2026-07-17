@@ -1,0 +1,73 @@
+# Local install & verify (Cursor)
+
+**Audience:** maintainers testing gen3 before Marketplace submit.  
+**Gene:** `repo.plugins.cursor.gen3`
+
+## One-command install
+
+From this repo (`provided_plugins/cursor-plugin/`):
+
+```bash
+node scripts/install-local.mjs
+```
+
+Creates:
+
+| OS | Mechanism | Path |
+|----|-----------|------|
+| Windows | directory **junction** (no admin) | `%USERPROFILE%\.cursor\plugins\local\agentstack` |
+| macOS / Linux | **symlink** | `~/.cursor/plugins/local/agentstack` |
+
+Replace existing link:
+
+```bash
+node scripts/install-local.mjs --force
+```
+
+Check / uninstall:
+
+```bash
+node scripts/install-local.mjs --check
+node scripts/uninstall-local.mjs
+```
+
+## Verify in Cursor (5 minutes)
+
+1. **Reload:** Command Palette → `Developer: Reload Window`
+2. Confirm plugin loads (rules/skills appear; or run a slash command).
+3. **Auth:** `/agentstack-init`  
+   - Requires **Node on PATH**  
+   - Browser → `https://agentstack.tech/activate`  
+   - Writes Bearer → `~/.cursor/mcp.json`
+4. **Smoke:** `/agentstack-diagnose` then `/agentstack-capability-matrix`
+5. Optional host: `/agentstack-host-site`
+
+Offline preflight (no Cursor UI):
+
+```bash
+node scripts/validate-plugin.mjs --strict-screenshots
+node scripts/test-hooks-contract.mjs
+pwsh scripts/smoke-local.ps1
+# or: node scripts/smoke-local.mjs
+```
+
+## Data flow reminder
+
+See [FLOW.md](FLOW.md). After init you should have:
+
+- `~/.cursor/mcp.json` — `mcpServers.agentstack` Bearer
+- `~/.cursor/agentstack-refresh` — refresh token
+- `~/.cursor/agentstack-capabilities.json` — **flat** `actions[]` snapshot
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Plugin not listed after install | Reload Window; confirm `install-local.mjs --check` |
+| `ERR_MODULE_NOT_FOUND` on device-code | Run from synced tree with `lib/plugin-kernel/`; re-run `sync-plugin-kernel.mjs` in monorepo |
+| Device Code hangs then fails immediately | Ensure kernel poll handles 400 `authorization_pending` (0.4.14+) |
+| Junction needs elevation | Use install-local (junction, not symlink); avoid copying the folder |
+
+## Uninstall marketplace vs local
+
+Local link does **not** remove Marketplace installs. Uninstall local with `uninstall-local.mjs` only.

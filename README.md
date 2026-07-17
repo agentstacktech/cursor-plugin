@@ -100,9 +100,27 @@ The full, always-up-to-date catalogue: `GET https://agentstack.tech/mcp/actions`
 
 ## Test locally (Cursor)
 
-1. Copy or symlink this folder to `~/.cursor/plugins/local/agentstack/`
-2. Reload Cursor window
-3. Run `node scripts/validate-plugin.mjs` and `pwsh scripts/smoke-local.ps1`
+```bash
+# From provided_plugins/cursor-plugin/
+node scripts/install-local.mjs          # junction/symlink → ~/.cursor/plugins/local/agentstack
+# Cursor → Developer: Reload Window
+# Chat → /agentstack-init
+
+node scripts/install-local.mjs --check
+node scripts/smoke-local.mjs --install  # install + offline smoke
+# or: pwsh scripts/smoke-local.ps1 -Install
+
+node scripts/uninstall-local.mjs        # remove local link only
+```
+
+Full guide: [LOCAL_INSTALL.md](LOCAL_INSTALL.md) · data flow: [FLOW.md](FLOW.md)
+
+Offline only (no Cursor UI):
+
+```bash
+node scripts/validate-plugin.mjs
+pwsh scripts/smoke-local.ps1
+```
 
 From monorepo root: `node provided_plugins/scripts/audit-cursor-plugin.mjs`
 

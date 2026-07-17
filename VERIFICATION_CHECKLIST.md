@@ -14,8 +14,9 @@
 
 ## 1. Structural validation
 
+- [ ] `node scripts/install-local.mjs` then Reload Window (see [LOCAL_INSTALL.md](LOCAL_INSTALL.md)).
 - [ ] `node scripts/validate-plugin.mjs` exits 0 with no FAIL lines.
-- [ ] `pwsh scripts/smoke-local.ps1` exits 0 (structural + hook syntax + pre-shell-scan behaviour).
+- [ ] `pwsh scripts/smoke-local.ps1 -Install` (or `node scripts/smoke-local.mjs --install`) exits 0.
 
 ## 2. Install (OAuth Device Code)
 
