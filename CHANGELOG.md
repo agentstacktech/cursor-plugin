@@ -12,6 +12,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 - Capability snapshot: flatten `GET /mcp/actions` `{domains}` → `actions[]` for `beforeMCPExecution` cap hints.
 - `device-code.mjs --help` exits 0 without starting OAuth (safe smoke).
 - Lean MCP write path shared via `mcpConfig.mjs` (no `tools` extras).
+- Standalone CI: vendor `scripts/lib/stale-actions.mjs` + `docs/CAPABILITY_MATRIX.md` (validate no longer imports monorepo-only paths).
 
 ### Added (local verify)
 

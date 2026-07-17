@@ -46,6 +46,8 @@ sequenceDiagram
 Live `GET /mcp/actions` returns `{ domains: { [name]: Entry[] }, total_actions }`.  
 Local snapshot always stores **flat** `actions: Entry[]` via `flattenMcpActionsCatalog`.
 
+Validate / CI uses vendored `docs/CAPABILITY_MATRIX.md` (snapshot of the live catalog) plus `scripts/lib/stale-actions.mjs` — **no monorepo-only imports** in the publish repo.
+
 ## OAuth pending
 
 Token poll must treat HTTP **400** + `error=authorization_pending` as continue (not throw). Implemented in `lib/plugin-kernel/deviceCodeClient.mjs`.

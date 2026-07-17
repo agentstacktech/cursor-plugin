@@ -20,4 +20,6 @@ jobs:
       - name: Intent eval
         run: node scripts/run-intent-eval.mjs
       - name: Device-code module loads
-        run: node hooks/scripts/device-code.mjs --help || true
+        run: node hooks/scripts/device-code.mjs --help
+      - name: Kernel catalog contract
+        run: node scripts/test-kernel-catalog.mjs

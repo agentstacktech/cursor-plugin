@@ -9,7 +9,7 @@
 
 - [x] Ready-to-paste **Description** + short/tagline in [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 - [x] Align `listing.json` description (no monorepo-only paths)
-- [x] Link from README + `docs/plugins/CURSOR_MARKETPLACE_SUBMIT_NOW.md`
+- [x] Link from README + `docs/plugins/CURSOR_MARKETPLACE_SUBMIT_NOW.md` (monorepo)
 - [ ] Open https://cursor.com/marketplace/publish and paste fields from `SUBMIT_FORM.md`
 - [ ] Upload screenshots `assets/screenshots/01`–`05` (alts in that folder’s README)
 - [ ] Confirm category / keywords / privacy / terms / support / freemium pricing on the form
@@ -31,6 +31,7 @@
 | Telemetry | buffer only if opt-in | [x] post-tool hooks |
 | `--help` | exit 0, no OAuth | [x] smoke |
 | Local install | junction/symlink `~/.cursor/plugins/local/agentstack` | [x] `install-local.mjs --check` |
+| Standalone validate CI | local `stale-actions` + matrix (no monorepo `../../scripts`) | [x] |
 
 **Human e2e still required:**
 
@@ -46,8 +47,18 @@
 
 - [x] `validate-plugin` / hooks contract / kernel catalog tests (re-run before push)
 - [x] Schema-valid `plugin.json`, version **0.4.14**, vendored `lib/plugin-kernel`
+- [x] Vendored `scripts/lib/stale-actions.mjs` + `docs/CAPABILITY_MATRIX.md` for GitHub Actions
+- [x] CI workflow: validate + hooks + intent-eval + device-code `--help` + kernel catalog (no `|| true`)
 - [ ] `git push origin master` + `git push origin v0.4.14` with **agentstacktech** credentials
 - [ ] Or: `node provided_plugins/scripts/sync-cursor-plugin-publish.mjs ../cursor-plugin-publish` then push sibling
+
+**Maintainer sync (monorepo):**
+
+```bash
+node provided_plugins/scripts/sync-plugin-kernel.mjs          # kernel + stale-actions + matrix
+node provided_plugins/scripts/sync-plugin-kernel.mjs --check
+node provided_plugins/scripts/audit-cursor-plugin.mjs --strict-screenshots
+```
 
 ---
 
@@ -62,7 +73,7 @@
 ## E. Optional polish (not blocking submit)
 
 - [~] Replace mock screenshots with live Cursor captures
-- [~] Commit monorepo-side `docs/plugins/*` if umbrella git exists on this machine
+- [~] Commit monorepo-side `docs/plugins/*` / `provided_plugins/scripts/*` if umbrella git exists
 - [~] Gen3.1 backlog items from audit (non-P0)
 
 ---

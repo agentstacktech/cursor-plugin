@@ -20,17 +20,31 @@ import {
   ACTION_COUNT_ALLOWLIST,
   ROUTER_SKILLS_REQUIRED,
   ROUTER_SKILLS_OPTIONAL,
-} from '../../scripts/lib/stale-actions.mjs';
+} from './lib/stale-actions.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const REPO_ROOT = path.resolve(ROOT, '..', '..');
+
+/** AgentStack monorepo root when nested under provided_plugins/; else plugin root (publish repo). */
+function resolveRepoRoot() {
+  const nested = path.resolve(ROOT, '..', '..');
+  if (
+    fs.existsSync(path.join(nested, 'docs/plugins/CAPABILITY_MATRIX.md')) ||
+    fs.existsSync(path.join(nested, 'provided_plugins/scripts/lib/stale-actions.mjs'))
+  ) {
+    return nested;
+  }
+  return ROOT;
+}
+
+const REPO_ROOT = resolveRepoRoot();
 const STRICT_SCREENSHOTS =
   process.argv.includes('--strict-screenshots') ||
   process.env.AGENTSTACK_STRICT_SCREENSHOTS === '1';
 const CAPABILITY_MATRIX_CANDIDATES = [
-  path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
+  path.join(ROOT, 'docs/CAPABILITY_MATRIX.md'),
   path.join(REPO_ROOT, 'docs/plugins/CAPABILITY_MATRIX.md'),
+  path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
 ];
 
 const REQUIRED_FILES = [
@@ -50,6 +64,8 @@ const REQUIRED_FILES = [
   'hooks/scripts/session-end.mjs',
   'hooks/scripts/post-tool-failure.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
+  'scripts/lib/stale-actions.mjs',
+  'docs/CAPABILITY_MATRIX.md',
   'assets/logo.svg',
   'assets/logo-dark.svg',
   'assets/brand-mark.svg',
@@ -181,6 +197,8 @@ function checkTextSecurityAndDrift(liveActions) {
   for (const filePath of walkTextFiles(ROOT)) {
     const relative = path.relative(ROOT, filePath).replace(/\\/g, '/');
     if (relative.startsWith('hooks/fixtures/')) continue;
+    // Drift map SoT — contains legacy action names by design
+    if (relative === 'scripts/lib/stale-actions.mjs') continue;
     const content = fs.readFileSync(filePath, 'utf8');
     for (const [oldAction, newAction] of STALE_ACTIONS) {
       if (content.includes(oldAction)) {
