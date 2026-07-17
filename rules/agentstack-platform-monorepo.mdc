@@ -18,6 +18,6 @@ You are editing the **AgentStack platform**, not a tenant app hosted on it.
 
 - **Do not** add `rollout_steps`, messenger percent-canary flags, or sandbox forks unless the user names rollout, canary, sandbox, or a specific gene/ADR.
 - **Do** ship one clear code path per feature (`repo.engineering.founder_direct_ship.gen1`).
-- Tenant-facing canary guidance lives in `agentstack-prefer.mdc` rule 9 for **consumer projects** only.
+- Tenant-facing canary guidance lives in `agentstack-prefer.mdc` rule 9 for **consumer / tenant projects** only.
 
 See `.cursor/rules/platform-vs-tenant-canary.mdc` in this repository.
