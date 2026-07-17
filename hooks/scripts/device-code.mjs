@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // hooks/scripts/device-code.mjs
 // RFC 8628 OAuth 2.1 Device Authorization Grant for cursor-plugin.
-// The user never copies the API key manually — approval happens in the browser.
 
 import { writeFile, readFile, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -9,6 +8,8 @@ import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { pollDeviceToken } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
+import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { applyAgentstackMcpBearer } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -33,19 +34,41 @@ const SCOPE_PRESETS = {
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
 const REFRESH_PATH = join(CURSOR_DIR, 'agentstack-refresh');
+const SNAPSHOT_PATH = join(CURSOR_DIR, 'agentstack-capabilities.json');
 
 function parseArgs(argv) {
   const out = { scopes: DEFAULT_SCOPES };
   for (const a of argv.slice(2)) {
-    if (a.startsWith('--scopes=')) out.scopes = a.slice('--scopes='.length).replace(/^"|"$/g, '');
+    if (a === '--help' || a === '-h') out.help = true;
+    else if (a.startsWith('--scopes=')) out.scopes = a.slice('--scopes='.length).replace(/^"|"$/g, '');
     else if (a.startsWith('--scope-preset=')) {
       const preset = a.slice('--scope-preset='.length);
       if (!SCOPE_PRESETS[preset]) throw new Error(`Unknown scope preset "${preset}". Use readonly, builder, or full.`);
       out.scopes = SCOPE_PRESETS[preset];
-    }
-    else if (a === '--headless') out.headless = true;
+    } else if (a === '--headless') out.headless = true;
   }
   return out;
+}
+
+function printHelp() {
+  console.log(`Usage: node hooks/scripts/device-code.mjs [options]
+
+RFC 8628 Device Code login for AgentStack Cursor plugin.
+
+Options:
+  --help                 Show this help and exit 0
+  --headless             Do not open a browser
+  --scope-preset=NAME    readonly | builder | full (default)
+  --scopes="a b c"       Explicit space-separated scopes
+
+Env:
+  AGENTSTACK_BASE_URL    Default https://agentstack.tech
+
+Writes:
+  ~/.cursor/mcp.json              Bearer for mcpServers.agentstack
+  ~/.cursor/agentstack-refresh    Refresh token (0600 when supported)
+  ~/.cursor/agentstack-capabilities.json  Flat action snapshot
+`);
 }
 
 async function openBrowser(url) {
@@ -80,31 +103,13 @@ async function pollToken({ device_code, interval, expires_in }, traceId) {
 async function writeMcpJson(accessToken) {
   let cfg = {};
   try { cfg = JSON.parse(await readFile(MCP_PATH, 'utf8')); } catch { /* first install */ }
-  cfg.mcpServers = cfg.mcpServers || {};
-  const existing = cfg.mcpServers.agentstack || {};
-  cfg.mcpServers.agentstack = {
-    ...existing,
-    type: 'streamable-http',
-    url: `${BASE_URL}/mcp`,
-    headers: {
-      ...(existing.headers || {}),
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    tools: { enabled: true, autoDiscover: true },
-  };
-  // Remove the manual fallback header if present, primary is now Bearer.
-  if (cfg.mcpServers.agentstack.headers['X-API-Key']) {
-    delete cfg.mcpServers.agentstack.headers['X-API-Key'];
-  }
+  applyAgentstackMcpBearer(cfg, { accessToken, baseUrl: BASE_URL });
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
 async function writeRefreshToken(refreshToken, token) {
   if (!refreshToken) return;
-  // Best-effort fallback: local-only metadata file with restrictive perms.
-  // Integrations that can use OS keyring should override this path.
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(REFRESH_PATH, JSON.stringify({
     refresh_token: refreshToken,
@@ -112,7 +117,7 @@ async function writeRefreshToken(refreshToken, token) {
     token_type: token.token_type || 'Bearer',
     obtained_at: new Date().toISOString(),
   }, null, 2), 'utf8');
-  try { await chmod(REFRESH_PATH, 0o600); } catch { /* Windows: ignore */ }
+  try { await chmod(REFRESH_PATH, 0o600); } catch { /* Windows */ }
 }
 
 async function clearMcpCache(accessToken, traceId) {
@@ -124,8 +129,34 @@ async function clearMcpCache(accessToken, traceId) {
   } catch { /* best effort */ }
 }
 
+async function seedCapabilitySnapshot(accessToken) {
+  try {
+    const res = await fetch(`${BASE_URL}/mcp/actions`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) return;
+    const catalog = await res.json();
+    const actions = flattenMcpActionsCatalog(catalog);
+    await mkdir(CURSOR_DIR, { recursive: true });
+    await writeFile(
+      SNAPSHOT_PATH,
+      JSON.stringify({
+        fetched_at: Date.now(),
+        total_actions: catalog.total_actions || actions.length,
+        actions,
+      }, null, 2),
+      'utf8',
+    );
+  } catch { /* next sessionStart */ }
+}
+
 async function main() {
-  const { scopes, headless } = parseArgs(process.argv);
+  const { scopes, headless, help } = parseArgs(process.argv);
+  if (help) {
+    printHelp();
+    process.exit(0);
+  }
+
   const traceId = randomUUID();
 
   console.log('\nRequesting device code from AgentStack...');
@@ -143,6 +174,7 @@ async function main() {
   await writeMcpJson(token.access_token);
   await writeRefreshToken(token.refresh_token, token);
   await clearMcpCache(token.access_token, traceId);
+  await seedCapabilitySnapshot(token.access_token);
 
   const scope = token.scope || scopes;
   const expiresIn = token.expires_in || 'unknown';
@@ -151,10 +183,11 @@ async function main() {
   console.log(`  Trace:   ${traceId}`);
   console.log(`  Expires: in ${expiresIn}s (hook 'session-start.mjs' refreshes automatically)`);
   console.log(`  Config:  ${MCP_PATH}\n`);
+  console.log('  Next: whoami smoke + /agentstack-capability-matrix (see /agentstack-init).\n');
   console.log('  Restart Cursor if the MCP server does not auto-reload.\n');
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('\nAgentStack device code flow failed:\n  ' + err.message);
   console.error('\nFallback: follow the manual X-API-Key instructions in MCP_QUICKSTART.md.\n');
   process.exit(1);

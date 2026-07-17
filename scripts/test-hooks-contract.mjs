@@ -43,14 +43,28 @@ runHook('pre-shell-scan.mjs', 'pre-shell-block.json', 2);
 runHook('pre-shell-scan.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-shell-allow.json', 0);
 
-const smoke = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
+const help = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
   cwd: ROOT,
   encoding: 'utf8',
 });
-if (/ERR_MODULE_NOT_FOUND|Cannot find module/.test(`${smoke.stderr}${smoke.stdout}`)) {
-  console.error('FAIL device-code kernel load', smoke.stderr);
+if (help.status !== 0) {
+  console.error('FAIL device-code --help exit', help.status, help.stderr);
   process.exit(1);
 }
-console.log('OK   device-code.mjs loads with vendored kernel');
+if (!/Usage:/.test(help.stdout || '')) {
+  console.error('FAIL device-code --help missing Usage');
+  process.exit(1);
+}
+console.log('OK   device-code.mjs --help');
+
+const kernelTest = spawnSync(process.execPath, ['scripts/test-kernel-catalog.mjs'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+});
+if (kernelTest.status !== 0) {
+  console.error(kernelTest.stderr || kernelTest.stdout);
+  process.exit(1);
+}
+console.log((kernelTest.stdout || '').trim());
 
 console.log('Hook contract tests passed.');

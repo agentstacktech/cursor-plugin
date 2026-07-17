@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Optional: wire to beforeMCPExecution when Cursor build supports it.
-// Policy-as-data cap hint using ~/.cursor/agentstack-capabilities.json
+// hooks/scripts/pre-mcp-cap-check.mjs
+// beforeMCPExecution — hint required_cap from local flat snapshot (non-blocking).
 
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { stdin } from 'node:process';
+import { actionsFromSnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 
 const SNAPSHOT_PATH = join(homedir(), '.cursor', 'agentstack-capabilities.json');
 
@@ -13,19 +14,35 @@ async function readStdinJson() {
   return new Promise((resolve) => {
     let data = '';
     stdin.setEncoding('utf8');
-    stdin.on('data', (c) => { data += c; });
-    stdin.on('end', () => { try { resolve(JSON.parse(data)); } catch { resolve(null); } });
+    stdin.on('data', (c) => {
+      data += c;
+    });
+    stdin.on('end', () => {
+      try {
+        resolve(JSON.parse(data));
+      } catch {
+        resolve(null);
+      }
+    });
     setTimeout(() => resolve(null), 200);
   });
+}
+
+function extractAction(event) {
+  return (
+    event?.params?.steps?.[0]?.action ||
+    event?.params?.action ||
+    event?.arguments?.steps?.[0]?.action ||
+    event?.toolInput?.steps?.[0]?.action ||
+    event?.action ||
+    null
+  );
 }
 
 async function main() {
   const event = await readStdinJson();
   if (!event) process.exit(0);
-  const action =
-    event.params?.steps?.[0]?.action ||
-    event.params?.action ||
-    event.action;
+  const action = extractAction(event);
   if (!action || !String(action).includes('.')) process.exit(0);
 
   let snapshot;
@@ -34,7 +51,9 @@ async function main() {
   } catch {
     process.exit(0);
   }
-  const row = (snapshot.actions || []).find((a) => a.action === action);
+
+  const actions = actionsFromSnapshot(snapshot);
+  const row = actions.find((a) => a.action === action || a.safe_action === action);
   if (row?.required_cap) {
     console.error(`[agentstack] action ${action} requires cap ${row.required_cap}`);
   }

@@ -6,6 +6,13 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 > Marketplace ship wave — self-contained Device Code, schema-valid manifest, listing SoT, hooks lifecycle.
 
+### Fixed (flow hardening)
+
+- OAuth Device Code poll: treat HTTP 400 `authorization_pending` / `slow_down` as continue (RFC 8628).
+- Capability snapshot: flatten `GET /mcp/actions` `{domains}` → `actions[]` for `beforeMCPExecution` cap hints.
+- `device-code.mjs --help` exits 0 without starting OAuth (safe smoke).
+- Lean MCP write path shared via `mcpConfig.mjs` (no `tools` extras).
+
 ### Added
 
 - Vendored `lib/plugin-kernel/` (self-contained publish artifact; `sync-plugin-kernel.mjs --check`).

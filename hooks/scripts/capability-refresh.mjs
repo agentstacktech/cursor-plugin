@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 // hooks/scripts/capability-refresh.mjs
-// After an edit of mcp.json (auth change, endpoint change), force the MCP
-// discovery cache to clear so the agent sees the correct tool set.
-// Also updates a local snapshot at ~/.cursor/agentstack-capabilities.json.
+// afterFileEdit matcher mcp.json$ — clear MCP cache + refresh flat capability snapshot.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
@@ -19,25 +18,40 @@ async function getAuthHeader() {
     const h = cfg?.mcpServers?.agentstack?.headers || {};
     if (h.Authorization) return { Authorization: h.Authorization };
     if (h['X-API-Key']) return { 'X-API-Key': h['X-API-Key'] };
-  } catch {}
+  } catch {
+    /* none */
+  }
   return null;
 }
 
 async function main() {
   const auth = await getAuthHeader();
-  if (!auth) return; // not configured yet
+  if (!auth) return;
 
   try {
     await fetch(`${BASE_URL}/mcp/cache/clear`, { method: 'POST', headers: { ...auth } });
-  } catch { /* best effort */ }
+  } catch {
+    /* best effort */
+  }
 
   try {
     const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: { ...auth } });
     if (!res.ok) return;
-    const actions = await res.json();
+    const catalog = await res.json();
+    const actions = flattenMcpActionsCatalog(catalog);
     await mkdir(CURSOR_DIR, { recursive: true });
-    await writeFile(SNAPSHOT_PATH, JSON.stringify({ fetched_at: Date.now(), actions }, null, 2), 'utf8');
-  } catch { /* next time */ }
+    await writeFile(
+      SNAPSHOT_PATH,
+      JSON.stringify({
+        fetched_at: Date.now(),
+        total_actions: catalog.total_actions || actions.length,
+        actions,
+      }, null, 2),
+      'utf8',
+    );
+  } catch {
+    /* next time */
+  }
 }
 
 main().catch(() => process.exit(0));
