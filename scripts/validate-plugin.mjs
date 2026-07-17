@@ -23,9 +23,12 @@ import {
 } from './lib/stale-actions.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** Publish / monorepo package root (has marketplace.json + scripts/). */
 const ROOT = path.resolve(__dirname, '..');
+/** Cursor plugin package (rules/skills/hooks/mcp) — under plugins/agentstack. */
+const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
 
-/** AgentStack monorepo root when nested under provided_plugins/; else plugin root (publish repo). */
+/** AgentStack monorepo root when nested under provided_plugins/; else publish root. */
 function resolveRepoRoot() {
   const nested = path.resolve(ROOT, '..', '..');
   if (
@@ -47,13 +50,19 @@ const CAPABILITY_MATRIX_CANDIDATES = [
   path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
 ];
 
-const REQUIRED_FILES = [
-  '.cursor-plugin/plugin.json',
+const REQUIRED_REPO_FILES = [
+  '.cursor-plugin/marketplace.json',
   '.cursor-plugin/listing.json',
-  'mcp.json',
   'README.md',
   'CHANGELOG.md',
   'LICENSE',
+  'scripts/lib/stale-actions.mjs',
+  'docs/CAPABILITY_MATRIX.md',
+];
+
+const REQUIRED_PLUGIN_FILES = [
+  '.cursor-plugin/plugin.json',
+  'mcp.json',
   'hooks/hooks.json',
   'hooks/scripts/device-code.mjs',
   'hooks/scripts/session-start.mjs',
@@ -64,14 +73,12 @@ const REQUIRED_FILES = [
   'hooks/scripts/session-end.mjs',
   'hooks/scripts/post-tool-failure.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
-  'scripts/lib/stale-actions.mjs',
-  'docs/CAPABILITY_MATRIX.md',
   'assets/logo.svg',
   'assets/logo-dark.svg',
   'assets/brand-mark.svg',
 ];
 
-const REQUIRED_DIRS = [
+const REQUIRED_PLUGIN_DIRS = [
   'rules',
   'skills',
   'commands',
@@ -114,8 +121,8 @@ function readPngSize(filePath) {
   }
 }
 
-function checkFile(filePath, label = filePath) {
-  const full = path.join(ROOT, filePath);
+function checkFile(base, filePath, label = filePath) {
+  const full = path.join(base, filePath);
   if (!fs.existsSync(full)) {
     fail(`Missing: ${label}`);
     return null;
@@ -124,8 +131,8 @@ function checkFile(filePath, label = filePath) {
   return full;
 }
 
-function checkDir(dirPath, label = dirPath) {
-  const full = path.join(ROOT, dirPath);
+function checkDir(base, dirPath, label = dirPath) {
+  const full = path.join(base, dirPath);
   if (!fs.existsSync(full) || !fs.statSync(full).isDirectory()) {
     fail(`Missing directory: ${label}`);
     return false;
@@ -196,9 +203,9 @@ function parseCapabilityActions() {
 function checkTextSecurityAndDrift(liveActions) {
   for (const filePath of walkTextFiles(ROOT)) {
     const relative = path.relative(ROOT, filePath).replace(/\\/g, '/');
-    if (relative.startsWith('hooks/fixtures/')) continue;
+    if (relative.startsWith('hooks/fixtures/') || relative.includes('/hooks/fixtures/')) continue;
     // Drift map SoT — contains legacy action names by design
-    if (relative === 'scripts/lib/stale-actions.mjs') continue;
+    if (relative === 'scripts/lib/stale-actions.mjs' || relative.endsWith('/scripts/lib/stale-actions.mjs')) continue;
     const content = fs.readFileSync(filePath, 'utf8');
     for (const [oldAction, newAction] of STALE_ACTIONS) {
       if (content.includes(oldAction)) {
@@ -226,17 +233,23 @@ function checkTextSecurityAndDrift(liveActions) {
   }
 }
 
-console.log(`Validating Cursor plugin structure (root: ${ROOT})\n`);
+console.log(`Validating Cursor plugin structure`);
+console.log(`  repo:   ${ROOT}`);
+console.log(`  plugin: ${PLUGIN}\n`);
+
+if (!fs.existsSync(PLUGIN)) {
+  fail('plugins/agentstack/ missing — Cursor requires marketplace.json + nested plugin package');
+}
 
 const LIVE_ACTIONS = parseCapabilityActions();
 
-// 1. Required files
-for (const f of REQUIRED_FILES) checkFile(f);
-// 2. Required directories
-for (const d of REQUIRED_DIRS) checkDir(d);
+// 1. Required files / dirs
+for (const f of REQUIRED_REPO_FILES) checkFile(ROOT, f);
+for (const f of REQUIRED_PLUGIN_FILES) checkFile(PLUGIN, f, `plugins/agentstack/${f}`);
+for (const d of REQUIRED_PLUGIN_DIRS) checkDir(PLUGIN, d, `plugins/agentstack/${d}`);
 
-// 3. plugin.json
-const pluginPath = path.join(ROOT, '.cursor-plugin/plugin.json');
+// 3. plugin.json (inside plugin package)
+const pluginPath = path.join(PLUGIN, '.cursor-plugin/plugin.json');
 let plugin = null;
 if (fs.existsSync(pluginPath)) {
   plugin = loadJson(pluginPath);
@@ -259,7 +272,7 @@ if (fs.existsSync(pluginPath)) {
     }
     const logoPath = plugin.logo;
     if (!logoPath) fail('plugin.json: logo is required by current Cursor plugin docs');
-    else if (!fs.existsSync(path.join(ROOT, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
+    else if (!fs.existsSync(path.join(PLUGIN, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
     else ok(`plugin.json: logo path exists (${logoPath})`);
     if (logoPath && !logoPath.endsWith('.svg')) warn('plugin.json: logo should be SVG for crisp retina');
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
@@ -268,13 +281,45 @@ if (fs.existsSync(pluginPath)) {
   }
 }
 
-// 3b. listing.json (AgentStack publisher SoT — not Cursor multi-plugin marketplace.json)
+// 3a. Cursor marketplace.json (required for Add marketplace / GitHub install)
+const marketplacePath = path.join(ROOT, '.cursor-plugin/marketplace.json');
+if (fs.existsSync(marketplacePath)) {
+  const mp = loadJson(marketplacePath);
+  if (mp) {
+    if (!mp.name || !KEBAB_REGEX.test(mp.name)) fail('marketplace.json: name required (kebab-case)');
+    else ok(`marketplace.json: name=${mp.name}`);
+    if (!mp.owner?.name) fail('marketplace.json: owner.name required');
+    if (!Array.isArray(mp.plugins) || mp.plugins.length === 0) fail('marketplace.json: plugins[] required');
+    else {
+      const entry = mp.plugins.find((p) => p.name === 'agentstack') || mp.plugins[0];
+      if (!entry?.name || !entry?.source) fail('marketplace.json: each plugin needs name + source');
+      const pluginRoot = mp.metadata?.pluginRoot || '';
+      const sourceDir = path.join(ROOT, pluginRoot, entry.source);
+      if (!fs.existsSync(path.join(sourceDir, '.cursor-plugin/plugin.json'))) {
+        fail(`marketplace.json: source "${entry.source}" has no .cursor-plugin/plugin.json under ${pluginRoot || '.'}`);
+      } else {
+        ok(`marketplace.json: source resolves → ${path.relative(ROOT, sourceDir)}`);
+      }
+      if (entry.name !== 'agentstack') warn(`marketplace.json: expected plugin name agentstack, got ${entry.name}`);
+      if (String(entry.source).includes('./') || entry.source === '.') {
+        fail('marketplace.json: use bare source dir name (e.g. "agentstack"), not "." or "./…"');
+      }
+    }
+    if (mp.metadata?.pluginRoot !== 'plugins') {
+      warn('marketplace.json: metadata.pluginRoot should be "plugins" (Cursor 2.6+ multi-plugin layout)');
+    }
+  }
+} else {
+  fail('.cursor-plugin/marketplace.json missing — Cursor Add marketplace requires it');
+}
+
+// 3b. listing.json (AgentStack publisher SoT — screenshots/support; not Cursor marketplace schema)
 const listingPath = path.join(ROOT, '.cursor-plugin/listing.json');
 if (fs.existsSync(listingPath)) {
   const marketplace = loadJson(listingPath);
   if (marketplace) {
     if (marketplace.$schema && String(marketplace.$schema).includes('cursor.com/schemas/marketplace')) {
-      fail('listing.json: must not claim Cursor marketplace.json $schema (multi-plugin format differs)');
+      fail('listing.json: must not claim Cursor marketplace.json $schema (use marketplace.json for that)');
     }
     if (!marketplace.publisher) fail('listing.json: publisher is required');
     const listing = marketplace.listing || {};
@@ -309,12 +354,9 @@ if (fs.existsSync(listingPath)) {
     ok('listing.json: listing metadata checked');
   }
 }
-if (fs.existsSync(path.join(ROOT, '.cursor-plugin/marketplace.json'))) {
-  fail('.cursor-plugin/marketplace.json must be removed — use listing.json (AgentStack SoT)');
-}
 
 // 4. mcp.json — streamable-http + OAuth primary
-const mcpPath = path.join(ROOT, 'mcp.json');
+const mcpPath = path.join(PLUGIN, 'mcp.json');
 if (fs.existsSync(mcpPath)) {
   const mcp = loadJson(mcpPath);
   if (mcp) {
@@ -338,7 +380,7 @@ if (fs.existsSync(mcpPath)) {
 }
 
 // 5. Skills
-const skillsDir = path.join(ROOT, 'skills');
+const skillsDir = path.join(PLUGIN, 'skills');
 if (fs.existsSync(skillsDir)) {
   const dirs = fs.readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory());
   if (dirs.length === 0) fail('skills/: no sub-skills');
@@ -361,7 +403,7 @@ if (fs.existsSync(skillsDir)) {
 }
 
 // 6. Rules (.mdc with frontmatter)
-const rulesDir = path.join(ROOT, 'rules');
+const rulesDir = path.join(PLUGIN, 'rules');
 if (fs.existsSync(rulesDir)) {
   const mdcs = fs.readdirSync(rulesDir).filter((f) => f.endsWith('.mdc'));
   if (mdcs.length === 0) fail('rules/: no .mdc files');
@@ -376,7 +418,7 @@ if (fs.existsSync(rulesDir)) {
 }
 
 // 6b. Router ↔ skills registry
-const backendSkillPath = path.join(ROOT, 'skills/agentstack-backend/SKILL.md');
+const backendSkillPath = path.join(PLUGIN, 'skills/agentstack-backend/SKILL.md');
 if (fs.existsSync(backendSkillPath)) {
   const backendBody = fs.readFileSync(backendSkillPath, 'utf8');
   for (const skill of ROUTER_SKILLS_REQUIRED) {
@@ -386,7 +428,7 @@ if (fs.existsSync(backendSkillPath)) {
   }
   ok('skills/agentstack-backend: router covers required skills');
 }
-if (fs.existsSync(path.join(ROOT, 'skills/agentstack-support-storage'))) {
+if (fs.existsSync(path.join(PLUGIN, 'skills/agentstack-support-storage'))) {
   fail('skills/agentstack-support-storage/: removed in gen3 — use hosting, support, storage');
 }
 
@@ -402,7 +444,7 @@ if (fs.existsSync(rulesDir)) {
 }
 
 // 7. Commands — frontmatter required
-const cmdDir = path.join(ROOT, 'commands');
+const cmdDir = path.join(PLUGIN, 'commands');
 if (fs.existsSync(cmdDir)) {
   const mds = fs.readdirSync(cmdDir).filter((f) => f.endsWith('.md'));
   if (mds.length === 0) fail('commands/: no .md files');
@@ -417,7 +459,7 @@ if (fs.existsSync(cmdDir)) {
 }
 
 // 7b. agentstack-init step title (OAuth primary)
-const initPath = path.join(ROOT, 'commands/agentstack-init.md');
+const initPath = path.join(PLUGIN, 'commands/agentstack-init.md');
 if (fs.existsSync(initPath)) {
   const initBody = fs.readFileSync(initPath, 'utf8');
   if (/##\s*3\.\s*Persist scoped API key/i.test(initBody)) {
@@ -426,7 +468,7 @@ if (fs.existsSync(initPath)) {
 }
 
 // 8. Agents — frontmatter required
-const agentDir = path.join(ROOT, 'agents');
+const agentDir = path.join(PLUGIN, 'agents');
 if (fs.existsSync(agentDir)) {
   const mds = fs.readdirSync(agentDir).filter((f) => f.endsWith('.md'));
   if (mds.length === 0) warn('agents/: no .md files (optional layer, but recommended)');
@@ -441,7 +483,7 @@ if (fs.existsSync(agentDir)) {
 }
 
 // 9. hooks/hooks.json — all referenced scripts must exist
-const hooksPath = path.join(ROOT, 'hooks/hooks.json');
+const hooksPath = path.join(PLUGIN, 'hooks/hooks.json');
 if (fs.existsSync(hooksPath)) {
   const hooks = loadJson(hooksPath);
   if (hooks) {
@@ -453,7 +495,7 @@ if (fs.existsSync(hooksPath)) {
           const cmd = entry.command || '';
           const m = cmd.match(/node\s+\.\/(.+?\.mjs)/);
           if (m) {
-            const script = path.join(ROOT, m[1]);
+            const script = path.join(PLUGIN, m[1]);
             if (!fs.existsSync(script)) fail(`hooks.json: ${event} -> missing script ${m[1]}`);
             else ok(`hooks.json: ${event} -> ${m[1]}`);
           } else {
@@ -490,7 +532,7 @@ checkTextSecurityAndDrift(LIVE_ACTIONS);
 //   • ≥ 1 <path> element         (the AgentStack mark)
 //   • brand mark path string must match brand-mark.svg (drift detector)
 const LOGO_FILES = ['assets/logo.svg', 'assets/logo-dark.svg'];
-const BRAND_MARK_PATH = path.join(ROOT, 'assets/brand-mark.svg');
+const BRAND_MARK_PATH = path.join(PLUGIN, 'assets/brand-mark.svg');
 
 function extractFirstPathD(svg) {
   // Strip comments.
@@ -514,8 +556,8 @@ if (fs.existsSync(BRAND_MARK_PATH)) {
 }
 
 for (const rel of LOGO_FILES) {
-  const full = path.join(ROOT, rel);
-  if (!fs.existsSync(full)) continue; // REQUIRED_FILES already flagged it
+  const full = path.join(PLUGIN, rel);
+  if (!fs.existsSync(full)) continue; // REQUIRED_PLUGIN_FILES already flagged it
   const svg = fs.readFileSync(full, 'utf8');
   const body = svg.replace(/<!--[\s\S]*?-->/g, '');
   let localOk = true;

@@ -2,6 +2,15 @@
 
 **Gene:** `repo.plugins.oauth_device_code.gen1` · `repo.plugins.hooks.contract.gen1` · `repo.plugins.capability_routing.gen1`
 
+## Repo layout (Cursor 2.6+)
+
+| Path | Role |
+|------|------|
+| `.cursor-plugin/marketplace.json` | **Required** for Cursor “Add marketplace” / GitHub install (`pluginRoot: plugins`, `source: agentstack`) |
+| `.cursor-plugin/listing.json` | AgentStack publisher SoT (screenshots, privacy, pricing) — **not** Cursor’s marketplace schema |
+| `plugins/agentstack/` | Plugin package: `plugin.json`, rules, skills, commands, agents, hooks, mcp, assets, vendored kernel |
+| `scripts/` | Validate / smoke / local install tooling |
+
 ```mermaid
 sequenceDiagram
   participant User
@@ -40,14 +49,11 @@ sequenceDiagram
 | `~/.cursor/agentstack-refresh` | device-code, session-start | session-start |
 | `~/.cursor/agentstack-capabilities.json` | device-code, session-start, capability-refresh | pre-mcp-cap-check, diagnose |
 | `~/.cursor/agentstack-telemetry.jsonl` | post-tool-* (opt-in only) | session-end flush, diagnose |
+| `~/.cursor/plugins/local/agentstack` | `scripts/install-local.mjs` | Cursor local plugins |
 
 ## Catalog shape
 
 Live `GET /mcp/actions` returns `{ domains: { [name]: Entry[] }, total_actions }`.  
 Local snapshot always stores **flat** `actions: Entry[]` via `flattenMcpActionsCatalog`.
 
-Validate / CI uses vendored `docs/CAPABILITY_MATRIX.md` (snapshot of the live catalog) plus `scripts/lib/stale-actions.mjs` — **no monorepo-only imports** in the publish repo.
-
-## OAuth pending
-
-Token poll must treat HTTP **400** + `error=authorization_pending` as continue (not throw). Implemented in `lib/plugin-kernel/deviceCodeClient.mjs`.
+Validate / CI uses vendored `docs/CAPABILITY_MATRIX.md` plus `scripts/lib/stale-actions.mjs` — **no monorepo-only imports** in the publish repo.

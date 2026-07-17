@@ -11,7 +11,7 @@ import zlib from 'zlib';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(ROOT, 'assets/screenshots');
+const OUT = path.join(ROOT, 'plugins/agentstack/assets/screenshots');
 const W = 1920;
 const H = 1200;
 

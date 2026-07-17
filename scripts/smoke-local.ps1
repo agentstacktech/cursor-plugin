@@ -41,15 +41,17 @@ function Write-Bad($msg)    { Write-Host "  [FAIL] $msg" -ForegroundColor Red;  
 function Write-Info($msg)   { Write-Host "  [..]   $msg" -ForegroundColor DarkGray }
 function Write-Skip($msg)   { Write-Host "  [skip] $msg" -ForegroundColor Yellow }
 
-$pluginRoot = Resolve-Path (Join-Path $PSScriptRoot '..') | Select-Object -ExpandProperty Path
+$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..') | Select-Object -ExpandProperty Path
+$pluginRoot = Join-Path $repoRoot 'plugins\agentstack'
 Write-Host "Cursor plugin smoke test v0.4.14" -ForegroundColor White
-Write-Host "root: $pluginRoot"
+Write-Host "repo:   $repoRoot"
+Write-Host "plugin: $pluginRoot"
 
 # ---------- Layer 0: local Cursor install ----------
 Write-Section "Layer 0 / local install (~/.cursor/plugins/local/agentstack)"
 if ($Install) {
     try {
-        $out = & node (Join-Path $pluginRoot 'scripts/install-local.mjs') 2>&1
+        $out = & node (Join-Path $repoRoot 'scripts/install-local.mjs') 2>&1
         $out | ForEach-Object { Write-Host $_ }
         if ($LASTEXITCODE -eq 0) { Write-Ok "install-local.mjs" }
         else { Write-Bad "install-local.mjs exit $LASTEXITCODE" }
@@ -58,7 +60,7 @@ if ($Install) {
     }
 }
 try {
-    $null = & node (Join-Path $pluginRoot 'scripts/install-local.mjs') --check 2>&1
+    $null = & node (Join-Path $repoRoot 'scripts/install-local.mjs') --check 2>&1
     if ($LASTEXITCODE -eq 0) { Write-Ok "local link points at this tree" }
     elseif ($Install) { Write-Bad "local link missing after -Install" }
     else { Write-Skip "not linked (pwsh scripts/smoke-local.ps1 -Install)" }
@@ -69,7 +71,7 @@ try {
 # ---------- Layer 1: structural validator ----------
 Write-Section "Layer 1 / structural validator"
 try {
-    $out = & node (Join-Path $pluginRoot 'scripts/validate-plugin.mjs') 2>&1
+    $out = & node (Join-Path $repoRoot 'scripts/validate-plugin.mjs') 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Ok "validate-plugin.mjs passed"
         ($out | Select-Object -Last 3) | ForEach-Object { Write-Info $_ }
@@ -101,7 +103,7 @@ if ($Quick) {
             'hooks/scripts/capability-refresh.mjs'
         )
         try {
-            $hc = & node (Join-Path $pluginRoot 'scripts/test-hooks-contract.mjs') 2>&1
+            $hc = & node (Join-Path $repoRoot 'scripts/test-hooks-contract.mjs') 2>&1
             if ($LASTEXITCODE -eq 0) { Write-Ok 'test-hooks-contract.mjs passed' }
             else { $hc | ForEach-Object { Write-Host $_ }; Write-Bad "test-hooks-contract.mjs exit $LASTEXITCODE" }
         } catch {
@@ -109,7 +111,7 @@ if ($Quick) {
         }
 
         try {
-            $kc = & node (Join-Path $pluginRoot 'scripts/test-kernel-catalog.mjs') 2>&1
+            $kc = & node (Join-Path $repoRoot 'scripts/test-kernel-catalog.mjs') 2>&1
             if ($LASTEXITCODE -eq 0) { Write-Ok 'test-kernel-catalog.mjs passed' }
             else { $kc | ForEach-Object { Write-Host $_ }; Write-Bad "test-kernel-catalog.mjs exit $LASTEXITCODE" }
         } catch {

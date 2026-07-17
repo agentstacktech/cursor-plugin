@@ -5,84 +5,56 @@
 
 ---
 
-## A. Copy & marketplace form
+## A. Cursor install layout (P0 — marketplace.json)
 
-- [x] Ready-to-paste **Description** + short/tagline in [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
-- [x] Align `listing.json` description (no monorepo-only paths)
-- [x] Link from README + `docs/plugins/CURSOR_MARKETPLACE_SUBMIT_NOW.md` (monorepo)
-- [ ] Open https://cursor.com/marketplace/publish and paste fields from `SUBMIT_FORM.md`
-- [ ] Upload screenshots `assets/screenshots/01`–`05` (alts in that folder’s README)
-- [ ] Confirm category / keywords / privacy / terms / support / freemium pricing on the form
-
-**Description rule:** live catalog wording inside the plugin tree; numeric marketing shorthand only from monorepo `docs/plugins/PUBLISHER_COPY.md` into the **web form**, if Cursor insists on a number.
+- [x] Restore schema-valid `.cursor-plugin/marketplace.json` (`pluginRoot: plugins`, `source: agentstack`)
+- [x] Nest runtime under `plugins/agentstack/` (Cursor 2.6+ — bare source, not `.`)
+- [x] Keep `.cursor-plugin/listing.json` as AgentStack publisher SoT (screenshots/support)
+- [x] Point local install / validators / CI at nested package
+- [ ] Reload Cursor → **Add marketplace** from `https://github.com/agentstacktech/cursor-plugin` **or** re-run `node scripts/install-local.mjs --force`
+- [ ] Confirm plugin appears (rules/skills/commands)
 
 ---
 
-## B. Call / data flow (verified in code + automated smoke)
+## B. Copy & marketplace form
+
+- [x] Ready-to-paste **Description** in [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
+- [ ] Submit at https://cursor.com/marketplace/publish (paste SUBMIT_FORM; attach screenshots under `plugins/agentstack/assets/screenshots/`)
+
+---
+
+## C. Call / data flow
 
 | Step | Contract | Status |
 |------|----------|--------|
-| Device Code authorize | `POST /api/oauth2/device/authorize` | [x] `device-code.mjs` |
-| Token poll | HTTP **400** + `authorization_pending` → continue | [x] `deviceCodeClient.postForm` / `pollDeviceToken` |
-| Write MCP Bearer | flat `mcpServers.agentstack` via `applyAgentstackMcpBearer` | [x] no stray `tools` key |
-| Catalog snapshot | `GET /mcp/actions` → **flat** `actions[]` | [x] `flattenMcpActionsCatalog` |
-| Cap hint hook | `beforeMCPExecution` reads flat snapshot | [x] `pre-mcp-cap-check.mjs` |
-| Session refresh | refresh token + catalog age | [x] `session-start.mjs` |
-| Telemetry | buffer only if opt-in | [x] post-tool hooks |
-| `--help` | exit 0, no OAuth | [x] smoke |
-| Local install | junction/symlink `~/.cursor/plugins/local/agentstack` | [x] `install-local.mjs --check` |
-| Standalone validate CI | local `stale-actions` + matrix (no monorepo `../../scripts`) | [x] |
+| Marketplace resolve | `marketplace.json` → `plugins/agentstack/.cursor-plugin/plugin.json` | [x] |
+| Device Code authorize | `POST /api/oauth2/device/authorize` | [x] |
+| Token poll | HTTP **400** + `authorization_pending` → continue | [x] |
+| Write MCP Bearer | `applyAgentstackMcpBearer` | [x] |
+| Catalog snapshot | flat `actions[]` | [x] |
+| Cap hint | `beforeMCPExecution` | [x] |
+| Local install | junction → `plugins/agentstack` | [x] scripts |
 
-**Human e2e still required:**
+**Human e2e:**
 
-- [ ] Reload Cursor after local install
-- [ ] `/agentstack-init` → approve `/activate` → Bearer in `~/.cursor/mcp.json`
-- [ ] `whoami` / discovery / `/agentstack-capability-matrix`
-- [ ] Optional `/agentstack-host-site` → live `/s/` URL
+- [ ] `/agentstack-init` → approve `/activate`
+- [ ] `whoami` / `/agentstack-capability-matrix`
 - [ ] Tick [`VERIFICATION_CHECKLIST.md`](VERIFICATION_CHECKLIST.md)
 
 ---
 
-## C. Gates & publish repo
+## D. Gates & push
 
-- [x] `validate-plugin` / hooks contract / kernel catalog tests (re-run before push)
-- [x] Schema-valid `plugin.json`, version **0.4.14**, vendored `lib/plugin-kernel`
-- [x] Vendored `scripts/lib/stale-actions.mjs` + `docs/CAPABILITY_MATRIX.md` for GitHub Actions
-- [x] CI workflow: validate + hooks + intent-eval + device-code `--help` + kernel catalog (no `|| true`)
-- [ ] `git push origin master` + `git push origin v0.4.14` with **agentstacktech** credentials
-- [ ] Or: `node provided_plugins/scripts/sync-cursor-plugin-publish.mjs ../cursor-plugin-publish` then push sibling
-
-**Maintainer sync (monorepo):**
+- [x] `validate-plugin --strict-screenshots` / hooks / kernel (re-run after layout change)
+- [ ] `git push origin master` + `git push origin v0.4.14` (`agentstacktech` auth)
 
 ```bash
-node provided_plugins/scripts/sync-plugin-kernel.mjs          # kernel + stale-actions + matrix
 node provided_plugins/scripts/sync-plugin-kernel.mjs --check
-node provided_plugins/scripts/audit-cursor-plugin.mjs --strict-screenshots
+cd provided_plugins/cursor-plugin && node scripts/smoke-local.mjs --install
 ```
 
 ---
 
-## D. After Cursor approval
+## E. After approval
 
-- [ ] [`docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md`](../../docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md)
-- [ ] Update post-release status doc
-- [ ] Announce / listing URL when live
-
----
-
-## E. Optional polish (not blocking submit)
-
-- [~] Replace mock screenshots with live Cursor captures
-- [~] Commit monorepo-side `docs/plugins/*` / `provided_plugins/scripts/*` if umbrella git exists
-- [~] Gen3.1 backlog items from audit (non-P0)
-
----
-
-## Quick commands
-
-```bash
-cd provided_plugins/cursor-plugin
-node scripts/install-local.mjs --check
-node scripts/smoke-local.mjs
-node scripts/validate-plugin.mjs --strict-screenshots
-```
+- [ ] Post-release checklist (monorepo `docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md`)

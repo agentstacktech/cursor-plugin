@@ -17,7 +17,7 @@ import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PLUGIN_ROOT = path.resolve(__dirname, '..');
+const PLUGIN_ROOT = path.resolve(__dirname, '..', 'plugins', 'agentstack');
 const LOCAL_ROOT = path.join(os.homedir(), '.cursor', 'plugins', 'local');
 const LINK_PATH = path.join(LOCAL_ROOT, 'agentstack');
 const force = process.argv.includes('--force');

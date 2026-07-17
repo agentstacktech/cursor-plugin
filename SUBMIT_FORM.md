@@ -60,7 +60,7 @@ the live-catalog description above for the official listing text.
 | **Support URL** | `https://agentstack.tech/support` |
 | **Pricing** | Freemium · `https://agentstack.tech/pricing` |
 | **License** | MIT |
-| **Screenshots** | `assets/screenshots/01`–`05` (1920×1200); alts in `assets/screenshots/README.md` |
+| **Screenshots** | `plugins/agentstack/assets/screenshots/01`–`05` (1920×1200); alts in that folder’s README |
 | **Demo script** | [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md) |
 
 ---

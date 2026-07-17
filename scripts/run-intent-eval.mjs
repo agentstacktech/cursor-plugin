@@ -7,8 +7,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const backend = fs.readFileSync(path.join(ROOT, 'skills/agentstack-backend/SKILL.md'), 'utf8');
-const yaml = fs.readFileSync(path.join(ROOT, 'evals/intent-routing.yaml'), 'utf8');
+const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
+const backend = fs.readFileSync(path.join(PLUGIN, 'skills/agentstack-backend/SKILL.md'), 'utf8');
+const yaml = fs.readFileSync(path.join(PLUGIN, 'evals/intent-routing.yaml'), 'utf8');
 
 const SKIP = new Set(['agentstack-backend']);
 const ROUTER_ALIAS = { solana: 'solana-agentstack-mcp' };

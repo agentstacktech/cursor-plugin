@@ -11,12 +11,14 @@ From this repo (`provided_plugins/cursor-plugin/`):
 node scripts/install-local.mjs
 ```
 
-Creates:
+Creates a link to **`plugins/agentstack/`** (the Cursor plugin package):
 
 | OS | Mechanism | Path |
 |----|-----------|------|
 | Windows | directory **junction** (no admin) | `%USERPROFILE%\.cursor\plugins\local\agentstack` |
 | macOS / Linux | **symlink** | `~/.cursor/plugins/local/agentstack` |
+
+Repo root also has `.cursor-plugin/marketplace.json` for **Add marketplace** from GitHub (`pluginRoot: plugins`, `source: agentstack`). Local link tests the package itself; GitHub add uses the marketplace index.
 
 Replace existing link:
 

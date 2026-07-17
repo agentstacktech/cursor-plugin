@@ -9,14 +9,14 @@
     "privacy": "https://agentstack.tech/privacy",
     "terms": "https://agentstack.tech/terms",
     "screenshots": [
-      "assets/screenshots/01-install.png",
-      "assets/screenshots/02-capability-matrix.png",
-      "assets/screenshots/03-scaffold-auth.png",
-      "assets/screenshots/04-host-site.png",
-      "assets/screenshots/05-sites-url-card.png"
+      "plugins/agentstack/assets/screenshots/01-install.png",
+      "plugins/agentstack/assets/screenshots/02-capability-matrix.png",
+      "plugins/agentstack/assets/screenshots/03-scaffold-auth.png",
+      "plugins/agentstack/assets/screenshots/04-host-site.png",
+      "plugins/agentstack/assets/screenshots/05-sites-url-card.png"
     ]
   },
   "pricing": { "model": "freemium", "details": "https://agentstack.tech/pricing" },
   "support": { "email": "support@agentstack.tech", "url": "https://agentstack.tech/support" },
-  "_comment": "AgentStack publisher listing SoT (not Cursor multi-plugin marketplace.json). Gene: repo.plugins.publication_gates.gen1"
+  "_comment": "AgentStack publisher listing SoT (screenshots + support). Cursor install index is marketplace.json. Gene: repo.plugins.publication_gates.gen1"
 }

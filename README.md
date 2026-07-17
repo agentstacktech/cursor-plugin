@@ -39,15 +39,12 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 ## 5-layer architecture
 
 ```
-.cursor-plugin/plugin.json   ← manifest (v0.4.14, Cursor schema-valid)
-.cursor-plugin/listing.json  ← AgentStack publisher listing (not Cursor multi-plugin marketplace)
-rules/                       ← T0 prefer + T1 globs + T3 monorepo (9 mdc)
-skills/                      ← 24 domain routers + optional solana
-commands/                    ← slash flows (/agentstack-init, …)
-agents/                      ← 5 long-running presets
-hooks/                       ← lifecycle + policy (shell, MCP cap, telemetry)
-lib/plugin-kernel/           ← vendored Device Code client (self-contained)
-mcp.json                     ← streamable-http + Bearer placeholder
+.cursor-plugin/marketplace.json  ← Cursor install index (required for Add marketplace)
+.cursor-plugin/listing.json      ← AgentStack publisher SoT (screenshots/support)
+plugins/agentstack/              ← plugin package (Cursor 2.6+ layout)
+  .cursor-plugin/plugin.json     ← per-plugin manifest (v0.4.14)
+  rules/ skills/ commands/ agents/ hooks/ mcp.json assets/ lib/
+scripts/                         ← validate / smoke / install-local (repo tooling)
 ```
 
 ## Marketplace submit

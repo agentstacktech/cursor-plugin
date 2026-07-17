@@ -13,6 +13,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 - `device-code.mjs --help` exits 0 without starting OAuth (safe smoke).
 - Lean MCP write path shared via `mcpConfig.mjs` (no `tools` extras).
 - Standalone CI: vendor `scripts/lib/stale-actions.mjs` + `docs/CAPABILITY_MATRIX.md` (validate no longer imports monorepo-only paths).
+- Cursor 2.6+ install: restore schema-valid `.cursor-plugin/marketplace.json` + nest package under `plugins/agentstack/` (bare `source`, `pluginRoot: plugins`). Keep `listing.json` as AgentStack publisher SoT.
 
 ### Added (local verify)
 

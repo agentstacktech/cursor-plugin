@@ -36,7 +36,7 @@ console.log('Cursor plugin smoke (node)');
 console.log('root:', ROOT);
 
 if (wantInstall) {
-  run('install-local', ['scripts/install-local.mjs']);
+  run('install-local', ['scripts/install-local.mjs', '--force']);
 }
 
 console.log('\n=== local install status ===');
@@ -61,7 +61,7 @@ run(
 );
 run('test-hooks-contract', ['scripts/test-hooks-contract.mjs']);
 run('test-kernel-catalog', ['scripts/test-kernel-catalog.mjs']);
-run('device-code --help', ['hooks/scripts/device-code.mjs', '--help']);
+run('device-code --help', ['plugins/agentstack/hooks/scripts/device-code.mjs', '--help']);
 
 console.log(`\nsummary: failed=${failed}`);
 process.exit(failed ? 1 : 0);

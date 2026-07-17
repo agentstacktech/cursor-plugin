@@ -3,8 +3,8 @@
  * Unit checks for plugin-kernel catalog flatten + OAuth pending body handling.
  */
 import assert from 'node:assert/strict';
-import { flattenMcpActionsCatalog, actionsFromSnapshot } from '../lib/plugin-kernel/mcpActionsCatalog.mjs';
-import { applyAgentstackMcpBearer } from '../lib/plugin-kernel/mcpConfig.mjs';
+import { flattenMcpActionsCatalog, actionsFromSnapshot } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { applyAgentstackMcpBearer } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 
 const catalog = {
   version: '2.0',

@@ -5,14 +5,15 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const fixtures = path.join(ROOT, 'hooks/fixtures');
+const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
+const fixtures = path.join(PLUGIN, 'hooks/fixtures');
 
 function runHook(script, fixture, expectCode) {
   const input = fs.readFileSync(path.join(fixtures, fixture), 'utf8');
-  const r = spawnSync(process.execPath, [path.join(ROOT, 'hooks/scripts', script)], {
+  const r = spawnSync(process.execPath, [path.join(PLUGIN, 'hooks/scripts', script)], {
     input,
     encoding: 'utf8',
-    cwd: ROOT,
+    cwd: PLUGIN,
   });
   const code = r.status ?? 1;
   if (code !== expectCode) {
@@ -24,15 +25,15 @@ function runHook(script, fixture, expectCode) {
 }
 
 function assertExists(rel) {
-  const full = path.join(ROOT, rel);
+  const full = path.join(PLUGIN, rel);
   if (!fs.existsSync(full)) {
-    console.error(`FAIL missing ${rel}`);
+    console.error(`FAIL missing plugins/agentstack/${rel}`);
     process.exit(1);
   }
   console.log(`OK   exists ${rel}`);
 }
 
-// Cwd contract: hooks resolve when cwd = plugin root
+// Cwd contract: hooks resolve when cwd = plugin package root
 assertExists('hooks/scripts/pre-shell-scan.mjs');
 assertExists('hooks/scripts/pre-mcp-cap-check.mjs');
 assertExists('hooks/scripts/session-end.mjs');
@@ -44,7 +45,7 @@ runHook('pre-shell-scan.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-shell-allow.json', 0);
 
 const help = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
-  cwd: ROOT,
+  cwd: PLUGIN,
   encoding: 'utf8',
 });
 if (help.status !== 0) {
