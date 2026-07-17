@@ -15,6 +15,8 @@ jobs:
           node-version: '20'
       - name: Validate (strict screenshots)
         run: node scripts/validate-plugin.mjs --strict-screenshots
+      - name: Layer audit (skills/rules/commands/hooks)
+        run: node scripts/audit-layers.mjs
       - name: Hook contract tests
         run: node scripts/test-hooks-contract.mjs
       - name: Intent eval

@@ -51,7 +51,8 @@ scripts/                         ← validate / smoke / install-local (repo tool
 
 Ready-to-paste form fields (especially **Description**): **[SUBMIT_FORM.md](SUBMIT_FORM.md)**.  
 Demo script: [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md). Local verify: [LOCAL_INSTALL.md](LOCAL_INSTALL.md). Ship checklist: [SHIP_TODO.md](SHIP_TODO.md).  
-Diagnose: `node scripts/diagnose-local.mjs` (`--fix` / `--seed-snapshot`).
+Diagnose: `node scripts/diagnose-local.mjs` (`--fix` / `--seed-snapshot`).  
+Layer audit: `node scripts/audit-layers.mjs` (skills / rules / commands / hooks).
 
 ## First 5 minutes
 

@@ -5,7 +5,7 @@ description: Entry point for AgentStack backend ecosystem. Use WHENEVER the user
 
 # AgentStack Backend — Master Router
 
-AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agentstack.execute`. Capabilities come from `GET /mcp/actions` and `docs/MCP_CAPABILITY_MATRIX.md` — do not hard-code action counts in skills.
+AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agentstack.execute`. Capabilities come from live `GET /mcp/actions` (and `/agentstack-capability-matrix`) — do not hard-code action counts in skills.
 
 ## Quick router — pick the sub-skill
 

@@ -55,10 +55,8 @@ if (chk.status === 0) {
   console.log('NOTE not linked yet — run: node scripts/install-local.mjs');
 }
 
-run(
-  'validate-plugin',
-  ['scripts/validate-plugin.mjs', ...(strict ? ['--strict-screenshots'] : [])],
-);
+run('validate-plugin', ['scripts/validate-plugin.mjs', ...(strict ? ['--strict-screenshots'] : [])]);
+run('audit-layers', ['scripts/audit-layers.mjs']);
 run('test-hooks-contract', ['scripts/test-hooks-contract.mjs']);
 run('test-kernel-catalog', ['scripts/test-kernel-catalog.mjs']);
 run('device-code --help', ['plugins/agentstack/hooks/scripts/device-code.mjs', '--help']);

@@ -6,26 +6,24 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { agentstackAuthHeaders } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
 const SNAPSHOT_PATH = join(CURSOR_DIR, 'agentstack-capabilities.json');
 
-async function getAuthHeader() {
+async function getAuthHeaders() {
   try {
     const cfg = JSON.parse(await readFile(MCP_PATH, 'utf8'));
-    const h = cfg?.mcpServers?.agentstack?.headers || {};
-    if (h.Authorization) return { Authorization: h.Authorization };
-    if (h['X-API-Key']) return { 'X-API-Key': h['X-API-Key'] };
+    return agentstackAuthHeaders(cfg);
   } catch {
-    /* none */
+    return null;
   }
-  return null;
 }
 
 async function main() {
-  const auth = await getAuthHeader();
+  const auth = await getAuthHeaders();
   if (!auth) return;
 
   try {

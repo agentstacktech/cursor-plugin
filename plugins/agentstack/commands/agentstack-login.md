@@ -18,7 +18,10 @@ Use when:
    - `--scope-preset=readonly` for inspection.
    - `--scope-preset=builder` for app/data/rules/RAG/storage work.
    - `--scope-preset=full` for full platform work including Agents Fleet/support.
-2. Run `node ./hooks/scripts/device-code.mjs --scope-preset=builder` or `node ./hooks/scripts/device-code.mjs --scopes="<space-separated>"`.
+2. Resolve the plugin root (directory with `hooks/scripts/device-code.mjs` — typically `~/.cursor/plugins/local/agentstack`). Then run:
+   `node ./hooks/scripts/device-code.mjs --scope-preset=builder`
+   or `node ./hooks/scripts/device-code.mjs --scopes="<space-separated>"`
+   (If cwd is not the plugin root, pass an absolute path to the script.)
 3. After success, if the token grants access to more than one project, ask the user to pick one:
    - Call `projects.get_projects` via MCP (alias `projects.list`).
    - Persist the picked project id to `~/.cursor/agentstack-project` (plain text, 0600).

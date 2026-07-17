@@ -5,67 +5,69 @@
 
 ---
 
-## A. Install layout
+## A. Layer inventory (skills / rules / commands / hooks)
 
-- [x] `.cursor-plugin/marketplace.json` + `plugins/agentstack/` (Cursor 2.6+)
-- [x] Local junction → `plugins/agentstack` (`install-local.mjs`)
-- [x] Local link verified OK on this machine
-- [ ] Reload Window after latest hook/mcpConfig changes
+| Layer | Count | Gate | Status |
+|-------|------:|------|--------|
+| Skills | 24 | frontmatter + live catalog pointer | [x] `audit-layers.mjs` |
+| Rules | 9 | exactly 1 `alwaysApply` (prefer) | [x] |
+| Commands | 13 | name/description + init/login/diagnose | [x] |
+| Agents | 5 | name/description | [x] |
+| Hooks | 7 events | scripts resolve under package | [x] |
+| Device Code | 1 script | not a hook event; install path | [x] |
+
+- [x] Fix backend skill: no `docs/MCP_CAPABILITY_MATRIX.md` (use live `GET /mcp/actions`)
+- [x] login command: resolve plugin root before `device-code.mjs`
+- [x] capability-refresh: shared `agentstackAuthHeaders` (Bearer or API key)
+- [x] CI + smoke run `audit-layers.mjs`
 
 ---
 
-## B. Call / data flow (verified)
+## B. Call / data flow
 
 | Step | Contract | Status |
 |------|----------|--------|
 | Marketplace → package | `pluginRoot=plugins` / `source=agentstack` | [x] |
-| Local package load | `~/.cursor/plugins/local/agentstack` → SoT | [x] |
-| Device Code | authorize → poll 400+pending → tokens | [x] code |
-| MCP write | lean `streamable-http` + Bearer (strips `tools`, drops API key on OAuth) | [x] |
-| MCP normalize | `--fix` / sessionStart strips non-lean keys | [x] |
-| Snapshot | flat `actions[]` from `GET /mcp/actions` | [x] seeded via API key |
-| Cap hint | `beforeMCPExecution` reads flat snapshot | [x] |
-| Session start | auth via Bearer **or** X-API-Key for catalog; Bearer refresh only | [x] |
-
-**This machine (diagnose):**
-
-- [x] Plugin linked
-- [x] mcp lean after `--fix`
-- [x] Snapshot flat (live catalog via `--seed-snapshot`)
-- [ ] Auth still **X-API-Key** — run `/agentstack-init` for Device Code + refresh file
-- [ ] `/agentstack-diagnose` + `/agentstack-capability-matrix` in Cursor
+| Local link | `~/.cursor/plugins/local/agentstack` | [x] |
+| Device Code | authorize → poll pending → tokens | [x] |
+| MCP lean write | no `tools` key; Bearer or API key | [x] |
+| Snapshot | flat `actions[]` | [x] |
+| beforeMCPExecution | cap hint from snapshot | [x] |
+| sessionStart | normalize + seed catalog | [x] |
+| afterFileEdit mcp.json | cache clear + snapshot | [x] |
+| Telemetry | opt-in only | [x] |
 
 ---
 
-## C. Commands for Lance (now)
+## C. Human e2e (this machine)
 
 ```bash
 cd provided_plugins/cursor-plugin
-node scripts/diagnose-local.mjs              # status
-node scripts/diagnose-local.mjs --fix        # lean mcp.json
-node scripts/diagnose-local.mjs --seed-snapshot
+node scripts/diagnose-local.mjs
+node scripts/audit-layers.mjs
+node scripts/smoke-local.mjs
 ```
 
-In Cursor after Reload:
+In Cursor after **Reload Window**:
 
-1. `/agentstack-init` (upgrade to Device Code)
-2. `/agentstack-diagnose`
-3. `/agentstack-capability-matrix`
-4. Optional `/agentstack-host-site`
+- [ ] `/agentstack-init` (upgrade X-API-Key → Device Code)
+- [ ] `/agentstack-diagnose`
+- [ ] `/agentstack-capability-matrix`
+- [ ] Spot-check one skill route (e.g. hosting or auth)
 
-Form paste: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
+Form: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 
 ---
 
 ## D. Publish
 
-- [ ] `git push origin master` + `v0.4.14` (`agentstacktech`)
+- [ ] `git push origin master` + `v0.4.14`
 - [ ] https://cursor.com/marketplace/publish
-- [ ] Post-release checklist (monorepo)
+- [ ] Post-release checklist
 
 ---
 
 ## E. Optional
 
-- [~] Live screenshots replace mocks
-- [~] Prefer Device Code over long-lived API key in local mcp.json
+- [~] Live screenshots
+- [~] Explicit `alwaysApply: false` on all non-T0 rules (cosmetic)

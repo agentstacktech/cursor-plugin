@@ -15,6 +15,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 - Standalone CI: vendor `scripts/lib/stale-actions.mjs` + `docs/CAPABILITY_MATRIX.md` (validate no longer imports monorepo-only paths).
 - Cursor 2.6+ install: restore schema-valid `.cursor-plugin/marketplace.json` + nest package under `plugins/agentstack/` (bare `source`, `pluginRoot: plugins`). Keep `listing.json` as AgentStack publisher SoT.
 - Lean MCP config: strip `tools` extras; sessionStart seeds capability snapshot with Bearer **or** `X-API-Key`; `scripts/diagnose-local.mjs` (`--fix`, `--seed-snapshot`).
+- Layer audit: `scripts/audit-layers.mjs` (skills/rules/commands/agents/hooks) wired into smoke + CI.
 
 ### Added (local verify)
 
