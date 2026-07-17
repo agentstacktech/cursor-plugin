@@ -14,3 +14,7 @@ description: Use when the user manages project treasury, project wallet segments
 ## References
 
 - `project-wallet/README.md`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

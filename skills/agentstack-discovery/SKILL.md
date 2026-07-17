@@ -17,3 +17,7 @@ description: Use when the user asks where a feature lives in the UI, how to navi
 
 - Genes: `frontend.discovery.hub.gen1`, `frontend.platform.compass.gen1`, `frontend.docs.cookbook.gen1`
 - Map: `docs/dual-shell/NARRATIVE_COOKBOOK_MAP.md`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

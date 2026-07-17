@@ -17,3 +17,7 @@ description: Use when the user builds a hosted storefront, edits catalog in stud
 
 - `commerce/STOREFRONT_STUDIO.md`, `commerce/HOSTED_STOREFRONT.md`
 - SDK: `@agentstack/sdk/commerce/assets`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

@@ -23,3 +23,7 @@ description: Use when the user asks to upload files, list attachments, check sto
 
 - Gene: `frontend.storage.ui.gen1`
 - Live catalog: `/agentstack-capability-matrix`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

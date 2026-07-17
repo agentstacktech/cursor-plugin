@@ -22,3 +22,7 @@ description: Use when the user wants TypeScript SDK setup, sdk.protocol, getCapa
 
 - Gene: `repo.platform.sdk.ai_surface.gen1`, `sdk.protocol`
 - Docs: `docs/AGENT_PROTOCOL_QUICKSTART.md`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

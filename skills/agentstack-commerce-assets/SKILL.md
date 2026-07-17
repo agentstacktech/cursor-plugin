@@ -16,3 +16,7 @@ description: Use when the user wants digital goods, asset presets, inventory wiz
 
 - Genes: `sdk.commerce.assets.gen1`, `frontend.commerce.assets.wizard.gen1`
 - For payments/wallets see `agentstack-commerce` skill.
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

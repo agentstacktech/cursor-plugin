@@ -22,3 +22,7 @@ description: Use when the user mentions chat, DM, channels, messenger, message o
 
 - Genes: `core.social.chat.ordering.gen1`, `frontend.social.messenger.ordering.gen1`
 - Runbook: `docs/operations/MESSENGER_ORDERING_RUNBOOK.md`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

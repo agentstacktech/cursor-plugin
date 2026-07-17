@@ -17,3 +17,7 @@ description: Use when the user asks where to click in the UI, what to do next on
 
 - `platform/COMPASS_AND_DISCOVERY.md`
 - `platform/CAPABILITY_TASKS.md`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

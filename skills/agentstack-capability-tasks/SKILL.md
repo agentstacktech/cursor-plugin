@@ -16,3 +16,7 @@ description: Use when the user mentions comfort tasks, hub slots, capability ato
 
 - ADR: `docs/adr/PLATFORM_TASK_CAPABILITY_ATOMS.md`
 - Manifest: `agentstack-frontend/src/lib/capability-tasks/`
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.

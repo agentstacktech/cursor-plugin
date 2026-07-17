@@ -24,3 +24,7 @@ category: grant
 ```
 
 Do not implement cross-chain bridge in application code without ADR Accepted.
+
+## Live catalog
+
+Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.
