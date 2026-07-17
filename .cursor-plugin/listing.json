@@ -3,7 +3,7 @@
   "listing": {
     "name": "agentstack",
     "tagline": "Backend + static hosting for AI — one MCP, live action catalog",
-    "description": "AgentStack gives your AI agent a full backend and on-platform hosting: publish HTML or ZIP to a live /s/ URL, store project files, and run the live MCP catalog (discover via GET /mcp/actions) through agentstack.execute. OAuth Device Code install in ~30 seconds. Scale reference: docs/publication/PLATFORM_SCALE.md.",
+    "description": "AgentStack gives your AI agent a full backend and on-platform hosting: publish HTML or ZIP to a live /s/ URL, store project files, and run the live MCP catalog (discover via GET /mcp/actions) through agentstack.execute. OAuth Device Code install in about 30 seconds. Homepage https://agentstack.tech — privacy, terms, and freemium pricing linked from the listing.",
     "categories": ["Backend", "AI", "Productivity"],
     "keywords": ["mcp", "backend", "hosting", "static-site", "8dna", "rules-engine", "payments", "rag", "ai-agents", "storage", "publish"],
     "privacy": "https://agentstack.tech/privacy",

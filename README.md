@@ -50,6 +50,11 @@ lib/plugin-kernel/           ← vendored Device Code client (self-contained)
 mcp.json                     ← streamable-http + Bearer placeholder
 ```
 
+## Marketplace submit
+
+Ready-to-paste form fields (especially **Description**): **[SUBMIT_FORM.md](SUBMIT_FORM.md)**.  
+Demo script: [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md). Local verify: [LOCAL_INSTALL.md](LOCAL_INSTALL.md). Ship checklist: [SHIP_TODO.md](SHIP_TODO.md).
+
 ## First 5 minutes
 
 1. Symlink or install plugin → reload Cursor  
