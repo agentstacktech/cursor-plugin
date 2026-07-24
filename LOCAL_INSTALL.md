@@ -26,6 +26,16 @@ Replace existing link:
 node scripts/install-local.mjs --force
 ```
 
+### Maintainer overlay (platform engineers)
+
+Copy platform-only agents from `../cursor-plugin-maintainer/`:
+
+```bash
+node scripts/install-local.mjs --maintainer
+```
+
+See [`../cursor-plugin-maintainer/README.md`](../cursor-plugin-maintainer/README.md). Not published to Marketplace.
+
 Check / uninstall:
 
 ```bash

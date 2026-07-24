@@ -16,7 +16,7 @@ import {
   normalizeAgentstackMcpConfig,
   agentstackAuthHeaders,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
-import { flattenMcpActionsCatalog } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { tenantActionsFromCatalog } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
@@ -145,13 +145,14 @@ if (wantSeed) {
       fail(`GET /mcp/actions HTTP ${res.status}`);
     } else {
       const catalog = await res.json();
-      const actions = flattenMcpActionsCatalog(catalog);
+      const actions = tenantActionsFromCatalog(catalog);
       fs.writeFileSync(
         SNAP,
         JSON.stringify(
           {
             fetched_at: Date.now(),
-            total_actions: catalog.total_actions || actions.length,
+            audience: 'tenant',
+            total_actions: actions.length,
             actions,
           },
           null,

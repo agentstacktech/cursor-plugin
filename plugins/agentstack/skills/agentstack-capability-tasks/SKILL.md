@@ -14,8 +14,8 @@ description: Use when the user mentions comfort tasks, hub slots, capability ato
 
 ## References
 
-- ADR: `docs/adr/PLATFORM_TASK_CAPABILITY_ATOMS.md`
-- Manifest: `agentstack-frontend/src/lib/capability-tasks/`
+- ADR: public docs — Platform Task Capability Atoms (`docs.agentstack.tech`)
+- Discover hub tasks via Compass / `guidance.*` MCP when available
 
 ## Live catalog
 

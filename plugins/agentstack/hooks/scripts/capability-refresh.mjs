@@ -5,7 +5,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { agentstackAuthHeaders } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
@@ -36,13 +36,14 @@ async function main() {
     const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: { ...auth } });
     if (!res.ok) return;
     const catalog = await res.json();
-    const actions = flattenMcpActionsCatalog(catalog);
+    const actions = tenantActionsFromCatalog(catalog);
     await mkdir(CURSOR_DIR, { recursive: true });
     await writeFile(
       SNAPSHOT_PATH,
       JSON.stringify({
         fetched_at: Date.now(),
-        total_actions: catalog.total_actions || actions.length,
+        audience: 'tenant',
+        total_actions: actions.length,
         actions,
       }, null, 2),
       'utf8',

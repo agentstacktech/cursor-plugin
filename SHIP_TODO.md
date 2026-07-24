@@ -12,7 +12,8 @@
 | Skills | 24 | frontmatter + live catalog pointer | [x] `audit-layers.mjs` |
 | Rules | 9 | exactly 1 `alwaysApply` (prefer) | [x] |
 | Commands | 13 | name/description + init/login/diagnose | [x] |
-| Agents | 5 | name/description | [x] |
+| Agents | 3 | name/description; no oncall/fleet-operator | [x] |
+| Maintainer overlay | 2 agents | `cursor-plugin-maintainer/` — LOCAL_INSTALL only | [x] |
 | Hooks | 7 events | scripts resolve under package | [x] |
 | Device Code | 1 script | not a hook event; install path | [x] |
 

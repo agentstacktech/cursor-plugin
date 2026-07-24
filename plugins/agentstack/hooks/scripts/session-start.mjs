@@ -6,7 +6,7 @@ import { readFile, writeFile, mkdir, chmod, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { flattenMcpActionsCatalog, tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import {
   applyAgentstackMcpBearer,
   agentstackAuthHeaders,
@@ -95,13 +95,14 @@ async function refresh(refreshToken, traceId) {
 }
 
 async function writeFlatSnapshot(catalog) {
-  const actions = flattenMcpActionsCatalog(catalog);
+  const actions = tenantActionsFromCatalog(catalog);
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(
     SNAPSHOT_PATH,
     JSON.stringify({
       fetched_at: Date.now(),
-      total_actions: catalog.total_actions || actions.length,
+      audience: 'tenant',
+      total_actions: actions.length,
       actions,
     }, null, 2),
     'utf8',

@@ -6,7 +6,9 @@ import assert from 'node:assert/strict';
 import {
   flattenMcpActionsCatalog,
   actionsFromSnapshot,
+  tenantActionsFromCatalog,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { filterTenantActions, inferDocAudience } from '../plugins/agentstack/lib/plugin-kernel/docAudienceFilter.mjs';
 import {
   applyAgentstackMcpBearer,
   normalizeAgentstackMcpConfig,
@@ -33,6 +35,19 @@ assert.equal(actionsFromSnapshot(snap).length, 2);
 const legacy = { fetched_at: 1, actions: catalog };
 assert.equal(actionsFromSnapshot(legacy).length, 2);
 assert.equal(actionsFromSnapshot({ catalog }).length, 2);
+
+const mixed = {
+  domains: {
+    auth: [{ action: 'auth.login', summary: 'Login' }],
+    admin: [{ action: 'admin.database.schema_inventory', summary: 'Ops: schema' }],
+    social: [{ action: 'social.admin.list_channels', summary: 'List channels' }],
+  },
+};
+assert.equal(inferDocAudience('admin.foo'), 'operator');
+assert.equal(inferDocAudience('social.admin.foo'), 'operator');
+assert.equal(filterTenantActions(flattenMcpActionsCatalog(mixed)).length, 1);
+assert.equal(tenantActionsFromCatalog(mixed).length, 1);
+assert.equal(tenantActionsFromCatalog(mixed)[0].action, 'auth.login');
 
 const cfg = applyAgentstackMcpBearer(
   {

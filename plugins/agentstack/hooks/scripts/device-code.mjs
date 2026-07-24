@@ -8,7 +8,7 @@ import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { pollDeviceToken } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
-import { flattenMcpActionsCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { applyAgentstackMcpBearer } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
@@ -76,23 +76,73 @@ async function openBrowser(url) {
   try { exec(cmd); } catch { /* best effort */ }
 }
 
+async function loadConfidentialClient() {
+  // Prod currently requires client_secret on device/authorize (OpenAPI required fields).
+  // Prefer env, else ~/.cursor/agentstack-oauth-client.json from Dynamic Client Registration.
+  const fromEnvId = process.env.AGENTSTACK_OAUTH_CLIENT_ID;
+  const fromEnvSecret = process.env.AGENTSTACK_OAUTH_CLIENT_SECRET;
+  if (fromEnvId && fromEnvSecret) {
+    return { clientId: fromEnvId, clientSecret: fromEnvSecret, source: 'env' };
+  }
+  try {
+    const raw = await readFile(join(CURSOR_DIR, 'agentstack-oauth-client.json'), 'utf8');
+    const j = JSON.parse(raw);
+    if (j.client_id && j.client_secret) {
+      return { clientId: j.client_id, clientSecret: j.client_secret, source: 'agentstack-oauth-client.json' };
+    }
+  } catch { /* optional */ }
+  return { clientId: CLIENT_ID, clientSecret: process.env.AGENTSTACK_OAUTH_CLIENT_SECRET || null, source: 'builtin' };
+}
+
 async function authorize(scopes, traceId) {
+  const { clientId, clientSecret, source } = await loadConfidentialClient();
+  const params = { client_id: clientId, scope: scopes };
+  if (clientSecret) params.client_secret = clientSecret;
+  else if (source === 'builtin') {
+    console.warn('  Note: device/authorize may require client_secret on production; register via POST /api/oauth2/clients or set AGENTSTACK_OAUTH_CLIENT_SECRET.');
+  }
   const res = await fetch(`${BASE_URL}/api/oauth2/device/authorize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
-    body: new URLSearchParams({ client_id: CLIENT_ID, scope: scopes }),
+    body: new URLSearchParams(params),
   });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`device/authorize failed: HTTP ${res.status} — ${body} (trace ${traceId})`);
   }
-  return res.json();
+  const json = await res.json();
+  json.__client_id = clientId;
+  json.__client_secret = clientSecret;
+  return json;
 }
 
-async function pollToken({ device_code, interval, expires_in }, traceId) {
+async function pollToken({ device_code, interval, expires_in, __client_id, __client_secret }, traceId) {
+  // Confidential clients need client_secret on the token poll as well.
+  if (__client_secret) {
+    const deadline = Date.now() + (expires_in || 600) * 1000;
+    let waitMs = Math.max(1000, (interval || 5) * 1000);
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, waitMs));
+      const token = await fetch(`${BASE_URL}/api/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
+        body: new URLSearchParams({
+          grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+          device_code,
+          client_id: __client_id || CLIENT_ID,
+          client_secret: __client_secret,
+        }),
+      }).then((r) => r.json().catch(() => ({})));
+      if (token.access_token) return token;
+      if (token.error === 'authorization_pending') continue;
+      if (token.error === 'slow_down') { waitMs = Math.min(waitMs + 5000, 30000); continue; }
+      throw new Error(token.error_description || token.error || 'Device authorization failed');
+    }
+    throw new Error('Device code expired');
+  }
   return pollDeviceToken({
     tokenUrl: `${BASE_URL}/api/oauth2/token`,
-    clientId: CLIENT_ID,
+    clientId: __client_id || CLIENT_ID,
     deviceCode: device_code,
     intervalSec: interval,
     expiresInSec: expires_in,
@@ -136,13 +186,14 @@ async function seedCapabilitySnapshot(accessToken) {
     });
     if (!res.ok) return;
     const catalog = await res.json();
-    const actions = flattenMcpActionsCatalog(catalog);
+    const actions = tenantActionsFromCatalog(catalog);
     await mkdir(CURSOR_DIR, { recursive: true });
     await writeFile(
       SNAPSHOT_PATH,
       JSON.stringify({
         fetched_at: Date.now(),
-        total_actions: catalog.total_actions || actions.length,
+        audience: 'tenant',
+        total_actions: actions.length,
         actions,
       }, null, 2),
       'utf8',

@@ -17,7 +17,7 @@ Support threads use messenger delta plane with `psup_*` channel ids on project 8
 
 ## References
 
-- Gene: `core.social.support.gen1` — `support_channel_service.py`, runbooks in `docs/operations/`.
+- Gene: `core.social.support.gen1` — discover `social.support.*` via `GET /mcp/actions`.
 - Messenger ordering: `core.social.chat.ordering.gen1` when merging thread history.
 
 ## Live catalog

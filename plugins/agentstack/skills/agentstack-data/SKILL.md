@@ -7,7 +7,7 @@ description: Use when the user wants to store, read, protect, upload, or A/B-tes
 
 One skill covers three organs because they share the same guiding principle: **data belongs to the project row**, access is policy-driven, experiments are sandbox forks of the same row.
 
-**Scope:** Sandbox / A-B / `rollout_steps` guidance applies to **applications consuming AgentStack** (MCP or REST). If you are editing the **AgentStack platform monorepo** itself (`agentstack-core`, `agentstack-frontend`, `shared`, SDK packages, etc.), do **not** treat every change as needing a new canary or sandbox path unless the user explicitly asks for that rollout surface. **Lance (founder) + AI** in this repo: **direct ship** — final single-path code; see `repo.engineering.founder_direct_ship.gen1` in `philosophy/genes/`.
+**Scope:** Sandbox / A-B / `rollout_steps` guidance applies to **applications consuming AgentStack** (MCP or REST). Platform monorepo contributors follow direct-ship workflow unless explicitly building tenant rollout features.
 
 ## Decision matrix
 

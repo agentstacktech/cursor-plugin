@@ -20,8 +20,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = path.resolve(__dirname, '..', 'plugins', 'agentstack');
 const LOCAL_ROOT = path.join(os.homedir(), '.cursor', 'plugins', 'local');
 const LINK_PATH = path.join(LOCAL_ROOT, 'agentstack');
+const maintainer = process.argv.includes('--maintainer');
 const force = process.argv.includes('--force');
 const checkOnly = process.argv.includes('--check');
+const MAINTAINER_ROOT = path.resolve(__dirname, '..', '..', 'cursor-plugin-maintainer');
 
 function resolveLinkTarget(p) {
   try {
@@ -107,6 +109,21 @@ if (!fs.existsSync(kernel)) {
   process.exit(1);
 }
 console.log('OK   lib/plugin-kernel present via link');
+
+if (maintainer) {
+  const agentsSrc = path.join(MAINTAINER_ROOT, 'agents');
+  const agentsDest = path.join(LINK_PATH, 'agents');
+  if (!fs.existsSync(agentsSrc)) {
+    console.error('FAIL maintainer overlay missing:', agentsSrc);
+    process.exit(1);
+  }
+  fs.mkdirSync(agentsDest, { recursive: true });
+  for (const name of fs.readdirSync(agentsSrc)) {
+    if (!name.endsWith('.md')) continue;
+    fs.copyFileSync(path.join(agentsSrc, name), path.join(agentsDest, name));
+  }
+  console.log('OK   maintainer agents overlay copied');
+}
 
 console.log(`
 Next steps:

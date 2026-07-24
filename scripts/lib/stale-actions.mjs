@@ -34,6 +34,7 @@ export const ACTION_COUNT_ALLOWLIST = new Set([
   'docs/publication/PLATFORM_SCALE.md',
   'docs/plugins/CANONICAL_COPY.md',
   'docs/plugins/CURSOR_PLUGIN_AUDIT_2026-05.md',
+  'docs/plugins/CAPABILITY_MATRIX.public.md',
   'docs/plugins/CAPABILITY_MATRIX.md',
   'docs/CAPABILITY_MATRIX.md',
   'provided_plugins/cursor-plugin/VERIFICATION_CHECKLIST.md',

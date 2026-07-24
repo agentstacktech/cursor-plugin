@@ -42,8 +42,7 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 ## References
 
 - Live action catalog: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
-- Backend index: `agentstack-core/services/AI_INDEX.md` (`core.agents.fleet.gen1`).
-- AI Builder index: `agentstack-core/ai_builder/INDEX.md`.
+- Genetic tag: `core.agents.fleet.gen1` · `frontend.agents.surfaces.gen1`
 
 ## Triggers
 

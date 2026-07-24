@@ -1,6 +1,6 @@
 # AgentStack Cursor Plugin
 
-> Turn every Cursor agent into an AgentStack-native engineer. v0.4.14 (gen3) · one-click install.
+> Turn every Cursor agent into an AgentStack-native engineer. v0.4.15 (gen3) · one-click install.
 
 ---
 

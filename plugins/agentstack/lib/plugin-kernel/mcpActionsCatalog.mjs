@@ -4,6 +4,8 @@
  * @see repo.plugins.capability_routing.gen1
  */
 
+import { filterTenantActions } from './docAudienceFilter.mjs';
+
 /**
  * @param {unknown} payload
  * @returns {{ action: string, required_cap?: string, summary?: string, safe_action?: string }[]}
@@ -40,4 +42,12 @@ export function actionsFromSnapshot(snapshotFile) {
   }
   if (snapshotFile.catalog) return flattenMcpActionsCatalog(snapshotFile.catalog);
   return flattenMcpActionsCatalog(snapshotFile);
+}
+
+/**
+ * Flatten live catalog and keep tenant-facing actions only (public docs parity).
+ * @param {unknown} payload
+ */
+export function tenantActionsFromCatalog(payload) {
+  return filterTenantActions(flattenMcpActionsCatalog(payload));
 }

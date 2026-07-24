@@ -11,6 +11,6 @@ For **applications built on AgentStack** (not this monorepo):
 - DM ordering: unified `(hlc, author_user_id, id)` — see `agentstack-messenger` skill.
 - A/B / canary data: 8DNA sandbox (`parent_uuid`, `generation`, `rollout_steps`) when the user asks for experiments.
 
-For **platform maintenance** in `agentstack-core/`, `agentstack-frontend/`, `shared/`, skip unsolicited canary design unless explicitly requested.
+For **platform maintenance** in a monorepo checkout, skip unsolicited canary design unless explicitly requested.
 
-Runbook: `docs/operations/MESSENGER_ORDERING_RUNBOOK.md`
+Messenger ordering is handled by the platform — use `social.*` MCP actions; see `agentstack-messenger` skill.

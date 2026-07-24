@@ -45,7 +45,12 @@ function parseFm(content) {
   return fields;
 }
 
-console.log(`Layer audit — ${PLUGIN}\n`);
+const FORBIDDEN_TENANT = [
+  { re: /docs\/operations\//, label: 'docs/operations path' },
+  { re: /platform_db_init/, label: 'platform_db_init' },
+  { re: /agentstack-core\//, label: 'agentstack-core path' },
+];
+const BANNED_AGENTS = new Set(['agentstack-oncall.md', 'agentstack-fleet-operator.md']);
 
 // Skills
 const skillDirs = listDirs(path.join(PLUGIN, 'skills'));
@@ -68,6 +73,9 @@ for (const d of skillDirs) {
   if (/docs\/MCP_CAPABILITY_MATRIX\.md/.test(t)) {
     fail(`skills/${d}: references docs/MCP_CAPABILITY_MATRIX.md (not in package) — use GET /mcp/actions`);
   }
+  for (const { re, label } of FORBIDDEN_TENANT) {
+    if (re.test(t)) fail(`skills/${d}: ${label}`);
+  }
 }
 if (missingLive.length) {
   for (const d of missingLive) warn(`skills/${d}: add live catalog pointer (GET /mcp/actions)`);
@@ -83,6 +91,11 @@ for (const f of rules) {
   const fm = parseFm(t);
   if (!fm?.description) fail(`rules/${f}: missing description frontmatter`);
   if (/alwaysApply:\s*true/.test(t)) always += 1;
+  for (const { re, label } of FORBIDDEN_TENANT) {
+    if (re.test(t) && f !== 'agentstack-platform-monorepo.mdc' && f !== 'agentstack-ui-surfaces.mdc') {
+      fail(`rules/${f}: ${label}`);
+    }
+  }
   ok(`rule ${f}`);
 }
 if (always !== 1) fail(`expected exactly 1 alwaysApply rule, got ${always}`);
@@ -104,6 +117,7 @@ for (const need of ['agentstack-init.md', 'agentstack-login.md', 'agentstack-dia
 const agents = listFiles(path.join(PLUGIN, 'agents'), '.md');
 for (const f of agents) {
   const t = fs.readFileSync(path.join(PLUGIN, 'agents', f), 'utf8');
+  if (BANNED_AGENTS.has(f)) fail(`agents/${f}: platform-only agent in tenant bundle`);
   const fm = parseFm(t);
   if (!fm?.name || !fm?.description) fail(`agents/${f}: frontmatter needs name + description`);
   else ok(`agent ${fm.name}`);

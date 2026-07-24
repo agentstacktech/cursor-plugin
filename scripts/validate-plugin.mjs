@@ -11,6 +11,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'url';
 import {
   STALE_ACTIONS,
@@ -46,7 +47,9 @@ const STRICT_SCREENSHOTS =
   process.env.AGENTSTACK_STRICT_SCREENSHOTS === '1';
 const CAPABILITY_MATRIX_CANDIDATES = [
   path.join(ROOT, 'docs/CAPABILITY_MATRIX.md'),
+  path.join(REPO_ROOT, 'docs/plugins/CAPABILITY_MATRIX.public.md'),
   path.join(REPO_ROOT, 'docs/plugins/CAPABILITY_MATRIX.md'),
+  path.join(REPO_ROOT, 'agentstack_repo/docs/MCP_CAPABILITY_MATRIX.md'),
   path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
 ];
 
@@ -72,6 +75,7 @@ const REQUIRED_PLUGIN_FILES = [
   'hooks/scripts/pre-mcp-cap-check.mjs',
   'hooks/scripts/session-end.mjs',
   'hooks/scripts/post-tool-failure.mjs',
+  'hooks/scripts/pre-nav-index-edit.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
   'assets/logo.svg',
   'assets/logo-dark.svg',
@@ -603,5 +607,18 @@ if (hasErrors) {
   console.error('Validation FAILED. Fix the issues above and run again.');
   process.exit(1);
 }
+
+const proseGate = path.join(REPO_ROOT, 'scripts/audit-plugin-prose-leaks.mjs');
+if (fs.existsSync(proseGate)) {
+  const r = spawnSync(process.execPath, [proseGate], {
+    cwd: REPO_ROOT,
+    stdio: 'inherit',
+  });
+  if (r.status !== 0) {
+    console.error('Validation FAILED: audit-plugin-prose-leaks');
+    process.exit(r.status ?? 1);
+  }
+}
+
 console.log('All checks passed.');
 process.exit(0);

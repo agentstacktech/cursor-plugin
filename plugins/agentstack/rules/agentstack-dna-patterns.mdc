@@ -14,10 +14,10 @@ globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.sql", "**/dna/**"]
 
 ## Unified storage (v0.4.7+)
 
-- Single table `data_projects_8dna` holds both project and user rows.
-  - `user_id = 0` → project row (`project.data.*`, `project.protected.*`).
-  - `user_id > 0` → user row (`user.data.*`, `user.protected.*`).
-- Access the same row via either `projects.update_project` (project scope) or `POST /api/dna/data` with a full dotted key (`project.data.config.limits.api_calls.daily`).
+- AgentStack stores project and user data in a **unified 8DNA JSON document** per scope.
+  - Project scope: `project.data.*`, `project.protected.*`
+  - User scope: `user.data.*`, `user.protected.*`
+- Access via `projects.update_project` / `projects.get_project` or `POST /api/dna/data` with dotted keys (`project.data.config.limits.api_calls.daily`).
 
 ## Dot-notation keys (genetic-style)
 

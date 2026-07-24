@@ -38,6 +38,7 @@ assertExists('hooks/scripts/pre-shell-scan.mjs');
 assertExists('hooks/scripts/pre-mcp-cap-check.mjs');
 assertExists('hooks/scripts/session-end.mjs');
 assertExists('hooks/scripts/post-tool-failure.mjs');
+assertExists('hooks/scripts/pre-nav-index-edit.mjs');
 assertExists('lib/plugin-kernel/deviceCodeClient.mjs');
 
 runHook('pre-shell-scan.mjs', 'pre-shell-block.json', 2);

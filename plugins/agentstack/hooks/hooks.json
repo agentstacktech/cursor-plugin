@@ -27,6 +27,10 @@
       {
         "command": "node ./hooks/scripts/capability-refresh.mjs",
         "matcher": "mcp\\.json$"
+      },
+      {
+        "command": "node ./hooks/scripts/pre-nav-index-edit.mjs",
+        "matcher": "AI_NAVIGATION_MAP\\.md|AI_INDEX\\.md"
       }
     ]
   },
