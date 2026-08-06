@@ -17,7 +17,10 @@ This plugin follows [Cursor plugin building docs](https://cursor.com/docs/plugin
 node scripts/validate-plugin.mjs
 node scripts/validate-plugin.mjs --strict-screenshots
 node scripts/test-hooks-contract.mjs
+node scripts/ci-validate.mjs
 ```
+
+GitHub Actions runs `node scripts/ci-validate.mjs` (single checkout action; re-run workflow if GitHub reports "Service Unavailable" on action download).
 
 From monorepo: `node provided_plugins/scripts/audit-cursor-plugin.mjs --strict-screenshots`
 
