@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cursor/plugins/main/schemas/hooks.schema.json",
   "version": 1,
   "hooks": {
     "sessionStart": [

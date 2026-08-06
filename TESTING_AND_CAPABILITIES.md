@@ -1,4 +1,4 @@
-# Testing & Capabilities — AgentStack Cursor Plugin v0.4.14 (gen3)
+# Testing & Capabilities — AgentStack Cursor Plugin v0.4.15 (gen3)
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 

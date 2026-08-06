@@ -1,23 +1,44 @@
 ---
 name: agentstack-guidance
-description: Use when the user asks where to click in the UI, what to do next on the platform, or needs Compass/Discovery routing. Prefer guidance.* MCP and Platform Compass playbooks.
+description: Use when the user mentions Platform Compass, guided paths, playbooks, start_path, complete_step, path_status, verify kinds, or funnel stats. Routes to guidance.* MCP actions via live GET /mcp/actions catalog.
 ---
 
-# Guidance & Compass
+# AgentStack Guidance (Compass paths)
 
-## Decision matrix
+## When to use
 
-| User says | Prefer |
-|-----------|--------|
-| "where do I…" / "how do I find" | `guidance.*`, Compass ⌘K |
-| "capability map" | `discovery.get_platform_surfaces` |
-| comfort task (≤3 steps) | PTC manifests — `agentstack-capability-tasks` skill |
+- User wants to start, resume, or complete a **guided playbook path**.
+- Agent needs verify snapshot or funnel stats for a project.
 
-## References
+## MCP tools (preferred order)
 
-- `platform/COMPASS_AND_DISCOVERY.md`
-- `platform/CAPABILITY_TASKS.md`
+Discover actions via `GET /mcp/actions` (filter `guidance.*`). Preferred order:
 
-## Live catalog
+1. `guidance.match_playbook` — NL goal → playbook id + verify kinds.
+2. `guidance.start_path` — alias of `guidance.start_session`; idempotent upsert.
+3. `guidance.complete_step` — record step completion (parity with SPA `completePathStep`).
+4. `guidance.list_active_sessions` — resume in-progress paths.
+5. `guidance.path_status` — server verify snapshot for bot/commerce gates.
 
-Discover actions: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`. Do not hard-code action counts.
+## Example: complete a step
+
+```json
+{
+  "tool": "guidance.complete_step",
+  "arguments": {
+    "project_id": 123,
+    "session_id": "<uuid>",
+    "step_id": "t_publish",
+    "artifact": { "siteId": "abc" }
+  }
+}
+```
+
+## Verify kinds
+
+Canonical verify-kind map ships in the platform SDK fixtures. Run `/agentstack-discover guidance` or inspect live `guidance.path_status` responses for project-specific kinds.
+
+## Docs
+
+- `docs/platform/NORTH_STAR_DEV_GUIDE.md`
+- Platform Compass ADR (monorepo): `docs/adr/PLATFORM_COMPASS_ARCHITECTURE.md`

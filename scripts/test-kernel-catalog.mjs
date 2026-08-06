@@ -14,6 +14,7 @@ import {
   normalizeAgentstackMcpConfig,
   agentstackAuthHeaders,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
 
 const catalog = {
   version: '2.0',
@@ -85,5 +86,17 @@ assert.equal(changed, true);
 assert.equal(cleaned.mcpServers.agentstack.tools, undefined);
 assert.equal(cleaned.mcpServers.agentstack.headers['X-API-Key'], 'ask_test');
 assert.deepEqual(agentstackAuthHeaders(cleaned), { 'X-API-Key': 'ask_test' });
+
+assert.equal(
+  extractMcpAction({
+    tool: 'agentstack.execute',
+    arguments: { params: { steps: [{ action: 'hosting.publish' }] } },
+  }),
+  'hosting.publish',
+);
+assert.equal(
+  extractMcpAction({ params: { steps: [{ action: 'auth.login' }] } }),
+  'auth.login',
+);
 
 console.log('OK   kernel catalog + mcpConfig contract');

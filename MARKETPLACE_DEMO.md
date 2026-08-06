@@ -1,6 +1,6 @@
 # Marketplace demo pack (60–90s) — Cursor submit form
 
-**Version:** 0.4.14  
+**Version:** 0.4.15  
 **Repo:** https://github.com/agentstacktech/cursor-plugin  
 **Homepage:** https://agentstack.tech  
 **Privacy:** https://agentstack.tech/privacy  

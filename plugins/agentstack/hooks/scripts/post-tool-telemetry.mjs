@@ -8,6 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { stdin } from 'node:process';
+import { extractMcpAction } from '../../lib/plugin-kernel/extractMcpAction.mjs';
 
 const CURSOR_DIR = join(homedir(), '.cursor');
 const SETTINGS_PATH = join(CURSOR_DIR, 'settings.json');
@@ -160,7 +161,7 @@ async function main() {
   const entry = {
     ts: Date.now(),
     tool: toolName,
-    action: event.params?.steps?.[0]?.action || event.params?.action || null,
+    action: extractMcpAction(event),
     success: event.success !== false && !event.error,
     duration_ms: event.duration_ms || null,
     trace_id: event.response_headers?.['x-trace-id'] || event.trace_id || null,

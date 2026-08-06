@@ -96,7 +96,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.14';
+const TARGET_VERSION = '0.4.15';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
@@ -258,6 +258,9 @@ let plugin = null;
 if (fs.existsSync(pluginPath)) {
   plugin = loadJson(pluginPath);
   if (plugin) {
+    if (plugin.$schema !== undefined) {
+      fail('plugin.json: remove "$schema" — Cursor rejects external schema URLs and fails plugin load');
+    }
     const required = ['name', 'displayName', 'version', 'description', 'author', 'license', 'keywords', 'logo'];
     for (const key of required) {
       if (plugin[key] === undefined || plugin[key] === '') fail(`plugin.json: missing or empty "${key}"`);
@@ -282,6 +285,11 @@ if (fs.existsSync(pluginPath)) {
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);
+    if (plugin.variables?.type !== 'object') {
+      warn('plugin.json: variables JSON Schema recommended when mcp.json uses ${VAR} placeholders');
+    } else {
+      ok('plugin.json: variables schema present');
+    }
   }
 }
 
@@ -290,6 +298,9 @@ const marketplacePath = path.join(ROOT, '.cursor-plugin/marketplace.json');
 if (fs.existsSync(marketplacePath)) {
   const mp = loadJson(marketplacePath);
   if (mp) {
+    if (mp.$schema !== undefined) {
+      fail('marketplace.json: remove "$schema" — Cursor rejects external schema URLs on marketplace manifests');
+    }
     if (!mp.name || !KEBAB_REGEX.test(mp.name)) fail('marketplace.json: name required (kebab-case)');
     else ok(`marketplace.json: name=${mp.name}`);
     if (!mp.owner?.name) fail('marketplace.json: owner.name required');
@@ -379,6 +390,12 @@ if (fs.existsSync(mcpPath)) {
       const tokenLooksReal = /^ask_[A-Za-z0-9_-]{16,}/.test(apiKey) || /^Bearer\s+ey[A-Za-z0-9._-]{30,}/.test(auth);
       const isPlaceholder = /\$\{|YOUR_|<.+>/.test(apiKey + '|' + auth);
       if (tokenLooksReal && !isPlaceholder) fail('mcp.json: real token appears committed — use ${AGENTSTACK_ACCESS_TOKEN} placeholder');
+      const placeholders = [...JSON.stringify(cfg).matchAll(/\$\{([A-Z][A-Z0-9_]*)\}/g)].map((m) => m[1]);
+      const varProps = plugin?.variables?.properties || {};
+      for (const ph of placeholders) {
+        if (!varProps[ph]) fail(`mcp.json: placeholder \${${ph}} missing from plugin.json variables.properties`);
+      }
+      if (placeholders.length && Object.keys(varProps).length) ok(`mcp.json: ${placeholders.length} placeholder(s) declared in variables`);
     }
   }
 }

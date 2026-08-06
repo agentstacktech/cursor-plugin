@@ -31,6 +31,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | chat, DM, message ordering | `agentstack-messenger` | `social.*` |
 | Slack, integration recipe | `agentstack-integrations` | `integrations.*` |
 | where in UI, Compass, discover | `agentstack-discovery` | discovery manifest + UI registry |
+| OpenAPI spec, REST surface, endpoint map | `agentstack-openapi` | OpenAPI + REST routing |
 | hub task, capability atom | `agentstack-capability-tasks` | PTC manifests |
 | TypeScript SDK, sdk.protocol | `agentstack-sdk` | `@agentstack/sdk` |
 | Solana grant tooling (optional) | `solana-agentstack-mcp` | grant-scoped actions only |

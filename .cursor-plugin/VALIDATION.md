@@ -4,7 +4,7 @@ This plugin follows [Cursor plugin building docs](https://cursor.com/docs/plugin
 
 ## Checklist
 
-- [x] `.cursor-plugin/plugin.json` schema-valid (pinned `plugin.schema.json`)
+- [x] `.cursor-plugin/plugin.json` Cursor-schema-valid (no `$schema` field — Cursor rejects external schema URLs)
 - [x] `name` kebab-case: `agentstack`
 - [x] `.cursor-plugin/listing.json` AgentStack publisher SoT
 - [x] `skills/`, `rules/`, `commands/`, `agents/`, `hooks/`

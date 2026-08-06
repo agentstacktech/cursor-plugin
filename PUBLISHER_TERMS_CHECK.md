@@ -1,7 +1,7 @@
 # Cursor Marketplace Publisher Terms — compliance check
 
 **Source:** https://cursor.com/marketplace-publisher-terms (Anysphere, Inc.)  
-**Plugin:** AgentStack Cursor plugin `0.4.14` · repo `agentstacktech/cursor-plugin`  
+**Plugin:** AgentStack Cursor plugin `0.4.15` · repo `agentstacktech/cursor-plugin`  
 **Checked:** 2026-07-17  
 **Verdict:** No clear hard violation found. Address the **§3.1 freemium wording** and **§4.5 screenshot honesty** items below before submit.
 

@@ -42,7 +42,7 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 .cursor-plugin/marketplace.json  ← Cursor install index (required for Add marketplace)
 .cursor-plugin/listing.json      ← AgentStack publisher SoT (screenshots/support)
 plugins/agentstack/              ← plugin package (Cursor 2.6+ layout)
-  .cursor-plugin/plugin.json     ← per-plugin manifest (v0.4.14)
+  .cursor-plugin/plugin.json     ← per-plugin manifest (v0.4.15)
   rules/ skills/ commands/ agents/ hooks/ mcp.json assets/ lib/
 scripts/                         ← validate / smoke / install-local (repo tooling)
 ```

@@ -1,8 +1,7 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cursor/plugins/main/schemas/plugin.schema.json",
   "name": "agentstack",
   "displayName": "AgentStack — Backend, Hosting & AI MCP",
-  "version": "0.4.14",
+  "version": "0.4.15",
   "description": "One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, agents fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code install; rules, skills, commands, hooks, and agents route AI to the platform instead of custom backend glue.",
   "author": {
     "name": "AgentStack",
@@ -28,6 +27,16 @@
     "agent",
     "boilerplate-free"
   ],
+  "variables": {
+    "type": "object",
+    "properties": {
+      "AGENTSTACK_ACCESS_TOKEN": {
+        "type": "string",
+        "title": "AgentStack access token",
+        "description": "OAuth Bearer token for agentstack.execute MCP. Set via /agentstack-login (Device Code) or paste a scoped API token. Written to ~/.cursor/mcp.json on login."
+      }
+    }
+  },
   "rules": "rules/",
   "skills": "skills/",
   "commands": "commands/",

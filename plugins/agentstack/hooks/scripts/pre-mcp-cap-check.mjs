@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { stdin } from 'node:process';
 import { actionsFromSnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { extractMcpAction } from '../../lib/plugin-kernel/extractMcpAction.mjs';
 
 const SNAPSHOT_PATH = join(homedir(), '.cursor', 'agentstack-capabilities.json');
 
@@ -29,14 +30,7 @@ async function readStdinJson() {
 }
 
 function extractAction(event) {
-  return (
-    event?.params?.steps?.[0]?.action ||
-    event?.params?.action ||
-    event?.arguments?.steps?.[0]?.action ||
-    event?.toolInput?.steps?.[0]?.action ||
-    event?.action ||
-    null
-  );
+  return extractMcpAction(event);
 }
 
 async function main() {

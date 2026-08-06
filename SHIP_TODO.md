@@ -1,4 +1,4 @@
-# Marketplace / local ship — detailed task list (0.4.14)
+# Marketplace / local ship — detailed task list (0.4.15)
 
 **Gene:** `repo.plugins.cursor.gen3` · `repo.plugins.publication_gates.gen1`  
 **Status:** `[x]` done · `[ ]` human · `[~]` optional
@@ -21,6 +21,9 @@
 - [x] login command: resolve plugin root before `device-code.mjs`
 - [x] capability-refresh: shared `agentstackAuthHeaders` (Bearer or API key)
 - [x] CI + smoke run `audit-layers.mjs`
+- [x] Remove `$schema` from manifests (Cursor load blocker)
+- [x] Add `variables` for `${AGENTSTACK_ACCESS_TOKEN}`
+- [x] Fix `agentstack-guidance` skill frontmatter + tenant paths
 
 ---
 
@@ -37,6 +40,7 @@
 | sessionStart | normalize + seed catalog | [x] |
 | afterFileEdit mcp.json | cache clear + snapshot | [x] |
 | Telemetry | opt-in only | [x] |
+| Plugin variables | `${AGENTSTACK_ACCESS_TOKEN}` ↔ Configure UI | [x] |
 
 ---
 
@@ -51,6 +55,7 @@ node scripts/smoke-local.mjs
 
 In Cursor after **Reload Window**:
 
+- [ ] Plugin loads without "$schema version" error
 - [ ] `/agentstack-init` (upgrade X-API-Key → Device Code)
 - [ ] `/agentstack-diagnose`
 - [ ] `/agentstack-capability-matrix`
@@ -62,7 +67,7 @@ Form: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 
 ## D. Publish
 
-- [ ] `git push origin master` + `v0.4.14`
+- [ ] `git push origin master` + `v0.4.15`
 - [ ] https://cursor.com/marketplace/publish
 - [ ] Post-release checklist
 

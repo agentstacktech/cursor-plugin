@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/cursor/plugins/main/schemas/marketplace.schema.json",
   "name": "agentstack",
   "owner": {
     "name": "AgentStack",
@@ -7,7 +6,7 @@
   },
   "metadata": {
     "description": "AgentStack Cursor plugins — backend, hosting, and AI MCP via one tool (agentstack.execute).",
-    "version": "0.4.14",
+    "version": "0.4.15",
     "pluginRoot": "plugins"
   },
   "plugins": [
@@ -15,7 +14,7 @@
       "name": "agentstack",
       "source": "agentstack",
       "description": "One MCP tool (agentstack.execute) for the live AgentStack catalog — hosting (/s/), storage, 8DNA, auth, logic, payments, agents, RAG, messenger, integrations. OAuth Device Code install.",
-      "version": "0.4.14",
+      "version": "0.4.15",
       "author": {
         "name": "AgentStack",
         "email": "support@agentstack.tech"

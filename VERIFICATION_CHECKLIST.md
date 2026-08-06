@@ -79,8 +79,8 @@
 
 ## 12. Docs sync
 
-- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.14`.
-- [ ] `CHANGELOG.md` has a `[0.4.14]` entry.
+- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.15`.
+- [ ] `CHANGELOG.md` has a `[0.4.15]` entry.
 - [ ] `lib/plugin-kernel/` is present (self-contained Device Code).
 
 ## 13. Design alignment

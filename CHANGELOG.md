@@ -2,6 +2,22 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.15] - 2026-08-06
+
+> Fix Cursor plugin load failure ("Unsupported plugin manifest $schema version") and align with current Cursor manifest contract.
+
+### Fixed
+
+- **Plugin load blocker:** remove `$schema` from `plugin.json`, `marketplace.json`, and `hooks.json`. Current Cursor builds whitelist only internal schema IDs; raw GitHub schema URLs cause hard load failures.
+- `agentstack-guidance` skill: inline frontmatter `description` (folded YAML broke validator word count); remove `docs/operations/` tenant-forbidden path; add live `GET /mcp/actions` catalog pointer.
+- Backend router: add `agentstack-openapi` row.
+
+### Added
+
+- `variables` JSON Schema in `plugin.json` for `${AGENTSTACK_ACCESS_TOKEN}` (Cursor Plugins → Configure contract).
+- Shared `extractMcpAction` for hook event shapes (`arguments.params.steps` for `agentstack.execute`).
+- Monorepo validators aligned: no `$schema` in shipped manifests; `variables` required.
+
 ## [0.4.14] - 2026-07-17
 
 > Marketplace ship wave — self-contained Device Code, schema-valid manifest, listing SoT, hooks lifecycle.

@@ -1,0 +1,10 @@
+{
+  "tool": "agentstack.execute",
+  "arguments": {
+    "params": {
+      "steps": [
+        { "action": "hosting.publish", "params": { "project_id": 1 } }
+      ]
+    }
+  }
+}

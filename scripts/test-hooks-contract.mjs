@@ -44,6 +44,7 @@ assertExists('lib/plugin-kernel/deviceCodeClient.mjs');
 runHook('pre-shell-scan.mjs', 'pre-shell-block.json', 2);
 runHook('pre-shell-scan.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-shell-allow.json', 0);
+runHook('pre-mcp-cap-check.mjs', 'pre-mcp-agentstack-execute.json', 0);
 
 const help = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
   cwd: PLUGIN,
