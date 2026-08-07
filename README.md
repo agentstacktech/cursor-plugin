@@ -15,7 +15,9 @@ The plugin prints a short code, opens a browser tab to `https://agentstack.tech/
 
 Behind the scenes: OAuth 2.1 Device Authorization Grant (RFC 8628).
 
-MCP tools/list advertises **`agentstack.execute`** and the Cursor-safe alias **`agentstack_execute`** (same JSON-RPC `tools/call` batch arguments). Use **`safe_action`** from `GET /mcp/actions` when a client forbids dots in action ids.
+MCP `tools/list` advertises a **single** tool **`agentstack.execute`** (Cursor displays it as `agentstack_execute`). `tools/call` still accepts the underscore alias for backward compatibility. Use **`safe_action`** from `GET /mcp/actions` when a client forbids dots in action ids.
+
+MCP is registered in **`~/.cursor/mcp.json`** by `/agentstack-init` (Device Code). The bundled `mcp.json` in this package is a reference template only — the plugin does **not** register a second MCP server (that duplicated the user config in Cursor).
 
 ---
 

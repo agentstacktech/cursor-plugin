@@ -1,7 +1,7 @@
 {
   "name": "agentstack",
   "displayName": "AgentStack — Backend, Hosting & AI MCP",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "description": "One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, agents fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code install; rules, skills, commands, hooks, and agents route AI to the platform instead of custom backend glue.",
   "author": {
     "name": "AgentStack",
@@ -41,6 +41,5 @@
   "skills": "skills/",
   "commands": "commands/",
   "agents": "agents/",
-  "hooks": "hooks/hooks.json",
-  "mcpServers": "mcp.json"
+  "hooks": "hooks/hooks.json"
 }

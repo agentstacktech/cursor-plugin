@@ -1,4 +1,5 @@
 {
+  "_comment": "Reference template — Device Code (/agentstack-init) writes ~/.cursor/mcp.json; plugin does not auto-register this file.",
   "mcpServers": {
     "agentstack": {
       "type": "streamable-http",

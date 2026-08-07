@@ -1,7 +1,7 @@
 # MCP Quick start — Cursor plugin
 
 **Endpoint:** `https://agentstack.tech/mcp`  
-**Tool:** `agentstack.execute` (alias `agentstack_execute`)  
+**Tool:** `agentstack.execute` (Cursor shows `agentstack_execute`; underscore alias still works in `tools/call`)  
 **Live catalog:** `GET https://agentstack.tech/mcp/actions`
 
 ## Local plugin install (dev)

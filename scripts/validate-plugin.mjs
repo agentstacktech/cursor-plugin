@@ -96,7 +96,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.15';
+const TARGET_VERSION = '0.4.16';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
@@ -285,6 +285,9 @@ if (fs.existsSync(pluginPath)) {
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);
+    if (plugin.mcpServers) {
+      warn('plugin.json: mcpServers registers a second MCP server alongside ~/.cursor/mcp.json — remove it; use Device Code only');
+    }
     if (plugin.variables?.type !== 'object') {
       warn('plugin.json: variables JSON Schema recommended when mcp.json uses ${VAR} placeholders');
     } else {

@@ -2,6 +2,13 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.16] - 2026-08-07
+
+### Fixed
+
+- **Duplicate MCP tools in Cursor:** stop registering a plugin-level MCP server (`mcpServers` in `plugin.json`). Auth + MCP config stay in `~/.cursor/mcp.json` from Device Code only — avoids `plugin-agentstack-*` + `user-agentstack` double registration.
+- **Backend `tools/list`:** return one tool (`agentstack.execute`) instead of dot + underscore aliases. Cursor normalizes both to `agentstack_execute`, which looked like two identical tools. `tools/call` still accepts `agentstack_execute`.
+
 ## [0.4.15] - 2026-08-06
 
 > Fix Cursor plugin load failure ("Unsupported plugin manifest $schema version") and align with current Cursor manifest contract.
