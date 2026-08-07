@@ -24,6 +24,7 @@
 - [x] Remove `$schema` from manifests (Cursor load blocker)
 - [x] Add `variables` for `${AGENTSTACK_ACCESS_TOKEN}`
 - [x] Fix `agentstack-guidance` skill frontmatter + tenant paths
+- [x] `refresh-cursor-runtime.mjs` — purge/sync stale marketplace cache (root cause of lingering `$schema` UI error)
 
 ---
 
@@ -33,6 +34,7 @@
 |------|----------|--------|
 | Marketplace → package | `pluginRoot=plugins` / `source=agentstack` | [x] |
 | Local link | `~/.cursor/plugins/local/agentstack` | [x] |
+| Marketplace cache | `~/.cursor/plugins/cache|marketplaces` must match SoT (no `$schema`) | [x] `refresh-cursor-runtime` |
 | Device Code | authorize → poll pending → tokens | [x] |
 | MCP lean write | no `tools` key; Bearer or API key | [x] |
 | Snapshot | flat `actions[]` | [x] |
@@ -48,6 +50,7 @@
 
 ```bash
 cd provided_plugins/cursor-plugin
+node scripts/refresh-cursor-runtime.mjs --fix
 node scripts/diagnose-local.mjs
 node scripts/audit-layers.mjs
 node scripts/smoke-local.mjs
@@ -55,7 +58,7 @@ node scripts/smoke-local.mjs
 
 In Cursor after **Reload Window**:
 
-- [ ] Plugin loads without "$schema version" error
+- [ ] Plugin loads without "$schema version" error (version 0.4.15)
 - [ ] `/agentstack-init` (upgrade X-API-Key → Device Code)
 - [ ] `/agentstack-diagnose`
 - [ ] `/agentstack-capability-matrix`

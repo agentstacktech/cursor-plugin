@@ -50,6 +50,8 @@ sequenceDiagram
 | `~/.cursor/agentstack-capabilities.json` | device-code, session-start, capability-refresh | pre-mcp-cap-check, diagnose |
 | `~/.cursor/agentstack-telemetry.jsonl` | post-tool-* (opt-in only) | session-end flush, diagnose |
 | `~/.cursor/plugins/local/agentstack` | `scripts/install-local.mjs` | Cursor local plugins |
+| `~/.cursor/plugins/cache/agentstack/…` | Cursor marketplace install | Cursor may prefer this over local — must not ship `$schema` |
+| `~/.cursor/plugins/marketplaces/…` | Cursor “Add marketplace” snapshot | Same — refresh with `scripts/refresh-cursor-runtime.mjs --fix` |
 
 ## Catalog shape
 

@@ -17,6 +17,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 - `variables` JSON Schema in `plugin.json` for `${AGENTSTACK_ACCESS_TOKEN}` (Cursor Plugins → Configure contract).
 - Shared `extractMcpAction` for hook event shapes (`arguments.params.steps` for `agentstack.execute`).
 - Monorepo validators aligned: no `$schema` in shipped manifests; `variables` required.
+- **Runtime:** `scripts/refresh-cursor-runtime.mjs` detects/fixes stale Cursor marketplace **cache** still serving 0.4.14 with `$schema` (local link alone was not enough).
 
 ## [0.4.14] - 2026-07-17
 

@@ -127,11 +127,13 @@ if (maintainer) {
 
 console.log(`
 Next steps:
-  1. Cursor → Developer: Reload Window
-  2. Chat: /agentstack-init  (Node must be on PATH)
-  3. Approve at https://agentstack.tech/activate
-  4. /agentstack-diagnose then /agentstack-capability-matrix
+  1. node scripts/refresh-cursor-runtime.mjs --fix   # clear stale marketplace $schema cache
+  2. Cursor → Developer: Reload Window
+  3. Chat: /agentstack-init  (Node must be on PATH)
+  4. Approve at https://agentstack.tech/activate
+  5. /agentstack-diagnose then /agentstack-capability-matrix
 
 Uninstall: node scripts/uninstall-local.mjs
 Verify:    node scripts/install-local.mjs --check
+Runtime:   node scripts/refresh-cursor-runtime.mjs
 `);
