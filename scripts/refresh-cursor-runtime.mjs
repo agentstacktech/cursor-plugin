@@ -184,7 +184,7 @@ if (fix || purge) {
   console.log(`
 Next:
   1. Cursor → Developer: Reload Window
-  2. Confirm plugin shows 0.4.15 without "$schema" error
+  2. Confirm plugin shows 0.4.16 without "$schema" error
   3. /agentstack-diagnose
 `);
   process.exit(fails ? 1 : 0);
