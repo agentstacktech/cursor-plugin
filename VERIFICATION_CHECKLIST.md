@@ -3,7 +3,8 @@
 | Date | Operator | Environment | Result |
 |------|----------|-------------|--------|
 | 2026-07-17 | automated | local validate + smoke-local L1–L2 | PASS |
-| _pending_ | human | staging/prod Device Code e2e | _tick sections 2–10 below_ |
+| 2026-08-07 | automated | validate + smoke + audit-cursor-plugin + MCP contract tests (40) | PASS |
+| _pending_ | human | staging/prod Device Code e2e + Cursor UI §3 | _tick sections 2–10 below_ |
 
 ## 0. Prerequisites
 

@@ -95,6 +95,20 @@ Cursor may keep a snapshot under:
 
 `diagnose-local.mjs` fails closed if any of those still ship `$schema`.
 
+### Migration from pre-0.4.16 (operator runbook)
+
+| Step | Action |
+|------|--------|
+| 1 | Upgrade local plugin tree to **0.4.16+** (`git pull` or marketplace refresh) |
+| 2 | `node scripts/refresh-cursor-runtime.mjs --fix` — strip cached `mcpServers` from plugin manifests |
+| 3 | **Reload Window** in Cursor |
+| 4 | Confirm Settings → MCP shows **one** `agentstack` server (not `plugin-agentstack-*` + `user-agentstack`) |
+| 5 | `node scripts/diagnose-local.mjs` — must pass `plugin.json has no mcpServers` |
+| 6 | After **core** deploy: `POST /mcp/cache/clear`; `tools/list` must return 1 tool |
+| 7 | If prod still lists 2 tools, core is not on 0.4.16 yet — wait for deploy before re-testing Cursor |
+
+Backward compat: existing clients may still call `tools/call` with `agentstack_execute`; only `tools/list` is single-name.
+
 ## Uninstall marketplace vs local
 
 Local link does **not** remove Marketplace installs. Uninstall local with `uninstall-local.mjs` only.

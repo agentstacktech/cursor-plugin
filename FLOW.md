@@ -73,6 +73,21 @@ node scripts/diagnose-local.mjs --fix --seed-snapshot
 
 **Single path:** Device Code → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` (that created a second Cursor MCP server alongside the user config).
 
+```mermaid
+flowchart LR
+  subgraph forbidden [Anti-pattern]
+    PJ[plugin.json mcpServers]
+    PJ --> CS1[plugin-agentstack-* server]
+  end
+  subgraph canonical [Canonical 0.4.16+]
+    DC[device-code.mjs]
+    DC --> UM[~/.cursor/mcp.json]
+    UM --> CS2[one agentstack server]
+    CS2 --> TL[tools/list: 1 tool]
+    TL --> AC[GET /mcp/actions catalog]
+  end
+```
+
 | Anti-pattern | Symptom | Fix |
 |--------------|---------|-----|
 | `mcpServers` in plugin.json | Two MCP servers in Cursor | Upgrade plugin 0.4.16+; `refresh-cursor-runtime.mjs --fix`; Reload |

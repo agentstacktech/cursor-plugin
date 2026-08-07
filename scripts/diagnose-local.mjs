@@ -24,6 +24,8 @@ const LINK = path.join(os.homedir(), '.cursor', 'plugins', 'local', 'agentstack'
 const MCP = path.join(os.homedir(), '.cursor', 'mcp.json');
 const SNAP = path.join(os.homedir(), '.cursor', 'agentstack-capabilities.json');
 const REFRESH = path.join(os.homedir(), '.cursor', 'agentstack-refresh');
+const TELEMETRY = path.join(os.homedir(), '.cursor', 'agentstack-telemetry.jsonl');
+const SETTINGS = path.join(os.homedir(), '.cursor', 'settings.json');
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const wantFix = process.argv.includes('--fix');
 const wantSeed = process.argv.includes('--seed-snapshot');
@@ -38,6 +40,36 @@ function warn(msg) {
 function fail(msg) {
   console.error(`FAIL ${msg}`);
   fails += 1;
+}
+
+/** Opt-in beacon when live tools/list is not single-tool (Wave 7 observability). */
+function maybeEmitDuplicateSurfaceBeacon(tools) {
+  let optIn = false;
+  try {
+    if (fs.existsSync(SETTINGS)) {
+      const settings = JSON.parse(fs.readFileSync(SETTINGS, 'utf8'));
+      optIn =
+        settings['agentstack.sendTelemetry'] === true ||
+        settings.agentstack?.sendTelemetry === true;
+    }
+  } catch {
+    /* ignore */
+  }
+  if (!optIn) return;
+  const row = {
+    ts: new Date().toISOString(),
+    event: 'plugin_mcp_duplicate_surface',
+    tool_count: tools?.length ?? 0,
+    tool_names: (tools || []).map((t) => t?.name).filter(Boolean),
+    plugin_version: '0.4.16',
+    base_url: BASE_URL,
+  };
+  try {
+    fs.appendFileSync(TELEMETRY, `${JSON.stringify(row)}\n`, 'utf8');
+    ok('telemetry: plugin_mcp_duplicate_surface (opt-in)');
+  } catch (e) {
+    warn(`telemetry append failed: ${e.message}`);
+  }
 }
 
 function resolveLink(p) {
@@ -133,6 +165,7 @@ if (!fs.existsSync(MCP)) {
             ok('tools/list returns 1 tool (agentstack.execute)');
           } else {
             warn(`tools/list returned ${tools.length} tool(s) — deploy core 0.4.16 if >1`);
+            maybeEmitDuplicateSurfaceBeacon(tools);
           }
         } else {
           warn(`tools/list probe HTTP ${probe.status}`);
