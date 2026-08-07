@@ -4,7 +4,8 @@
 |------|----------|-------------|--------|
 | 2026-07-17 | automated | local validate + smoke-local L1–L2 | PASS |
 | 2026-08-07 | automated | validate + smoke + audit-cursor-plugin + MCP contract tests (40) | PASS |
-| _pending_ | human | staging/prod Device Code e2e + Cursor UI §3 | _tick sections 2–10 below_ |
+| 2026-08-07 | automated | `verify-mcp-surface-e2e.mjs` — prod tools/list=1, tools/call alias OK | PASS |
+| _pending_ | human | Cursor UI §3 — Reload Window, confirm 1 server + 1 tool in MCP panel | _after refresh-cursor-runtime --fix_ |
 
 ## 0. Prerequisites
 
@@ -30,9 +31,12 @@
 
 ## 3. MCP connectivity
 
-- [ ] Cursor discovers **one** `agentstack` MCP server (not `plugin-agentstack-*` + `user-agentstack`).
-- [ ] Tools panel shows **one** `agentstack_execute` tool.
-- [ ] `POST /mcp` `tools/list` returns exactly 1 tool named `agentstack.execute` (after core 0.4.16 deploy).
+Run `node scripts/verify-mcp-surface-e2e.mjs` for automated API checks (tools/list, alias `tools/call`, plugin plane).
+
+- [ ] Cursor discovers **one** `agentstack` MCP server (not `plugin-agentstack-*` + `user-agentstack`). *Human: Reload Window after `refresh-cursor-runtime.mjs --fix`.*
+- [ ] Tools panel shows **one** `agentstack_execute` tool. *Human: confirm in Cursor UI.*
+- [x] `POST /mcp` `tools/list` returns exactly 1 tool named `agentstack.execute` — **verified prod 2026-08-07**.
+- [x] `tools/call` with `agentstack_execute` succeeds (Postel backward compat) — **verified prod 2026-08-07**.
 - [ ] `/agentstack-capability-matrix` prints actions grouped by domain (live `GET /mcp/actions`).
 
 ## 4. Scaffolding
