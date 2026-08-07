@@ -16,6 +16,10 @@ import {
   normalizeAgentstackMcpConfig,
   agentstackAuthHeaders,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import {
+  evaluateSingleToolSurface,
+  postToolsList,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
 import { tenantActionsFromCatalog } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -153,22 +157,12 @@ if (!fs.existsSync(MCP)) {
     else ok('auth=X-API-Key (legacy/CI path; prefer /agentstack-init for Device Code)');
     if (auth) {
       try {
-        const probe = await fetch(`${BASE_URL}/mcp`, {
-          method: 'POST',
-          headers: { ...auth, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 }),
-        });
-        if (probe.ok) {
-          const body = await probe.json();
-          const tools = body?.result?.tools ?? [];
-          if (tools.length === 1 && tools[0]?.name === 'agentstack.execute') {
-            ok('tools/list returns 1 tool (agentstack.execute)');
-          } else {
-            warn(`tools/list returned ${tools.length} tool(s) — deploy core 0.4.16 if >1`);
-            maybeEmitDuplicateSurfaceBeacon(tools);
-          }
-        } else {
-          warn(`tools/list probe HTTP ${probe.status}`);
+        const tools = await postToolsList(BASE_URL, auth);
+        const verdict = evaluateSingleToolSurface(tools);
+        if (verdict.ok) ok('tools/list returns 1 tool (agentstack.execute)');
+        else {
+          warn(`tools/list: ${verdict.reason} — deploy core 0.4.16 if >1`);
+          maybeEmitDuplicateSurfaceBeacon(tools);
         }
       } catch (e) {
         warn(`tools/list probe failed: ${e.message}`);

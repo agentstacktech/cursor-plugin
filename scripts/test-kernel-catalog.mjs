@@ -13,7 +13,12 @@ import {
   applyAgentstackMcpBearer,
   normalizeAgentstackMcpConfig,
   agentstackAuthHeaders,
+  stripLeanServerKeys,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import {
+  evaluateSingleToolSurface,
+  MCP_EXECUTE_TOOL_CANONICAL,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
 import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
 
 const catalog = {
@@ -86,6 +91,30 @@ assert.equal(changed, true);
 assert.equal(cleaned.mcpServers.agentstack.tools, undefined);
 assert.equal(cleaned.mcpServers.agentstack.headers['X-API-Key'], 'ask_test');
 assert.deepEqual(agentstackAuthHeaders(cleaned), { 'X-API-Key': 'ask_test' });
+
+const devDirty = {
+  mcpServers: {
+    'agentstack-dev': {
+      type: 'streamable-http',
+      baseUrl: 'http://127.0.0.1:8000/mcp',
+      url: 'http://127.0.0.1:8000/mcp',
+      tools: { enabled: true, autoDiscover: true },
+      headers: { 'X-API-Key': 'ask_dev' },
+    },
+  },
+};
+const { cfg: devClean, changed: devChanged } = normalizeAgentstackMcpConfig(devDirty);
+assert.equal(devChanged, true);
+assert.equal(devClean.mcpServers['agentstack-dev'].tools, undefined);
+assert.equal(devClean.mcpServers['agentstack-dev'].baseUrl, undefined);
+assert.equal(devClean.mcpServers['agentstack-dev'].url, 'http://127.0.0.1:8000/mcp');
+
+assert.deepEqual(stripLeanServerKeys({ url: 'https://x/mcp', tools: {}, baseUrl: 'https://x/mcp' }), {
+  url: 'https://x/mcp',
+});
+
+assert.equal(evaluateSingleToolSurface([{ name: MCP_EXECUTE_TOOL_CANONICAL }]).ok, true);
+assert.equal(evaluateSingleToolSurface([{ name: 'a' }, { name: 'b' }]).ok, false);
 
 assert.equal(
   extractMcpAction({

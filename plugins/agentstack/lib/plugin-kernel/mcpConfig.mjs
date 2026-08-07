@@ -4,12 +4,24 @@
  */
 
 /**
+ * Drop Cursor-only extras (tools{}, redundant baseUrl when url is set).
+ * @param {object} entry
+ */
+export function stripLeanServerKeys(entry) {
+  if (!entry || typeof entry !== 'object') return entry;
+  const next = { ...entry };
+  delete next.tools;
+  if (next.url && next.baseUrl) delete next.baseUrl;
+  return next;
+}
+
+/**
  * Build a lean streamable-http agentstack entry (no Cursor-only extras like `tools`).
  * @param {object} [existing]
  * @param {{ baseUrl: string, headers?: Record<string, string> }} opts
  */
 export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOverrides } = {}) {
-  const prev = existing && typeof existing === 'object' ? existing : {};
+  const prev = stripLeanServerKeys(existing && typeof existing === 'object' ? existing : {});
   const headers = headerOverrides
     ? { ...headerOverrides, 'Content-Type': 'application/json' }
     : { ...(prev.headers || {}), 'Content-Type': 'application/json' };
@@ -21,7 +33,7 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
 }
 
 /**
- * Drop non-lean keys on mcpServers.agentstack while preserving auth headers.
+ * Normalize all mcpServers entries (strip tools/baseUrl); re-lean agentstack entry.
  * @param {object} cfg
  * @param {{ baseUrl?: string }} [opts]
  * @returns {{ cfg: object, changed: boolean }}
@@ -29,16 +41,22 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
 export function normalizeAgentstackMcpConfig(cfg, { baseUrl } = {}) {
   const root = cfg && typeof cfg === 'object' ? cfg : {};
   root.mcpServers = root.mcpServers || {};
-  const existing = root.mcpServers.agentstack;
-  if (!existing || typeof existing !== 'object') {
-    return { cfg: root, changed: false };
+  let changed = false;
+
+  for (const [key, entry] of Object.entries(root.mcpServers)) {
+    if (!entry || typeof entry !== 'object') continue;
+    let next = stripLeanServerKeys(entry);
+    if (key === 'agentstack') {
+      const url = baseUrl || next.url?.replace(/\/mcp\/?$/, '') || 'https://agentstack.tech';
+      next = leanAgentstackServer(next, { baseUrl: url });
+    }
+    if (JSON.stringify(next) !== JSON.stringify(entry)) {
+      root.mcpServers[key] = next;
+      changed = true;
+    }
   }
-  const url = baseUrl || existing.url?.replace(/\/mcp\/?$/, '') || 'https://agentstack.tech';
-  const next = leanAgentstackServer(existing, { baseUrl: url });
-  const before = JSON.stringify(existing);
-  const after = JSON.stringify(next);
-  root.mcpServers.agentstack = next;
-  return { cfg: root, changed: before !== after };
+
+  return { cfg: root, changed };
 }
 
 /**

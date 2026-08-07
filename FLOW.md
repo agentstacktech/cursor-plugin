@@ -95,3 +95,5 @@ flowchart LR
 | Stale marketplace cache | Old plugin with mcpServers | `refresh-cursor-runtime.mjs --fix` |
 
 Reference template: `plugins/agentstack/mcp.json` (not auto-registered).
+
+Full call/data map: [docs/plugins/MCP_DEDUPE_FLOW.md](../../docs/plugins/MCP_DEDUPE_FLOW.md).
