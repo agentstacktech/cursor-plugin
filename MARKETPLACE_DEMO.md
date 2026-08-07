@@ -1,6 +1,6 @@
 # Marketplace demo pack (60–90s) — Cursor submit form
 
-**Version:** 0.4.15  
+**Version:** 0.4.16  
 **Repo:** https://github.com/agentstacktech/cursor-plugin  
 **Homepage:** https://agentstack.tech  
 **Privacy:** https://agentstack.tech/privacy  
@@ -10,14 +10,14 @@
 
 ## Spoken / screen script
 
-1. **0–20s — Install:** Open Cursor chat → `/agentstack-init` → show Device Code browser approve → Bearer written.  
-2. **20–45s — Catalog:** `/agentstack-capability-matrix` → live actions from `GET /mcp/actions`.  
+1. **0–20s — Install:** Open Cursor chat → `/agentstack-init` → show Device Code browser approve → Bearer written to `~/.cursor/mcp.json`.  
+2. **20–45s — Catalog:** `/agentstack-capability-matrix` → live actions from `GET /mcp/actions`. Confirm **one** MCP server / **one** tool in Settings → MCP.  
 3. **45–75s — Host:** `/agentstack-host-site` → paste minimal HTML → show `/s/` URL.  
 4. **75–90s — Close:** Mention one MCP tool `agentstack.execute`, freemium platform, no hard-coded action counts.
 
 ## Screenshots
 
-See `assets/screenshots/README.md` (1920×1200 + alts).
+See `plugins/agentstack/assets/screenshots/README.md` (1920×1200 + alts).
 
 ## Locale
 

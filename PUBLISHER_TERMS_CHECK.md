@@ -1,8 +1,8 @@
 # Cursor Marketplace Publisher Terms — compliance check
 
 **Source:** https://cursor.com/marketplace-publisher-terms (Anysphere, Inc.)  
-**Plugin:** AgentStack Cursor plugin `0.4.15` · repo `agentstacktech/cursor-plugin`  
-**Checked:** 2026-07-17  
+**Plugin:** AgentStack Cursor plugin `0.4.16` · repo `agentstacktech/cursor-plugin`  
+**Checked:** 2026-08-07 (version bump; terms review still current)  
 **Verdict:** No clear hard violation found. Address the **§3.1 freemium wording** and **§4.5 screenshot honesty** items below before submit.
 
 This is an engineering compliance review against published terms, not legal advice.
@@ -47,7 +47,7 @@ This is an engineering compliance review against published terms, not legal advi
 
 **Risk:** Branded mock screenshots can look like live Cursor captures.
 
-**Do:** Keep alts honest (`assets/screenshots/README.md`); prefer live captures when available; never claim “official Cursor” screenshots.
+**Do:** Keep alts honest (`plugins/agentstack/assets/screenshots/README.md`); prefer live captures when available; never claim “official Cursor” screenshots.
 
 ### 3. §4.2 / Plugin Data disclosures
 

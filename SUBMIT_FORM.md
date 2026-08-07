@@ -1,8 +1,8 @@
 # Cursor Marketplace — form fields (ready to paste)
 
-**Version:** 0.4.15 · **Repo:** https://github.com/agentstacktech/cursor-plugin  
+**Version:** 0.4.16 · **Repo:** https://github.com/agentstacktech/cursor-plugin  
 **Submit URL:** https://cursor.com/marketplace/publish  
-**SoT:** `.cursor-plugin/plugin.json` + `.cursor-plugin/listing.json` · philosophy: Creation over Conflict (offer value, no competitor attacks)
+**SoT:** `plugins/agentstack/.cursor-plugin/plugin.json` + `.cursor-plugin/listing.json` · philosophy: Creation over Conflict (offer value, no competitor attacks)
 
 ---
 
@@ -75,6 +75,6 @@ the live-catalog description above for the official listing text.
 
 ## After submit
 
-1. Push `master` + tag `v0.4.15` if not already on GitHub.  
+1. Push `master` + tag `v0.4.16` if not already on GitHub.  
 2. Wait for Cursor manual review.  
-3. [CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md](../../docs/plugins/CURSOR_PLUGIN_POST_RELEASE_CHECKLIST.md) (monorepo) or post-release section in README.
+3. Monorepo: `docs/plugins/CURSOR_PLUGIN_POST_RELEASE_STATUS.md` (or post-release checklist if present).

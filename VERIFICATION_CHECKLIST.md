@@ -79,8 +79,8 @@ Run `node scripts/verify-mcp-surface-e2e.mjs` for automated API checks (tools/li
 
 ## 11. Marketplace assets
 
-- [ ] `assets/logo.svg` and `assets/logo-dark.svg` render correctly light/dark.
-- [ ] `assets/screenshots/*.png` are populated at 1920x1200.
+- [ ] `plugins/agentstack/assets/logo.svg` and `logo-dark.svg` render correctly light/dark.
+- [ ] `plugins/agentstack/assets/screenshots/*.png` are populated at 1920x1200.
 - [ ] `.cursor-plugin/listing.json` links to [pricing](https://agentstack.tech/pricing) and [support](https://agentstack.tech/support).
 
 ## 12. Docs sync

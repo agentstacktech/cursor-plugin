@@ -2,21 +2,27 @@
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
-**MCP dedupe (0.4.16):** `plugin.json` must **not** include `mcpServers` — Device Code writes `~/.cursor/mcp.json` only. Expect **one** Cursor MCP server and **one** `agentstack_execute` tool after Reload Window. Validate with `node scripts/diagnose-local.mjs --seed-snapshot`.
+**MCP dedupe (0.4.16):** `plugin.json` must **not** include `mcpServers`. Device Code writes `~/.cursor/mcp.json` only. After Reload Window expect **one** Cursor MCP server (`agentstack`) and **one** `agentstack_execute` tool per server. Check with:
 
-## Structure
+```bash
+node scripts/diagnose-local.mjs --seed-snapshot
+node scripts/verify-mcp-surface-e2e.mjs
+```
+
+## Structure (paths under `plugins/agentstack/`)
 
 | Layer | Path | Purpose |
 |-------|------|---------|
-| Manifest | `.cursor-plugin/plugin.json` | schema-valid gen3 manifest |
-| Listing | `.cursor-plugin/listing.json` | publisher copy + screenshots |
-| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs + T3 monorepo (9) |
-| Skills | `skills/<domain>/SKILL.md` | 24 domains + optional `solana` |
-| Commands | `commands/*.md` | 13 slash workflows |
-| Agents | `agents/*.md` | 5 presets (non-overlap below) |
-| Hooks | `hooks/hooks.json` + scripts | Lifecycle + policy + contract tests |
-| Kernel | `lib/plugin-kernel/` | Vendored Device Code client |
-| MCP | `mcp.json` | streamable-http + Bearer placeholder |
+| Manifest | `.cursor-plugin/plugin.json` | Cursor-schema-valid gen3 manifest (no `$schema`) |
+| Listing (repo) | `../../.cursor-plugin/listing.json` | Publisher copy + screenshots |
+| Marketplace (repo) | `../../.cursor-plugin/marketplace.json` | GitHub / Add marketplace index |
+| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs + T3 monorepo (**9**) |
+| Skills | `skills/<domain>/SKILL.md` | **24** domains + optional `solana` |
+| Commands | `commands/*.md` | **13** slash workflows |
+| Agents | `agents/*.md` | **3** marketplace presets (see matrix) |
+| Hooks | `hooks/hooks.json` + `hooks/scripts/` | Lifecycle + policy + contract fixtures |
+| Kernel | `lib/plugin-kernel/` | Vendored Device Code + MCP config/probes |
+| MCP template | `mcp.json` | Lean streamable-http reference (not auto-registered) |
 
 ## Skills (gen3)
 
@@ -40,21 +46,22 @@ Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capabi
 | agentstack-discovery | UI + compass |
 | agentstack-capability-tasks | PTC |
 | agentstack-sdk | @agentstack/sdk |
+| agentstack-openapi | OpenAPI / API topology |
 | agentstack-crm | crm.* |
 | agentstack-agentnet | AGNT / agUSD |
 | agentstack-guidance | guidance.* / where-to-click |
 | agentstack-project-wallet | project treasury |
 | agentstack-storefront-studio | storefront studio |
-| solana | Grant-only |
+| solana | Grant-only (optional) |
 
 ## Agents (role matrix)
+
+Marketplace ships **three** agents. Platform oncall / fleet-operator live in the **maintainer overlay** (`cursor-plugin-maintainer/`, local install only).
 
 | Agent | Owns | Does not own |
 |-------|------|--------------|
 | architect | Multi-domain greenfield from product spec | Day-2 ops runbooks |
 | migrator | Cutover from Supabase/Firebase/Auth0/etc. | Fleet promote/trace |
-| oncall | Diagnose → runbooks | Long greenfield builds |
-| fleet-operator | Agents Fleet run/promote/trace/caps | Tenant canary product UX |
 | tenant-builder | Tenant apps; sandbox/canary when user asks | Platform monorepo founder path |
 
 ## Automated checks
@@ -63,6 +70,10 @@ Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capabi
 node scripts/validate-plugin.mjs
 node scripts/validate-plugin.mjs --strict-screenshots
 node scripts/test-hooks-contract.mjs
+node scripts/test-kernel-catalog.mjs
 node scripts/run-intent-eval.mjs
-node ../../scripts/audit-cursor-plugin.mjs
+node scripts/verify-mcp-surface-e2e.mjs
+node scripts/smoke-local.mjs
+# From monorepo root:
+node provided_plugins/scripts/audit-cursor-plugin.mjs
 ```

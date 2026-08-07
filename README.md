@@ -1,23 +1,29 @@
 # AgentStack Cursor Plugin
 
-> Turn every Cursor agent into an AgentStack-native engineer. v0.4.15 (gen3) · one-click install.
+> Turn every Cursor agent into an AgentStack-native engineer.  
+> **v0.4.16** (gen3) · OAuth Device Code install · one MCP tool
 
 ---
 
 ## 30-second install
 
 ```bash
-# In Cursor, open the chat and run:
+# In Cursor chat:
 /agentstack-init
 ```
 
-The plugin prints a short code, opens a browser tab to `https://agentstack.tech/activate`, and — after you confirm — writes a scoped Bearer token straight into `~/.cursor/mcp.json`. No copy-pasting API keys.
+The plugin prints a short code, opens `https://agentstack.tech/activate`, and after you approve writes a scoped Bearer into `~/.cursor/mcp.json`. No copy-pasting API keys. (OAuth 2.1 Device Authorization Grant — RFC 8628.)
 
-Behind the scenes: OAuth 2.1 Device Authorization Grant (RFC 8628).
+**MCP surface (0.4.16+):**
 
-MCP `tools/list` advertises a **single** tool **`agentstack.execute`** (Cursor displays it as `agentstack_execute`). `tools/call` still accepts the underscore alias for backward compatibility. Use **`safe_action`** from `GET /mcp/actions` when a client forbids dots in action ids.
+| What | Contract |
+|------|----------|
+| Registration | `~/.cursor/mcp.json` only (Device Code / session-start) |
+| `tools/list` | **One** tool: `agentstack.execute` (Cursor UI may show `agentstack_execute`) |
+| `tools/call` | Accepts `agentstack.execute` **and** `agentstack_execute` |
+| Actions | Live catalog: `GET https://agentstack.tech/mcp/actions` |
 
-MCP is registered in **`~/.cursor/mcp.json`** by `/agentstack-init` (Device Code). The bundled `mcp.json` in this package is a reference template only — the plugin does **not** register a second MCP server (that duplicated the user config in Cursor).
+The package `mcp.json` is a **reference template** only. The plugin does **not** declare `mcpServers` in `plugin.json` (that used to create a duplicate Cursor MCP server).
 
 ---
 
@@ -25,222 +31,200 @@ MCP is registered in **`~/.cursor/mcp.json`** by `/agentstack-init` (Device Code
 
 Most AI tools generate backend code. AgentStack teaches the agent to **route intent to an existing platform action** first, and only write code when no action fits.
 
-
-| You asked the agent for … | Without the plugin                                 | With the plugin                                 |
-| ------------------------- | -------------------------------------------------- | ----------------------------------------------- |
-| User sign-in / sign-up    | Handwritten JWT code, sessions, bcrypt, edge cases | `auth.login` MCP action + session cookie        |
-| Role-based access         | Custom middleware, roles table, joins              | `rbac.`* actions + `protected.`* 8DNA fields    |
-| Persistent app data       | Prisma/Drizzle schema + migrations                 | 8DNA `project.data.*` with dot-notation keys    |
-| Payments / subscriptions  | Stripe SDK integration from scratch                | `payments.*` + `buffs.*`                        |
-| RAG / semantic search     | pgvector + embedding pipeline                      | `rag.*` (TurboQuant, hybrid search)             |
-| Cron / webhooks / signals | New FastAPI routes, queue glue                     | `scheduler.*`, `webhooks.*`, `logic.*` triggers |
-
+| You asked the agent for … | Without the plugin | With the plugin |
+|---|---|---|
+| User sign-in / sign-up | Handwritten JWT, sessions, bcrypt | `auth.login` + session cookie |
+| Role-based access | Custom middleware + roles table | `rbac.*` + `protected.*` 8DNA |
+| Persistent app data | Prisma/Drizzle + migrations | 8DNA `project.data.*` / `user.data.*` |
+| Payments / subscriptions | Stripe SDK from scratch | `payments.*` + `buffs.*` |
+| RAG / semantic search | pgvector + embedding pipeline | `rag.*` (TurboQuant, hybrid) |
+| Cron / webhooks / signals | New routes + queue glue | `scheduler.*`, `webhooks.*`, `logic.*` |
 
 ---
 
-## 5-layer architecture
-
-```
-.cursor-plugin/marketplace.json  ← Cursor install index (required for Add marketplace)
-.cursor-plugin/listing.json      ← AgentStack publisher SoT (screenshots/support)
-plugins/agentstack/              ← plugin package (Cursor 2.6+ layout)
-  .cursor-plugin/plugin.json     ← per-plugin manifest (v0.4.15)
-  rules/ skills/ commands/ agents/ hooks/ mcp.json assets/ lib/
-scripts/                         ← validate / smoke / install-local (repo tooling)
-```
-
-## Marketplace submit
-
-Ready-to-paste form fields (especially **Description**): **[SUBMIT_FORM.md](SUBMIT_FORM.md)**.  
-Publisher Terms check: **[PUBLISHER_TERMS_CHECK.md](PUBLISHER_TERMS_CHECK.md)** (https://cursor.com/marketplace-publisher-terms).  
-Demo script: [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md). Local verify: [LOCAL_INSTALL.md](LOCAL_INSTALL.md). Ship checklist: [SHIP_TODO.md](SHIP_TODO.md).  
-Diagnose: `node scripts/diagnose-local.mjs` (`--fix` / `--seed-snapshot`).  
-Layer audit: `node scripts/audit-layers.mjs` (skills / rules / commands / hooks).
-
-## First 5 minutes
-
-1. Symlink or install plugin → reload Cursor  
-2. `/agentstack-init` (Node on PATH) → approve at `/activate`  
-3. Confirm whoami + `discovery.list` / `/agentstack-capability-matrix`  
-4. Optional: `/agentstack-host-site` for a live `/s/` URL  
-
-Auth notes: primary path is Device Code writing Bearer into `~/.cursor/mcp.json`. Fallback: set env `AGENTSTACK_ACCESS_TOKEN` and point MCP config at it, or API key via `MCP_QUICKSTART.md`. Dark logo assets: `assets/logo-dark.svg` (README/marketing; not schema fields).
-
----
-
-## Quick start commands
-
-
-| Command                         | What it does                                                                   |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `/agentstack-init`              | Device Code auth + attach project + inject Bearer. The canonical install flow. |
-| `/agentstack-login`             | Re-auth or switch project via Device Code.                                     |
-| `/agentstack-scaffold-auth`     | Generate minimal login/register UI on top of `auth.*`.                         |
-| `/agentstack-scaffold-backend`  | Scaffold RBAC middleware, Buffs tier gates, AgentPay widget, admin panel.      |
-| `/agentstack-sync-schema`       | Migrate Prisma/Drizzle to 8DNA + FAP + Logic Engine.                           |
-| `/agentstack-index-docs`        | RAG-index the project's markdown/text docs into `my-project-docs` so the agent can ground answers in your own documentation. Source code stays local (Cursor already indexes it). |
-| `/agentstack-capability-matrix` | Print the live domain × actions table from `/mcp/actions`.                     |
-| `/agentstack-diagnose`          | Health check: token, discovery, project status, hooks.                         |
-
-
----
-
-## Routing table the agent follows
-
-
-| Intent signal                         | First port of call                     |
-| ------------------------------------- | -------------------------------------- |
-| login / register / sessions / OAuth   | `auth.*` MCP actions                   |
-| permissions / roles / RLS-like checks | `rbac.*` + `protected.*` 8DNA          |
-| store/read user or project data       | 8DNA `project.data.*` / `user.data.*`  |
-| upload files, blobs, images           | `storage.*` MCP actions                |
-| payments / subscriptions / credits    | `payments.*` + `wallets.*` + `buffs.*` |
-| chat, channels, followers             | `social.*` MCP actions                 |
-| trials / feature flags / tier gates   | `buffs.*`                              |
-| semantic search / memory              | `rag.*`                                |
-| async reactions on data changes       | `logic.*` rules + triggers             |
-
-
-The full, always-up-to-date catalogue: `GET https://agentstack.tech/mcp/actions`, or run `/agentstack-capability-matrix` inside Cursor.
-
----
-
-## Test locally (Cursor)
-
-```bash
-# From provided_plugins/cursor-plugin/
-node scripts/install-local.mjs          # junction/symlink → ~/.cursor/plugins/local/agentstack
-# Cursor → Developer: Reload Window
-# Chat → /agentstack-init
-
-node scripts/install-local.mjs --check
-node scripts/smoke-local.mjs --install  # install + offline smoke
-# or: pwsh scripts/smoke-local.ps1 -Install
-
-node scripts/uninstall-local.mjs        # remove local link only
-```
-
-Full guide: [LOCAL_INSTALL.md](LOCAL_INSTALL.md) · data flow: [FLOW.md](FLOW.md)
-
-Offline only (no Cursor UI):
-
-```bash
-node scripts/validate-plugin.mjs
-pwsh scripts/smoke-local.ps1
-```
-
-From monorepo root: `node provided_plugins/scripts/audit-cursor-plugin.mjs`
-
----
-
-## Project structure
+## Layout (Cursor 2.6+)
 
 ```
 provided_plugins/cursor-plugin/
 ├── .cursor-plugin/
-│   ├── plugin.json
-│   └── listing.json
-├── .github/workflows/validate.yml
-├── assets/
-│   ├── logo.svg
-│   ├── logo-dark.svg
-│   └── screenshots/
-├── lib/plugin-kernel/        # vendored OAuth helpers
-├── rules/                    # 9 mdc rules
-├── skills/                   # 24 domain skills
-├── commands/                 # 13 slash commands
-├── agents/                   # 5 long-running presets
-├── hooks/
-│   ├── hooks.json
-│   └── scripts/              # device-code, session-*, pre-shell, pre-mcp, telemetry, failure, capability-refresh
-├── scripts/
+│   ├── marketplace.json     # Add marketplace / GitHub install (pluginRoot: plugins)
+│   ├── listing.json         # Publisher SoT (screenshots, privacy, support)
+│   └── VALIDATION.md
+├── plugins/agentstack/      # ← the plugin package Cursor loads
+│   ├── .cursor-plugin/plugin.json
+│   ├── mcp.json             # reference template (not auto-registered)
+│   ├── rules/               # 9 .mdc (1 alwaysApply: agentstack-prefer)
+│   ├── skills/              # 24 domains + optional solana
+│   ├── commands/            # 13 slash workflows
+│   ├── agents/              # 3 marketplace agents (+2 maintainer overlay)
+│   ├── hooks/               # lifecycle + policy scripts
+│   ├── lib/plugin-kernel/   # vendored Device Code + MCP helpers
+│   └── assets/              # logos + marketplace screenshots
+├── scripts/                 # validate, smoke, install-local, diagnose, verify
+├── docs/CAPABILITY_MATRIX.md
+├── README.md · CHANGELOG.md · LICENSE
+└── FLOW.md · LOCAL_INSTALL.md · MCP_QUICKSTART.md · …
 ```
-│   ├── validate-plugin.mjs   # structure validator
-│   ├── smoke-local.ps1       # 3-layer local smoke test (validator + node --check + curl)
-│   └── test-device-code.ps1  # e2e: Device Code + approve + Bearer write
-├── mcp.json
-├── README.md  · CHANGELOG.md
-├── MCP_QUICKSTART.md · VERIFICATION_CHECKLIST.md · TESTING_AND_CAPABILITIES.md
-└── LICENSE
+
+**5-layer product surface** (inside `plugins/agentstack/`): rules → skills → commands → agents → hooks.  
+Catalog plane: live `GET /mcp/actions` (never hard-code action counts in skills).
+
+---
+
+## First 5 minutes
+
+1. `node scripts/install-local.mjs` → **Developer: Reload Window**
+2. `/agentstack-init` (Node on PATH) → approve at `/activate`
+3. `/agentstack-diagnose` then `/agentstack-capability-matrix`
+4. Optional: `/agentstack-host-site` for a live `/s/` URL
+
+Primary auth is Device Code → Bearer in `~/.cursor/mcp.json`. Fallback: API key via [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+
+---
+
+## Slash commands
+
+| Command | What it does |
+|---------|--------------|
+| `/agentstack-init` | Device Code auth + lean MCP write (canonical install) |
+| `/agentstack-login` | Re-auth or switch project |
+| `/agentstack-scaffold-auth` | Minimal login/register UI on `auth.*` |
+| `/agentstack-scaffold-backend` | RBAC + Buffs gates + AgentPay + admin panel |
+| `/agentstack-sync-schema` | Prisma/Drizzle → 8DNA + FAP + Logic |
+| `/agentstack-index-docs` | RAG-index project markdown into `my-project-docs` |
+| `/agentstack-capability-matrix` | Live domain × actions from `/mcp/actions` |
+| `/agentstack-diagnose` | Token, discovery, MCP surface, hooks health |
+| `/agentstack-host-site` | Publish HTML/ZIP → `/s/` URL |
+| `/agentstack-support-setup` | Project support channel binding |
+| `/agentstack-integrations-wizard` | Integration Hub recipes |
+| `/agentstack-sdk-surface` | `@agentstack/sdk` / protocol pointers |
+| `/agentstack-discover` | Discover hub / Compass routing |
+
+---
+
+## Intent → MCP routing
+
+| Intent signal | First port of call |
+|---------------|-------------------|
+| login / register / sessions | `auth.*` |
+| permissions / roles | `rbac.*` + `protected.*` 8DNA |
+| store / read app data | `project.data.*` / `user.data.*` |
+| files / blobs | `storage.*` |
+| payments / credits | `payments.*` + `wallets.*` + `buffs.*` |
+| chat / channels | `social.*` |
+| trials / tier gates | `buffs.*` |
+| semantic search / memory | `rag.*` |
+| async reactions | `logic.*` rules + triggers |
+
+Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
+
+---
+
+## Local test
+
+```bash
+# From this repo root (provided_plugins/cursor-plugin/)
+node scripts/install-local.mjs
+# Cursor → Developer: Reload Window → /agentstack-init
+
+node scripts/install-local.mjs --check
+node scripts/smoke-local.mjs --install
+node scripts/diagnose-local.mjs --seed-snapshot
+node scripts/verify-mcp-surface-e2e.mjs   # single tools/list + Postel alias
+
+node scripts/uninstall-local.mjs
+```
+
+Offline CI-style:
+
+```bash
+node scripts/validate-plugin.mjs --strict-screenshots
+node scripts/ci-validate.mjs
+```
+
+Monorepo: `node provided_plugins/scripts/audit-cursor-plugin.mjs`
+
+Guides: [LOCAL_INSTALL.md](LOCAL_INSTALL.md) · data flow: [FLOW.md](FLOW.md) · MCP dedupe map: monorepo `docs/plugins/MCP_DEDUPE_FLOW.md`
+
+If Cursor still loads an old manifest (`$schema` error or duplicate MCP servers):
+
+```bash
+node scripts/refresh-cursor-runtime.mjs --fix
+# then Developer: Reload Window
 ```
 
 ---
 
-## OAuth 2.1 Device Code flow
+## Docs map
 
-```
-┌─────────┐  (1) POST /api/oauth2/device/authorize   ┌──────────────┐
-│ Cursor  │ ───────────────────────────────────────► │ agentstack   │
-│ plugin  │ ◄──────────────── device_code + user_code│ backend      │
-└────┬────┘                                          └──────┬───────┘
-     │(2) open browser: /activate?user_code=…              │
-     ▼                                                     │
-┌─────────┐  (3) user signs in & approves scopes           │
-│ browser │ ──► POST /api/oauth2/device/approve  ──────────┘
-└─────────┘
-     ▲
-     │(4) poll POST /api/oauth2/token  → access_token + refresh_token
-     │
-┌────┴────┐
-│ plugin  │  (5) writes Authorization: Bearer … into ~/.cursor/mcp.json
-└─────────┘  (6) session-start.mjs hook rotates the Bearer automatically
-```
-
-Backend surface used by this flow: `POST /api/oauth2/device/authorize`, `GET /api/oauth2/device/info`, `POST /api/oauth2/device/approve`, `POST /api/oauth2/token`. Consent UI lives at `https://agentstack.tech/activate`.
+| Doc | Audience |
+|-----|----------|
+| [MCP_QUICKSTART.md](MCP_QUICKSTART.md) | Auth + call shape one-pager |
+| [FLOW.md](FLOW.md) | Device Code → mcp.json → hooks → MCP |
+| [LOCAL_INSTALL.md](LOCAL_INSTALL.md) | Symlink install + troubleshooting |
+| [TESTING_AND_CAPABILITIES.md](TESTING_AND_CAPABILITIES.md) | Layers, skills, agents, automated checks |
+| [VERIFICATION_CHECKLIST.md](VERIFICATION_CHECKLIST.md) | Staging / release operator log |
+| [SHIP_TODO.md](SHIP_TODO.md) | Marketplace ship checklist |
+| [SUBMIT_FORM.md](SUBMIT_FORM.md) | Marketplace form paste fields |
+| [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md) | 60–90s demo script |
+| [PUBLISHER_TERMS_CHECK.md](PUBLISHER_TERMS_CHECK.md) | Publisher Terms compliance |
+| [SECURITY.md](SECURITY.md) | Tokens, telemetry, reporting |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Sync / audit before PR |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes |
 
 ---
 
-## Pre-publish self-check (for plugin maintainers)
+## Marketplace submit
 
-AgentStack itself runs only as a cloud service (`https://agentstack.tech`). The checks below run on your own machine but hit the cloud API for contract verification — there is no local backend to spin up.
+1. Paste fields from [SUBMIT_FORM.md](SUBMIT_FORM.md)  
+2. Terms check: [PUBLISHER_TERMS_CHECK.md](PUBLISHER_TERMS_CHECK.md)  
+3. Demo: [MARKETPLACE_DEMO.md](MARKETPLACE_DEMO.md)  
+4. Preflight: `node scripts/diagnose-local.mjs` · `node scripts/audit-layers.mjs`
 
-```powershell
-# Layer 1+2: offline — validator + node --check + pre-shell-scan behaviour
-pwsh ./scripts/smoke-local.ps1
+Submit URL: https://cursor.com/marketplace/publish
 
-# Layer 1+2+3: add contract checks against the cloud API
-pwsh ./scripts/smoke-local.ps1 -BaseUrl https://agentstack.tech -TestCookie 'session=…'
+---
 
-# Full e2e for the Device Code path (spins up device-code.mjs, auto-approves via cloud)
-pwsh ./scripts/test-device-code.ps1 -BaseUrl https://agentstack.tech -TestCookie 'session=…'
+## OAuth Device Code (summary)
 
-# Just the structural validator
-node ./scripts/validate-plugin.mjs
-```
+1. `POST /api/oauth2/device/authorize` → `device_code` + `user_code`  
+2. Browser: `/activate?user_code=…` → user approves  
+3. Poll `POST /api/oauth2/token` until `access_token` (+ `refresh_token`)  
+4. Plugin writes `Authorization: Bearer …` into `~/.cursor/mcp.json`  
+5. `session-start` refreshes Bearer near expiry and keeps a flat capability snapshot  
 
-`-TestCookie` is a fresh session cookie from your own authenticated browser session on `https://agentstack.tech`; the script uses it only to exercise the `/api/oauth2/device/approve` contract. Prefer pointing `-BaseUrl` at a staging environment (e.g. `https://staging.agentstack.tech`) when one is available.
-
-See `VERIFICATION_CHECKLIST.md` for the full 16-point release gate and `MCP_QUICKSTART.md` for the one-pager install guide.
+Full sequence diagram: [FLOW.md](FLOW.md).
 
 ---
 
 ## Telemetry
 
-Telemetry is **opt-in**. Set `agentstack.sendTelemetry: true` in your Cursor settings to let the plugin post usage events to `POST /api/telemetry/plugin`. Data is aggregated daily under the ecosystem project's 8DNA so the team can measure the north-star metric: **how often the agent picks an MCP action versus writing custom code**.
-
-Source: `hooks/scripts/post-tool-telemetry.mjs`. The backend endpoint is documented via `GET https://agentstack.tech/mcp/actions` (see `telemetry.*` if exposed, otherwise the raw REST URL above).
+**Opt-in only.** Set `agentstack.sendTelemetry: true` in Cursor settings to buffer usage events and flush to `POST /api/telemetry/plugin`. No prompt text is uploaded. Source: `plugins/agentstack/hooks/scripts/post-tool-telemetry.mjs`.
 
 ---
 
-## Git (AgentStack monorepo workspace)
+## Git (monorepo workspace)
 
-The folder `AgentStack/` opened in Cursor is often **not** a Git repository (empty or missing `.git` at the workspace root). **Commit and push from this plugin directory:**
+`AgentStack/` is often **not** a single Git root. Commit from this directory:
 
 ```bash
-cd provided_plugins/cursor-plugin   # or open this folder as the Cursor workspace root
+cd provided_plugins/cursor-plugin
 git status && git commit && git push
 ```
 
-Marketplace publish uses a copy-only sibling repo — see `https://github.com/agentstacktech/cursor-plugin` and the monorepo doc `docs/plugins/CURSOR_PLUGIN_PUBLISH.md` when your checkout includes it.
+Marketplace publish is a copy-only sibling checkout — see monorepo `docs/plugins/CURSOR_PLUGIN_PUBLISH.md`.
 
 ---
 
 ## Contributing
 
-1. Changes to rules / skills / commands go under the matching subfolder.
-2. Run `pwsh ./scripts/smoke-local.ps1` before every PR.
-3. If the backend MCP surface grows new actions, skills should **not** be updated with hard-coded action lists — they already pull the live list from `GET /mcp/actions`. The `capability-refresh.mjs` hook refreshes the local snapshot automatically when `mcp.json` changes.
-4. Bump the version in `.cursor-plugin/plugin.json` and `CHANGELOG.md` on every change.
+1. Edit under `plugins/agentstack/{rules,skills,commands,agents,hooks}/`.  
+2. Run `node scripts/smoke-local.mjs` (or `pwsh scripts/smoke-local.ps1`) before every PR.  
+3. Do **not** hard-code action lists in skills — use live `GET /mcp/actions`.  
+4. Bump `plugins/agentstack/.cursor-plugin/plugin.json` **and** `CHANGELOG.md` together.  
+5. From monorepo: `node provided_plugins/scripts/sync-plugin-kernel.mjs` then `audit-cursor-plugin.mjs`.
+
+Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

@@ -1,37 +1,71 @@
 # MCP Quick start — Cursor plugin
 
 **Endpoint:** `https://agentstack.tech/mcp`  
-**Tool:** `agentstack.execute` (Cursor shows `agentstack_execute`; underscore alias still works in `tools/call`)  
-**Live catalog:** `GET https://agentstack.tech/mcp/actions`
+**Tool:** `agentstack.execute` (Cursor may show `agentstack_execute`; underscore alias still works on `tools/call`)  
+**Live catalog:** `GET https://agentstack.tech/mcp/actions`  
+**Version:** 0.4.16+
 
-## Local plugin install (dev)
+## Install plugin (dev)
 
 ```bash
 node scripts/install-local.mjs
-# Reload Cursor → /agentstack-init
+# Cursor → Developer: Reload Window → /agentstack-init
 ```
 
 See [LOCAL_INSTALL.md](LOCAL_INSTALL.md).
 
 ## Auth (primary)
 
-OAuth 2.1 Device Code via `/agentstack-init` (writes Bearer into `~/.cursor/mcp.json`).
+OAuth 2.1 Device Code via `/agentstack-init` → Bearer in `~/.cursor/mcp.json`.
 
-Requires **Node.js** on PATH. Fallback: API key — set header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
+Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
 
-## Call shape
+**Do not** add a second MCP server in `plugin.json`. One registration path only.
+
+## Lean `~/.cursor/mcp.json` shape
 
 ```json
 {
-  "tool": "agentstack.execute",
-  "params": {
-    "steps": [{ "action": "discovery.list", "params": {} }]
+  "mcpServers": {
+    "agentstack": {
+      "type": "streamable-http",
+      "url": "https://agentstack.tech/mcp",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer YOUR_TOKEN"
+      }
+    }
   }
+}
+```
+
+No per-tool `tools{}` map — actions come from `GET /mcp/actions`.
+
+## Call shape
+
+Prefer JSON-RPC `tools/call` with batched steps:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "agentstack.execute",
+    "arguments": {
+      "steps": [{ "id": "d1", "action": "discovery.list", "params": {} }],
+      "options": { "stopOnError": true }
+    }
+  },
+  "id": 1
 }
 ```
 
 ## Diagnose
 
-`/agentstack-diagnose` · flow diagram: [FLOW.md](FLOW.md)
+| Command | Purpose |
+|---------|---------|
+| `/agentstack-diagnose` | Token, discovery, MCP surface |
+| `node scripts/diagnose-local.mjs` | Offline + live `tools/list` probe |
+| `node scripts/verify-mcp-surface-e2e.mjs` | Single-tool + Postel alias contract |
 
-Monorepo hub (if present): `docs/MCP_QUICKSTART.md`
+Flow diagram: [FLOW.md](FLOW.md). Monorepo hub (if present): `docs/MCP_QUICKSTART.md`.

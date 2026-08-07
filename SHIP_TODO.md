@@ -9,7 +9,7 @@
 
 | Layer | Count | Gate | Status |
 |-------|------:|------|--------|
-| Skills | 24 | frontmatter + live catalog pointer | [x] `audit-layers.mjs` |
+| Skills | 25 | 24 domains + optional `solana`; frontmatter + live catalog | [x] `audit-layers.mjs` |
 | Rules | 9 | exactly 1 `alwaysApply` (prefer) | [x] |
 | Commands | 13 | name/description + init/login/diagnose | [x] |
 | Agents | 3 | name/description; no oncall/fleet-operator | [x] |

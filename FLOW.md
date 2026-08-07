@@ -1,6 +1,7 @@
 # Data & call flow — AgentStack Cursor plugin
 
-**Gene:** `repo.plugins.oauth_device_code.gen1` · `repo.plugins.hooks.contract.gen1` · `repo.plugins.capability_routing.gen1`
+**Gene:** `repo.plugins.oauth_device_code.gen1` · `repo.plugins.hooks.contract.gen1` · `repo.plugins.capability_routing.gen1`  
+**Version:** 0.4.16 · Start here for install → MCP → hooks; one-pager: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
 
 ## Repo layout (Cursor 2.6+)
 
