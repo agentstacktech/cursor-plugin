@@ -19,7 +19,8 @@ Run these in order and present results as a single Markdown table.
 8. **Hooks** — verify `hooks/hooks.json` lists sessionStart, beforeShellExecution, beforeMCPExecution, postToolUse, postToolUseFailure, sessionEnd, afterFileEdit; scripts under `hooks/scripts/` resolve from plugin root (`~/.cursor/plugins/local/agentstack` or marketplace install).
 9. **Capability snapshot** — age of `~/.cursor/agentstack-capabilities.json` (mtime); if missing or >24h, refresh via session-start or `GET /mcp/actions`. Confirm `actions` is a **flat array** (not nested `domains`).
 10. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
-11. **Local layout (optional)** — from the publish checkout: `node scripts/diagnose-local.mjs` and `node scripts/audit-layers.mjs`.
+11. **MCP surface** — `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`; `mcp_surface_tools: 1` on `GET /mcp/health`). If Cursor shows two servers, Reload after plugin 0.4.16+ and run `refresh-cursor-runtime.mjs --fix`.
+12. **Local layout (optional)** — from the publish checkout: `node scripts/diagnose-local.mjs` and `node scripts/audit-layers.mjs`.
 
 ## Output
 
@@ -36,6 +37,7 @@ Run these in order and present results as a single Markdown table.
 | Hooks          | OK     | lifecycle scripts present                |
 | Snapshot       | OK     | age=12m                                  |
 | MCP cache      | OK     | cleared                                  |
+| MCP surface    | OK     | tools/list=1; single MCP server in Cursor |
 ```
 
 ## When something is wrong

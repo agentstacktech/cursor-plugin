@@ -29,9 +29,10 @@
 
 ## 3. MCP connectivity
 
-- [ ] Cursor discovers the `agentstack` server — the side panel lists tools.
-- [ ] `/agentstack-capability-matrix` prints **≥280** actions grouped by domain (May 2026 baseline: **332** catalog actions).
-- [ ] The live list from `GET https://agentstack.tech/mcp/actions` matches what the command prints.
+- [ ] Cursor discovers **one** `agentstack` MCP server (not `plugin-agentstack-*` + `user-agentstack`).
+- [ ] Tools panel shows **one** `agentstack_execute` tool.
+- [ ] `POST /mcp` `tools/list` returns exactly 1 tool named `agentstack.execute` (after core 0.4.16 deploy).
+- [ ] `/agentstack-capability-matrix` prints actions grouped by domain (live `GET /mcp/actions`).
 
 ## 4. Scaffolding
 
@@ -79,8 +80,8 @@
 
 ## 12. Docs sync
 
-- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.15`.
-- [ ] `CHANGELOG.md` has a `[0.4.15]` entry.
+- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.16`.
+- [ ] `CHANGELOG.md` has a `[0.4.16]` entry.
 - [ ] `lib/plugin-kernel/` is present (self-contained Device Code).
 
 ## 13. Design alignment

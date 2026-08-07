@@ -68,3 +68,15 @@ node scripts/diagnose-local.mjs --fix --seed-snapshot
 ```
 
 `sessionStart` normalizes lean `mcpServers.agentstack` and refreshes the flat capability snapshot using Bearer **or** `X-API-Key`.
+
+## MCP registration plane (0.4.16+)
+
+**Single path:** Device Code → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` (that created a second Cursor MCP server alongside the user config).
+
+| Anti-pattern | Symptom | Fix |
+|--------------|---------|-----|
+| `mcpServers` in plugin.json | Two MCP servers in Cursor | Upgrade plugin 0.4.16+; `refresh-cursor-runtime.mjs --fix`; Reload |
+| Backend lists 2 tools | Two `agentstack_execute` in tools panel | Deploy core 0.4.16 |
+| Stale marketplace cache | Old plugin with mcpServers | `refresh-cursor-runtime.mjs --fix` |
+
+Reference template: `plugins/agentstack/mcp.json` (not auto-registered).

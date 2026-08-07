@@ -88,8 +88,11 @@ function scanAndFix() {
     if (j?.$schema) {
       fail(`local plugin.json still has $schema (${local})`);
       if (fix) stripSchemaWrite(local, SOT_PLUGIN_JSON);
+    } else if (j?.mcpServers) {
+      fail(`local plugin.json still has mcpServers (${local}) — upgrade to 0.4.16+`);
+      if (fix) stripSchemaWrite(local, SOT_PLUGIN_JSON);
     } else if (j?.version) {
-      ok(`local plugin.json version=${j.version} (no $schema)`);
+      ok(`local plugin.json version=${j.version} (no $schema, no mcpServers)`);
     }
   } else {
     warn('local/agentstack not installed — run: node scripts/install-local.mjs');
@@ -127,6 +130,9 @@ function scanAndFix() {
           ok(`stripped $schema → ${file}`);
         }
       }
+    } else if (path.basename(file) === 'plugin.json' && j.mcpServers) {
+      fail(`${rel}: has mcpServers (forbidden 0.4.16+)`);
+      if (fix) stripSchemaWrite(file, SOT_PLUGIN_JSON);
     } else if (path.basename(file) === 'plugin.json') {
       ok(`clean plugin.json version=${j.version || '?'} @ ${rel}`);
     }

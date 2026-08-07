@@ -1,4 +1,4 @@
-# Marketplace / local ship — detailed task list (0.4.15)
+# Marketplace / local ship — detailed task list (0.4.16)
 
 **Gene:** `repo.plugins.cursor.gen3` · `repo.plugins.publication_gates.gen1`  
 **Status:** `[x]` done · `[ ]` human · `[~]` optional
@@ -46,6 +46,19 @@
 
 ---
 
+## F. MCP dedupe 0.4.16 (`P0-MCP-DEDUPE-0416`)
+
+| GAP | Item | Status |
+|-----|------|--------|
+| GAP-01 | Core `tools/list` → 1 tool `agentstack.execute` | [x] |
+| GAP-02 | No `mcpServers` in `plugin.json` | [x] |
+| GAP-03 | `codegen-plugin-versions` correct path | [x] |
+| GAP-07 | Health `mcp_surface_tools` field | [x] |
+| GAP-08 | Lean MCP snippets (frontend/docs) | [x] |
+| GAP-15 | `refresh-cursor-runtime` stale `mcpServers` cache | [x] |
+
+---
+
 ## C. Human e2e (this machine)
 
 ```bash
@@ -58,7 +71,7 @@ node scripts/smoke-local.mjs
 
 In Cursor after **Reload Window**:
 
-- [ ] Plugin loads without "$schema version" error (version 0.4.15)
+- [ ] Plugin loads without "$schema version" error (version 0.4.16)
 - [ ] `/agentstack-init` (upgrade X-API-Key → Device Code)
 - [ ] `/agentstack-diagnose`
 - [ ] `/agentstack-capability-matrix`
@@ -70,7 +83,7 @@ Form: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 
 ## D. Publish
 
-- [ ] `git push origin master` + `v0.4.15`
+- [ ] `git push origin master` + `v0.4.16`
 - [ ] https://cursor.com/marketplace/publish
 - [ ] Post-release checklist
 

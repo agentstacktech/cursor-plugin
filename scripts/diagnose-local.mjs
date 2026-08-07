@@ -65,6 +65,9 @@ if (!fs.existsSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'))) {
   fail('plugins/agentstack/.cursor-plugin/plugin.json missing');
 } else {
   ok('plugin package plugin.json present');
+  const pj = JSON.parse(fs.readFileSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'), 'utf8'));
+  if (pj.mcpServers) fail('plugin.json declares mcpServers — forbidden since 0.4.16');
+  else ok('plugin.json has no mcpServers (single registration plane)');
 }
 
 const target = resolveLink(LINK);
@@ -116,6 +119,28 @@ if (!fs.existsSync(MCP)) {
     if (!auth) fail('no Bearer and no X-API-Key — run /agentstack-init');
     else if (auth.Authorization) ok('auth=Bearer (Device Code path)');
     else ok('auth=X-API-Key (legacy/CI path; prefer /agentstack-init for Device Code)');
+    if (auth) {
+      try {
+        const probe = await fetch(`${BASE_URL}/mcp`, {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', params: {}, id: 1 }),
+        });
+        if (probe.ok) {
+          const body = await probe.json();
+          const tools = body?.result?.tools ?? [];
+          if (tools.length === 1 && tools[0]?.name === 'agentstack.execute') {
+            ok('tools/list returns 1 tool (agentstack.execute)');
+          } else {
+            warn(`tools/list returned ${tools.length} tool(s) — deploy core 0.4.16 if >1`);
+          }
+        } else {
+          warn(`tools/list probe HTTP ${probe.status}`);
+        }
+      } catch (e) {
+        warn(`tools/list probe failed: ${e.message}`);
+      }
+    }
   }
 }
 

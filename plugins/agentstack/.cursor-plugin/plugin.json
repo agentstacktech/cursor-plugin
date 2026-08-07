@@ -33,7 +33,7 @@
       "AGENTSTACK_ACCESS_TOKEN": {
         "type": "string",
         "title": "AgentStack access token",
-        "description": "OAuth Bearer token for agentstack.execute MCP. Set via /agentstack-login (Device Code) or paste a scoped API token. Written to ~/.cursor/mcp.json on login."
+        "description": "Optional. Primary install uses Device Code → ~/.cursor/mcp.json. Use only if your org injects tokens via Cursor plugin Configure without editing mcp.json."
       }
     }
   },

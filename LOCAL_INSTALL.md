@@ -82,6 +82,8 @@ See [FLOW.md](FLOW.md). After init you should have:
 | Plugin not listed after install | Reload Window; confirm `install-local.mjs --check` |
 | `ERR_MODULE_NOT_FOUND` on device-code | Run from synced tree with `lib/plugin-kernel/`; re-run `sync-plugin-kernel.mjs` in monorepo |
 | Device Code hangs then fails immediately | Ensure kernel poll handles 400 `authorization_pending` (0.4.14+) |
+| Two identical `agentstack_execute` tools | Deploy core 0.4.16; `diagnose-local.mjs` probes tools/list |
+| Two MCP servers in Cursor | Plugin 0.4.16+ removes `mcpServers`; `refresh-cursor-runtime.mjs --fix`; Reload |
 | Junction needs elevation | Use install-local (junction, not symlink); avoid copying the folder |
 
 ### Stale cache locations (Windows)

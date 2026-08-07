@@ -1,6 +1,8 @@
-# Testing & Capabilities — AgentStack Cursor Plugin v0.4.15 (gen3)
+# Testing & Capabilities — AgentStack Cursor Plugin v0.4.16 (gen3)
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
+
+**MCP dedupe (0.4.16):** `plugin.json` must **not** include `mcpServers` — Device Code writes `~/.cursor/mcp.json` only. Expect **one** Cursor MCP server and **one** `agentstack_execute` tool after Reload Window. Validate with `node scripts/diagnose-local.mjs --seed-snapshot`.
 
 ## Structure
 

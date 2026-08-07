@@ -1,4 +1,5 @@
 {
+  "_comment": "Single-tool contract: tools/list advertises agentstack.execute only; tools/call accepts this name.",
   "tool": "agentstack.execute",
   "arguments": {
     "params": {

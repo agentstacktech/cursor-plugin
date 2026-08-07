@@ -286,7 +286,7 @@ if (fs.existsSync(pluginPath)) {
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);
     if (plugin.mcpServers) {
-      warn('plugin.json: mcpServers registers a second MCP server alongside ~/.cursor/mcp.json — remove it; use Device Code only');
+      fail('plugin.json: mcpServers must not be set — MCP via ~/.cursor/mcp.json only (0.4.16+)');
     }
     if (plugin.variables?.type !== 'object') {
       warn('plugin.json: variables JSON Schema recommended when mcp.json uses ${VAR} placeholders');
