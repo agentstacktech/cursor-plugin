@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { pollDeviceToken, loadConfidentialClient } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
+import { pollDeviceToken, loadConfidentialClient, deviceCodeActivateUrl } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
 import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { applyAgentstackMcpBearer } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
@@ -165,11 +165,12 @@ async function main() {
   console.log('  Trace: ' + traceId);
   const init = await authorize(scopes, traceId);
 
-  console.log('\n  Open: ' + (init.verification_uri_complete || init.verification_uri));
+  const activateLink = deviceCodeActivateUrl(BASE_URL, init.user_code);
+  console.log('\n  Open: ' + activateLink);
   console.log('  Code: ' + init.user_code + '\n');
   console.log('  (Waiting for approval — this will return automatically.)\n');
 
-  if (!headless) await openBrowser(init.verification_uri_complete || init.verification_uri);
+  if (!headless) await openBrowser(activateLink);
 
   const token = await pollDeviceToken({
     tokenUrl: `${BASE_URL}/api/oauth2/token`,

@@ -49,6 +49,13 @@ export async function loadConfidentialClient({
   };
 }
 
+/** Human-facing approve URL (SPA /activate — not POST /api/oauth2/device/verify). */
+export function deviceCodeActivateUrl(baseUrl, userCode) {
+  const code = String(userCode || '').trim();
+  const base = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
+  return `${base}/activate?user_code=${encodeURIComponent(code)}`;
+}
+
 /**
  * POST application/x-www-form-urlencoded.
  * OAuth token endpoints often return HTTP 400 with `{ error: "authorization_pending" }` —
@@ -83,7 +90,8 @@ export async function pollDeviceToken({
   clientSecret = null,
 }) {
   const deadline = Date.now() + expiresInSec * 1000;
-  let waitMs = Math.max(1000, intervalSec * 1000);
+  // Prod oauth2_token RL is 5 req/min per IP — stay under that even when server interval=5.
+  let waitMs = Math.max(12000, intervalSec * 1000);
 
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, waitMs));
@@ -93,7 +101,17 @@ export async function pollDeviceToken({
       client_id: clientId,
     };
     if (clientSecret) params.client_secret = clientSecret;
-    const token = await postForm(tokenUrl, params, traceId);
+    let token;
+    try {
+      token = await postForm(tokenUrl, params, traceId);
+    } catch (err) {
+      const msg = String(err?.message || err);
+      if (msg.includes('HTTP 429')) {
+        waitMs = Math.min(waitMs + 5000, 30000);
+        continue;
+      }
+      throw err;
+    }
     if (token.access_token) return token;
     if (token.error === 'authorization_pending') continue;
     if (token.error === 'slow_down') {
