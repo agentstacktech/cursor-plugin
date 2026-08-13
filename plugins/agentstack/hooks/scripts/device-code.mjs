@@ -101,10 +101,14 @@ async function authorize(scopes, traceId) {
   return json;
 }
 
-async function writeMcpJson(accessToken) {
+async function writeMcpJson(accessToken, token = {}) {
   let cfg = {};
   try { cfg = JSON.parse(await readFile(MCP_PATH, 'utf8')); } catch { /* first install */ }
-  applyAgentstackMcpBearer(cfg, { accessToken, baseUrl: BASE_URL });
+  applyAgentstackMcpBearer(cfg, {
+    accessToken,
+    baseUrl: BASE_URL,
+    projectId: token.project_id,
+  });
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
@@ -182,7 +186,7 @@ async function main() {
     clientSecret: init.__client_secret || null,
   });
 
-  await writeMcpJson(token.access_token);
+  await writeMcpJson(token.access_token, token);
   await writeRefreshToken(token.refresh_token, token);
   await clearMcpCache(token.access_token, traceId);
   await seedCapabilitySnapshot(token.access_token);

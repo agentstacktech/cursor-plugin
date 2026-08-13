@@ -66,7 +66,7 @@ export function normalizeAgentstackMcpConfig(cfg, { baseUrl } = {}) {
  * @param {string} opts.baseUrl
  * @returns {object} cfg
  */
-export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl }) {
+export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl, projectId } = {}) {
   const root = cfg && typeof cfg === 'object' ? cfg : {};
   root.mcpServers = root.mcpServers || {};
   const existing = root.mcpServers.agentstack || {};
@@ -76,6 +76,10 @@ export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl }) {
     Authorization: `Bearer ${accessToken}`,
   };
   delete headers['X-API-Key'];
+  const pin = projectId ?? process.env.AGENTSTACK_PROJECT_ID;
+  if (pin != null && String(pin).trim()) {
+    headers['X-Project-ID'] = String(pin).trim();
+  }
   root.mcpServers.agentstack = leanAgentstackServer(existing, { baseUrl, headers });
   return root;
 }

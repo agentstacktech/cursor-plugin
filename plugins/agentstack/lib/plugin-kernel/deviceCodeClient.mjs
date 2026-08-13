@@ -75,7 +75,12 @@ export async function postForm(url, params, traceId = '') {
     if (json && typeof json.error === 'string') {
       return json;
     }
-    throw new Error(json.error_description || json.error || `HTTP ${res.status}`);
+    const detail = json.detail ?? json.error_description ?? json.error;
+    throw new Error(
+      detail
+        ? `${typeof detail === 'string' ? detail : JSON.stringify(detail)} (HTTP ${res.status})`
+        : `HTTP ${res.status}`,
+    );
   }
   return json;
 }
