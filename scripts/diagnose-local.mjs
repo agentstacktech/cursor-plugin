@@ -65,7 +65,7 @@ function maybeEmitDuplicateSurfaceBeacon(tools) {
     event: 'plugin_mcp_duplicate_surface',
     tool_count: tools?.length ?? 0,
     tool_names: (tools || []).map((t) => t?.name).filter(Boolean),
-    plugin_version: '0.4.16',
+    plugin_version: '0.4.17',
     base_url: BASE_URL,
   };
   try {
@@ -106,6 +106,12 @@ if (!fs.existsSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'))) {
   else ok('plugin.json has no mcpServers (single registration plane)');
 }
 
+if (fs.existsSync(path.join(PLUGIN, 'mcp.json'))) {
+  fail('plugins/agentstack/mcp.json must not ship (G-A162)');
+} else {
+  ok('repo plugin package has no mcp.json');
+}
+
 const target = resolveLink(LINK);
 if (!target) {
   fail(`local link missing: ${LINK} — run: node scripts/install-local.mjs --force`);
@@ -120,10 +126,36 @@ for (const rel of [
   'hooks/scripts/device-code.mjs',
   'hooks/scripts/session-start.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
-  'mcp.json',
 ]) {
   if (fs.existsSync(path.join(LINK, rel))) ok(`linked ${rel}`);
   else fail(`linked missing ${rel}`);
+}
+if (target) {
+  const linkedMcp = path.join(LINK, 'mcp.json');
+  if (fs.existsSync(linkedMcp)) {
+    fail(`linked mcp.json present (G-A162 trap) — delete it; plugin 0.4.17+ must not ship MCP config`);
+  } else {
+    ok('linked plugin has no mcp.json (MCP via ~/.cursor/mcp.json only)');
+  }
+}
+
+const cacheRoot = path.join(os.homedir(), '.cursor', 'plugins', 'cache', 'agentstack');
+if (fs.existsSync(cacheRoot)) {
+  const cachedMcp = [];
+  const stack = [cacheRoot];
+  while (stack.length) {
+    const dir = stack.pop();
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (entry.name === 'mcp.json') cachedMcp.push(full);
+    }
+  }
+  if (cachedMcp.length) {
+    fail(`cached plugin mcp.json (${cachedMcp.length}) — run: node scripts/refresh-cursor-runtime.mjs --fix`);
+  } else {
+    ok('no mcp.json in marketplace plugin cache');
+  }
 }
 
 // mcp.json
@@ -153,7 +185,13 @@ if (!fs.existsSync(MCP)) {
     }
     const auth = agentstackAuthHeaders(cfg);
     if (!auth) fail('no Bearer and no X-API-Key — run /agentstack-init');
-    else if (auth.Authorization) ok('auth=Bearer (Device Code path)');
+    else if (auth.Authorization) {
+      if (auth.Authorization.includes('${') || /AGENTSTACK_ACCESS_TOKEN/i.test(auth.Authorization)) {
+        fail('mcp.json Authorization is a placeholder — plugin MCP shadowed user config (G-A162). Upgrade 0.4.17 + Reload Window.');
+      } else {
+        ok('auth=Bearer (Device Code path)');
+      }
+    }
     else ok('auth=X-API-Key (legacy/CI path; prefer /agentstack-init for Device Code)');
     if (auth) {
       try {

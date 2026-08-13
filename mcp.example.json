@@ -1,5 +1,5 @@
 {
-  "_comment": "Reference template — Device Code (/agentstack-init) writes ~/.cursor/mcp.json; plugin does not auto-register this file.",
+  "_comment": "Example only — copy into ~/.cursor/mcp.json via /agentstack-init. Do NOT ship this as plugins/agentstack/mcp.json: Cursor auto-registers it as plugin-agentstack-* with an empty ${AGENTSTACK_ACCESS_TOKEN} and shadows the user MCP server.",
   "mcpServers": {
     "agentstack": {
       "type": "streamable-http",

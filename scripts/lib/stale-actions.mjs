@@ -14,6 +14,12 @@ export const STALE_ACTIONS = new Map([
   ['apikeys.revoke', 'apikeys.delete'],
 ]);
 
+/** True if `oldAction` appears as a whole MCP id (not `user.apikeys.revoke` vs `apikeys.revoke`). */
+export function textHasStaleAction(content, oldAction) {
+  const escaped = String(oldAction).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(?<![\\w.])${escaped}(?![\\w.])`).test(content);
+}
+
 export const SECRET_PATTERNS = [
   { name: 'AgentStack API key', regex: /\bask_[A-Za-z0-9_-]{16,}\b/g },
   { name: 'JWT bearer token', regex: /\bBearer\s+ey[A-Za-z0-9._-]{30,}\b/g },

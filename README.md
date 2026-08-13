@@ -1,7 +1,7 @@
 # AgentStack Cursor Plugin
 
 > Turn every Cursor agent into an AgentStack-native engineer.  
-> **v0.4.16** (gen3) · OAuth Device Code install · one MCP tool
+> **v0.4.17** (gen3) · OAuth Device Code install · one MCP tool
 
 ---
 
@@ -23,7 +23,7 @@ The plugin prints a short code, opens `https://agentstack.tech/activate`, and af
 | `tools/call` | Accepts `agentstack.execute` **and** `agentstack_execute` |
 | Actions | Live catalog: `GET https://agentstack.tech/mcp/actions` |
 
-The package `mcp.json` is a **reference template** only. The plugin does **not** declare `mcpServers` in `plugin.json` (that used to create a duplicate Cursor MCP server).
+The package **must not** ship `mcp.json`. Cursor auto-registers it as a second MCP server (`plugin-agentstack-*`) with an empty `${AGENTSTACK_ACCESS_TOKEN}` placeholder — `discovery.list` still works, `projects.get_projects` does not. Device Code writes `~/.cursor/mcp.json` only. Example: [`mcp.example.json`](mcp.example.json).
 
 ---
 
@@ -52,7 +52,7 @@ provided_plugins/cursor-plugin/
 │   └── VALIDATION.md
 ├── plugins/agentstack/      # ← the plugin package Cursor loads
 │   ├── .cursor-plugin/plugin.json
-│   ├── mcp.json             # reference template (not auto-registered)
+│   ├── (no mcp.json)        # Cursor would auto-register it; use ~/.cursor/mcp.json
 │   ├── rules/               # 9 .mdc (1 alwaysApply: agentstack-prefer)
 │   ├── skills/              # 24 domains + optional solana
 │   ├── commands/            # 13 slash workflows

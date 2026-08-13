@@ -20,6 +20,7 @@ import {
   MCP_EXECUTE_TOOL_CANONICAL,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
 import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
+import { loadConfidentialClient } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 
 const catalog = {
   version: '2.0',
@@ -123,9 +124,27 @@ assert.equal(
   }),
   'hosting.publish',
 );
+
 assert.equal(
   extractMcpAction({ params: { steps: [{ action: 'auth.login' }] } }),
   'auth.login',
 );
+
+const prevDcr = process.env.AGENTSTACK_OAUTH_USE_DCR;
+const prevId = process.env.AGENTSTACK_OAUTH_CLIENT_ID;
+const prevSecret = process.env.AGENTSTACK_OAUTH_CLIENT_SECRET;
+delete process.env.AGENTSTACK_OAUTH_USE_DCR;
+delete process.env.AGENTSTACK_OAUTH_CLIENT_ID;
+delete process.env.AGENTSTACK_OAUTH_CLIENT_SECRET;
+try {
+  const oc = await loadConfidentialClient();
+  assert.equal(oc.source, 'builtin');
+  assert.equal(oc.clientId, 'cursor-plugin');
+  assert.equal(oc.clientSecret, null);
+} finally {
+  if (prevDcr !== undefined) process.env.AGENTSTACK_OAUTH_USE_DCR = prevDcr;
+  if (prevId !== undefined) process.env.AGENTSTACK_OAUTH_CLIENT_ID = prevId;
+  if (prevSecret !== undefined) process.env.AGENTSTACK_OAUTH_CLIENT_SECRET = prevSecret;
+}
 
 console.log('OK   kernel catalog + mcpConfig contract');

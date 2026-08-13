@@ -137,6 +137,18 @@ function scanAndFix() {
       ok(`clean plugin.json version=${j.version || '?'} @ ${rel}`);
     }
   }
+
+  for (const file of walkJson(CURSOR_PLUGINS)) {
+    const n = file.replace(/\\/g, '/').toLowerCase();
+    if (path.basename(n) !== 'mcp.json') continue;
+    if (!n.includes('agentstack')) continue;
+    fail(`${file}: plugin mcp.json (G-A162 auto-register trap)`);
+    if (fix) {
+      fs.unlinkSync(file);
+      fixed += 1;
+      ok(`deleted ${file}`);
+    }
+  }
 }
 
 function purgeCaches() {

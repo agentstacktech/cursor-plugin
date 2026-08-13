@@ -2,6 +2,18 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.17] - 2026-08-13
+
+### Fixed
+
+- **Plugin MCP shadowed user key (G-A162):** Cursor auto-registers `plugins/agentstack/mcp.json` as `plugin-agentstack-*` with empty `${AGENTSTACK_ACCESS_TOKEN}`. `discovery.list` worked; `projects.get_projects` returned unauthorized even when `~/.cursor/mcp.json` had a valid Bearer/PAT. Removed shipped `mcp.json`; example lives at `mcp.example.json`. Reload Window after update — keep **one** AgentStack MCP from `~/.cursor/mcp.json`.
+- **OAuth refresh skipped `client_secret` (G-A163):** `session-start.mjs` posted refresh with only `client_id`; prod requires the confidential secret from env or `~/.cursor/agentstack-oauth-client.json`. Shared `loadConfidentialClient` in plugin-kernel; Device Code and session-start both send it.
+- **Public plugin Device Code (G-A164):** `cursor-plugin` (and sibling IDE clients) are RFC 8628 public clients — `device/authorize` + token poll/refresh work without `client_secret`. Default client is builtin public (DCR json only if `AGENTSTACK_OAUTH_USE_DCR=1`). `diagnose-local` / `refresh-cursor-runtime --fix` treat cached plugin `mcp.json` as a fail (G-A162).
+
+### Changed
+
+- Validate gate: fail if the plugin package ships `mcp.json` (auto-register trap).
+
 ## [0.4.16] - 2026-08-07
 
 ### Fixed

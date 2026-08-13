@@ -1,7 +1,7 @@
 # Data & call flow — AgentStack Cursor plugin
 
 **Gene:** `repo.plugins.oauth_device_code.gen1` · `repo.plugins.hooks.contract.gen1` · `repo.plugins.capability_routing.gen1`  
-**Version:** 0.4.16 · Start here for install → MCP → hooks; one-pager: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
+**Version:** 0.4.17 · Start here for install → MCP → hooks; one-pager: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
 
 ## Repo layout (Cursor 2.6+)
 
@@ -9,7 +9,7 @@
 |------|------|
 | `.cursor-plugin/marketplace.json` | **Required** for Cursor “Add marketplace” / GitHub install (`pluginRoot: plugins`, `source: agentstack`) |
 | `.cursor-plugin/listing.json` | AgentStack publisher SoT (screenshots, privacy, pricing) — **not** Cursor’s marketplace schema |
-| `plugins/agentstack/` | Plugin package: `plugin.json`, rules, skills, commands, agents, hooks, mcp, assets, vendored kernel |
+| `plugins/agentstack/` | Plugin package: `plugin.json`, rules, skills, commands, agents, hooks, assets, vendored kernel (do **not** ship `mcp.json`) |
 | `scripts/` | Validate / smoke / local install tooling |
 
 ```mermaid
@@ -36,7 +36,7 @@ sequenceDiagram
   DC->>AS: POST /mcp/cache/clear
   DC->>AS: GET /mcp/actions
   DC->>Snap: flat actions[] snapshot
-  Hooks->>MCP: sessionStart refresh if exp less than 120s
+  Hooks->>MCP: sessionStart refresh if exp less than 120s (public cursor-plugin; secret only if env/DCR)
   Hooks->>Snap: refresh if older than 24h
   MCP->>AS: agentstack.execute steps
   Hooks->>Snap: beforeMCPExecution cap hint
@@ -72,7 +72,7 @@ node scripts/diagnose-local.mjs --fix --seed-snapshot
 
 ## MCP registration plane (0.4.16+)
 
-**Single path:** Device Code → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` (that created a second Cursor MCP server alongside the user config).
+**Single path:** Device Code → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` **and must not ship `mcp.json`** (Cursor auto-registers it as `plugin-agentstack-*` with an empty token — G-A162).
 
 ```mermaid
 flowchart LR
@@ -95,6 +95,6 @@ flowchart LR
 | Backend lists 2 tools | Two `agentstack_execute` in tools panel | Deploy core 0.4.16 |
 | Stale marketplace cache | Old plugin with mcpServers | `refresh-cursor-runtime.mjs --fix` |
 
-Reference template: `plugins/agentstack/mcp.json` (not auto-registered).
+Reference template: [`mcp.example.json`](mcp.example.json) (not shipped inside the plugin package).
 
 Full call/data map: [docs/plugins/MCP_DEDUPE_FLOW.md](../../docs/plugins/MCP_DEDUPE_FLOW.md).

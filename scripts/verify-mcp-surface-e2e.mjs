@@ -39,8 +39,8 @@ const pj = JSON.parse(fs.readFileSync(PLUGIN_JSON, 'utf8'));
 if (pj.mcpServers) fail('plugin.json must not declare mcpServers (0.4.16+)');
 else ok('plugin.json has no mcpServers');
 
-if (String(pj.version || '').startsWith('0.4.16')) ok(`plugin version ${pj.version}`);
-else warn(`plugin version ${pj.version} — expected 0.4.16 for dedupe release`);
+if (String(pj.version || '').startsWith('0.4.17')) ok(`plugin version ${pj.version}`);
+else warn(`plugin version ${pj.version} — expected 0.4.17 (G-A162 MCP dedupe)`);
 
 if (fs.existsSync(MCP)) {
   const cfg = JSON.parse(fs.readFileSync(MCP, 'utf8'));

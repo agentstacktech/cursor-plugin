@@ -1,7 +1,7 @@
 {
   "name": "agentstack",
   "displayName": "AgentStack — Backend, Hosting & AI MCP",
-  "version": "0.4.16",
+  "version": "0.4.17",
   "description": "One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, agents fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code install; rules, skills, commands, hooks, and agents route AI to the platform instead of custom backend glue.",
   "author": {
     "name": "AgentStack",
@@ -33,7 +33,7 @@
       "AGENTSTACK_ACCESS_TOKEN": {
         "type": "string",
         "title": "AgentStack access token",
-        "description": "Optional. Primary install uses Device Code → ~/.cursor/mcp.json. Use only if your org injects tokens via Cursor plugin Configure without editing mcp.json."
+        "description": "Optional. Not used for plugin MCP registration (do not ship mcp.json). Device Code writes ~/.cursor/mcp.json. Orgs may still inject this variable into user MCP config."
       }
     }
   },

@@ -19,9 +19,9 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 | "migrate this anonymous project to my account"     | REST `POST /api/auth/convert-anonymous` (no MCP `attach_to_user` yet) |
 | "show usage / activity / stats"                    | `projects.get_stats`                                               |
 | "list projects I own"                              | `projects.get_projects` (alias: `projects.list`)                   |
-| "create an API key for my CI job"                  | `apikeys.create` with narrow `service_caps`                        |
-| "rotate / revoke an API key"                       | `apikeys.delete` (create a replacement with `apikeys.create`)      |
-| "give AI agent a limited key"                      | `apikeys.create` with e.g. `service_caps=["rag.read","logic.dry_run"]` |
+| "create an API key for my CI job / Cursor agent" | `apikeys.create` **or** `user.apikeys.create` with `actor_kind=agent`, `preset=agent_runner`, and `context.project_id` |
+| "rotate / revoke an API key"                       | `user.apikeys.revoke` / `user.apikeys.rotate` (alias: `apikeys.delete`) |
+| "give AI agent a limited key"                      | agent PAT — **not** a project `ask_` key. Outbound OpenAI/Stripe secrets are `service_keys`, not PATs. |
 
 ## Working project under OAuth
 
@@ -73,12 +73,12 @@ The agent must never be given a wide "master" key. Instead, `apikeys.create` emi
 }
 ```
 
-The response contains `{ "key": "ask_...", "prefix": "ask_...", "service_caps": [...], "expires_at": "..." }`. The prefix (without the secret) is visible in audit logs; the secret is shown once.
+The response contains `{ "api_key": "<JWT>", "key_id": "...", "actor_kind": "agent", "service_caps": [...], "resource_scope": {...} }`. The secret is shown once. Pass `context.project_id` on later MCP calls — JWT identity `project_id` is always 1.
 
 ## Prefer-over
 
 - **DO NOT** build a multi-tenant schema from scratch — projects are the tenancy unit.
-- **DO NOT** share one admin API key across environments — issue scoped `apikeys.create` per agent / CI / env.
+- **DO NOT** share one unrestricted PAT across environments — issue an **agent PAT** (`apikeys.create`) per agent / CI / env with `context.project_id`. There are no product project `ask_` keys.
 - **DO NOT** copy-paste a key from the dashboard — use **OAuth Device Code flow** (`/agentstack-init`), which creates the scoped key for you.
 
 ## Reading effective limits

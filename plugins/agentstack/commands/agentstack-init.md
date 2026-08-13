@@ -47,7 +47,7 @@ After the token exchange succeeds, `device-code.mjs` writes:
 - `~/.cursor/mcp.json` → `mcpServers.agentstack.headers.Authorization = "Bearer <access_token>"` (short-lived; hook `session-start.mjs` refreshes ahead of expiry).
 - `~/.cursor/agentstack-refresh` (mode 0600) — refresh token fallback if OS keyring is unavailable.
 
-**Reload Window** after first install (plugin 0.4.16+ registers MCP only via `~/.cursor/mcp.json`, not `plugin.json` mcpServers). In MCP settings you should see **one** `agentstack` server and **one** `agentstack_execute` tool.
+**Reload Window** after first install (plugin 0.4.17+ registers MCP only via `~/.cursor/mcp.json`). In MCP settings you should see **one** `agentstack` server from user config — **not** `plugin-agentstack-*` with an empty token.
 
 Optionally issue a long-lived scoped API key for CI (user choice):
 

@@ -3,7 +3,7 @@
 **Endpoint:** `https://agentstack.tech/mcp`  
 **Tool:** `agentstack.execute` (Cursor may show `agentstack_execute`; underscore alias still works on `tools/call`)  
 **Live catalog:** `GET https://agentstack.tech/mcp/actions`  
-**Version:** 0.4.16+
+**Version:** 0.4.17+
 
 ## Install plugin (dev)
 
@@ -20,7 +20,7 @@ OAuth 2.1 Device Code via `/agentstack-init` → Bearer in `~/.cursor/mcp.json`.
 
 Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
 
-**Do not** add a second MCP server in `plugin.json`. One registration path only.
+**Do not** ship `mcp.json` inside the plugin package (Cursor auto-registers it). One registration path: `~/.cursor/mcp.json`.
 
 ## Lean `~/.cursor/mcp.json` shape
 

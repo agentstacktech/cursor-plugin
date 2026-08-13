@@ -31,6 +31,7 @@ Use when:
 ## Recovery
 
 - **`invalid_grant`** — refresh token was revoked; clear `~/.cursor/agentstack-refresh` and restart.
+- **`client_secret is required`** — prod before public-plugin deploy. After shared+core deploy, builtin `cursor-plugin` needs no secret. Stale DCR: unset `AGENTSTACK_OAUTH_USE_DCR` or delete `~/.cursor/agentstack-oauth-client.json`. Then Reload Window.
 - **`invalid_scope`** — the requested scope is not allowed for `cursor-plugin` client; remove it.
 - **Browser did not open** — print the URL + code and ask the user to open manually.
 - **Support asks for diagnostics** — include the printed trace id from the login flow.
@@ -39,4 +40,4 @@ Use when:
 
 - `/agentstack-init` — first-time install.
 - `/agentstack-diagnose` — inspect current token state.
-- Hook `session-start.mjs` — auto-refreshes 2 minutes before expiry.
+- Hook `session-start.mjs` — auto-refreshes 2 minutes before expiry (public `cursor-plugin` by default; confidential secret only from env or `AGENTSTACK_OAUTH_USE_DCR=1`).

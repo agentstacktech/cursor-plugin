@@ -6,12 +6,13 @@ import { readFile, writeFile, mkdir, chmod, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { flattenMcpActionsCatalog, tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import {
   applyAgentstackMcpBearer,
   agentstackAuthHeaders,
   normalizeAgentstackMcpConfig,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { loadConfidentialClient } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -78,14 +79,19 @@ async function writeRefreshFile(data) {
 }
 
 async function refresh(refreshToken, traceId) {
+  const { clientId, clientSecret } = await loadConfidentialClient({
+    builtinClientId: CLIENT_ID,
+  });
+  const params = {
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+    client_id: clientId,
+  };
+  if (clientSecret) params.client_secret = clientSecret;
   const res = await fetch(`${BASE_URL}/api/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Trace-Id': traceId },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: CLIENT_ID,
-    }),
+    body: new URLSearchParams(params),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');

@@ -15,6 +15,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'url';
 import {
   STALE_ACTIONS,
+  textHasStaleAction,
   SECRET_PATTERNS,
   SAFE_PLACEHOLDER,
   HARD_CODED_ACTION_COUNT,
@@ -65,7 +66,6 @@ const REQUIRED_REPO_FILES = [
 
 const REQUIRED_PLUGIN_FILES = [
   '.cursor-plugin/plugin.json',
-  'mcp.json',
   'hooks/hooks.json',
   'hooks/scripts/device-code.mjs',
   'hooks/scripts/session-start.mjs',
@@ -96,7 +96,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.16';
+const TARGET_VERSION = '0.4.17';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
@@ -212,7 +212,7 @@ function checkTextSecurityAndDrift(liveActions) {
     if (relative === 'scripts/lib/stale-actions.mjs' || relative.endsWith('/scripts/lib/stale-actions.mjs')) continue;
     const content = fs.readFileSync(filePath, 'utf8');
     for (const [oldAction, newAction] of STALE_ACTIONS) {
-      if (content.includes(oldAction)) {
+      if (textHasStaleAction(content, oldAction)) {
         const severity = liveActions.has(newAction) ? fail : warn;
         severity(`${relative}: stale action "${oldAction}" found; use "${newAction}" or runtime discovery`);
       }
@@ -289,7 +289,7 @@ if (fs.existsSync(pluginPath)) {
       fail('plugin.json: mcpServers must not be set — MCP via ~/.cursor/mcp.json only (0.4.16+)');
     }
     if (plugin.variables?.type !== 'object') {
-      warn('plugin.json: variables JSON Schema recommended when mcp.json uses ${VAR} placeholders');
+      warn('plugin.json: variables JSON Schema optional (Device Code writes ~/.cursor/mcp.json)');
     } else {
       ok('plugin.json: variables schema present');
     }
@@ -373,34 +373,26 @@ if (fs.existsSync(listingPath)) {
   }
 }
 
-// 4. mcp.json — streamable-http + OAuth primary
-const mcpPath = path.join(PLUGIN, 'mcp.json');
-if (fs.existsSync(mcpPath)) {
-  const mcp = loadJson(mcpPath);
-  if (mcp) {
-    const cfg = mcp.mcpServers && mcp.mcpServers.agentstack;
-    if (!cfg) fail('mcp.json: missing mcpServers.agentstack');
-    else {
-      ok('mcp.json: mcpServers.agentstack present');
-      if (cfg.type !== 'streamable-http') fail(`mcp.json: type must be "streamable-http" (got: ${cfg.type})`);
-      else ok('mcp.json: type = streamable-http');
-      const h = cfg.headers || {};
-      const auth = h.Authorization || '';
-      const apiKey = h['X-API-Key'] || '';
-      if (auth.startsWith('Bearer ')) ok('mcp.json: Authorization: Bearer present (OAuth primary)');
-      else if (apiKey) warn('mcp.json: only X-API-Key present; OAuth Bearer is the primary channel in 0.4.9');
-      else fail('mcp.json: neither Authorization nor X-API-Key header configured');
-      const tokenLooksReal = /^ask_[A-Za-z0-9_-]{16,}/.test(apiKey) || /^Bearer\s+ey[A-Za-z0-9._-]{30,}/.test(auth);
-      const isPlaceholder = /\$\{|YOUR_|<.+>/.test(apiKey + '|' + auth);
-      if (tokenLooksReal && !isPlaceholder) fail('mcp.json: real token appears committed — use ${AGENTSTACK_ACCESS_TOKEN} placeholder');
-      const placeholders = [...JSON.stringify(cfg).matchAll(/\$\{([A-Z][A-Z0-9_]*)\}/g)].map((m) => m[1]);
-      const varProps = plugin?.variables?.properties || {};
-      for (const ph of placeholders) {
-        if (!varProps[ph]) fail(`mcp.json: placeholder \${${ph}} missing from plugin.json variables.properties`);
-      }
-      if (placeholders.length && Object.keys(varProps).length) ok(`mcp.json: ${placeholders.length} placeholder(s) declared in variables`);
-    }
-  }
+// 4. Plugin must NOT ship mcp.json — Cursor auto-registers it as plugin-agentstack-*
+// with empty ${AGENTSTACK_ACCESS_TOKEN} and shadows ~/.cursor/mcp.json (G-A162).
+const shippedMcp = path.join(PLUGIN, 'mcp.json');
+if (fs.existsSync(shippedMcp)) {
+  fail(
+    'plugins/agentstack/mcp.json must not ship (Cursor auto-registers plugin MCP). ' +
+      'Keep the example at mcp.example.json and write ~/.cursor/mcp.json via /agentstack-init.',
+  );
+} else {
+  ok('no plugins/agentstack/mcp.json (MCP via ~/.cursor/mcp.json only)');
+}
+const exampleMcpPath = path.join(ROOT, 'mcp.example.json');
+if (!fs.existsSync(exampleMcpPath)) {
+  fail('mcp.example.json missing at plugin repo root (docs template for ~/.cursor/mcp.json)');
+} else {
+  const example = loadJson(exampleMcpPath);
+  const cfg = example?.mcpServers?.agentstack;
+  if (!cfg) fail('mcp.example.json: missing mcpServers.agentstack');
+  else if (cfg.type !== 'streamable-http') fail(`mcp.example.json: type must be streamable-http (got: ${cfg.type})`);
+  else ok('mcp.example.json: lean streamable-http template');
 }
 
 // 5. Skills
