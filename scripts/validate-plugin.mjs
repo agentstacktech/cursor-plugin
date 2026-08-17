@@ -293,10 +293,10 @@ if (fs.existsSync(pluginPath)) {
     const ptrErr = pluginMcpPointerError(plugin);
     if (ptrErr) fail(`plugin.json: ${ptrErr}`);
     else ok(`plugin.json: mcpServers=${plugin.mcpServers}`);
-    if (plugin.variables?.type !== 'object') {
-      warn('plugin.json: variables JSON Schema optional (Device Code writes ~/.cursor/mcp.json)');
+    if (plugin.variables?.properties?.AGENTSTACK_ACCESS_TOKEN) {
+      fail('plugin.json: variables.AGENTSTACK_ACCESS_TOKEN is the old Configure API-key form — omit variables');
     } else {
-      ok('plugin.json: variables schema present');
+      ok('plugin.json: no Configure API-key variables (Connect + Device Code)');
     }
   }
 }

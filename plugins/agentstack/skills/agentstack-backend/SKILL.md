@@ -53,6 +53,8 @@ Content-Type: application/json
 
 Discover: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
+Read-only session bootstrap: recipe `mcp_read_bootstrap` (prompt `agentstack_read_bootstrap`) with `continueOnError: true`. Omit `apikeys.list` unless the key has L1 `api_keys`. Do not change the default `stopOnError=true` on money/mutation batches.
+
 ## References
 
 - Rules: `rules/agentstack-prefer.mdc`, `rules/agentstack-api-routing.mdc`

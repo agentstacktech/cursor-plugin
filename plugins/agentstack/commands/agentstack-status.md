@@ -5,7 +5,7 @@ description: Show AgentStack auth status, signed-in profile, and pinned project 
 
 # /agentstack-status
 
-One screen: **who is signed in**, **which project is pinned**, **whether MCP is usable**. Do not ask the user to paste a key. Do not call native `mcp_auth`.
+One screen: **who is signed in**, **which project is pinned**, **whether MCP is usable**. Do not ask the user to paste a key. Do not call native `mcp_auth`. There is no plugin Configure API-key form (that was leftover `variables`). Auth UI is this card + **Connect** in the MCP panel.
 
 ## How auth works (do not invent a second login)
 

@@ -14,7 +14,7 @@ Run these in order and present results as a single Markdown table.
 3. **Token** — decode the JWT in `~/.cursor/mcp.json` → `mcpServers.agentstack.headers.Authorization` (local only, no network); print `type`, `actor_kind`, `service_caps` (null vs list length), `exp`, and seconds to expiry. **`service_caps=null` on `agentstack.tech` fails every `tools/call`** even if `tools/list` is OK.
 4. **Whoami** — `GET /api/auth/me` with current Bearer (not `/whoami`). Prefer `/agentstack-status` when the user only wants auth + profile.
 5. **Project** — `projects.get_stats` with `X-Project-ID` (not JWT `project_id=1`). If the header is `1`, pin a tenant workspace (e.g. 1444).
-6. **API keys** — `apikeys.list` (print label, prefix, scopes, ttl).
+6. **API keys** — only if the token has L1 `api_keys` / `apikeys.read` (Device Code `user_full` or a PAT with that cap). Otherwise **skip** (`SKIP — no api_keys cap`); do **not** call `apikeys.list` (it fails the whole `stopOnError` batch). Prefer named recipe `mcp_read_bootstrap` / prompt `agentstack_read_bootstrap` (`continueOnError`, no `apikeys.list`).
 7. **Recent errors** — last 20 lines from `~/.cursor/agentstack-telemetry.jsonl` where `success=false`; show `trace_id` + action.
 8. **Hooks** — verify `hooks/hooks.json` lists sessionStart, beforeShellExecution, beforeMCPExecution, postToolUse, postToolUseFailure, sessionEnd, afterFileEdit; scripts under `hooks/scripts/` resolve from plugin root (`~/.cursor/plugins/local/agentstack` or marketplace install).
 9. **Capability snapshot** — age of `~/.cursor/agentstack-capabilities.json` (mtime); if missing or >24h, refresh via session-start or `GET /mcp/actions`. Confirm `actions` is a **flat array** (not nested `domains`).

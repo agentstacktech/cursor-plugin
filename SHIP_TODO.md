@@ -22,7 +22,7 @@
 - [x] capability-refresh: shared `agentstackAuthHeaders` (Bearer or API key)
 - [x] CI + smoke run `audit-layers.mjs`
 - [x] Remove `$schema` from manifests (Cursor load blocker)
-- [x] Add `variables` for `${AGENTSTACK_ACCESS_TOKEN}`
+- [x] No `variables.AGENTSTACK_ACCESS_TOKEN` (that was the old Configure API-key form)
 - [x] Fix `agentstack-guidance` skill frontmatter + tenant paths
 - [x] `refresh-cursor-runtime.mjs` — purge/sync stale marketplace cache (root cause of lingering `$schema` UI error)
 
@@ -42,7 +42,7 @@
 | sessionStart | normalize + status card + auto Device Code + seed catalog | [x] |
 | afterFileEdit mcp.json | cache clear + snapshot | [x] |
 | Telemetry | opt-in only | [x] |
-| Plugin variables | `${AGENTSTACK_ACCESS_TOKEN}` ↔ Configure UI | [x] |
+| Plugin variables | omitted — Configure API-key form was leftover; Connect + `/agentstack-status` | [x] |
 
 ---
 

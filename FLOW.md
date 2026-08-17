@@ -75,7 +75,7 @@ node scripts/diagnose-local.mjs --fix --seed-snapshot
 
 ## MCP registration plane (0.4.18)
 
-**Plugin panel:** `plugin.json` `mcpServers: "./mcp.json"` → URL-only streamable-http (no Bearer). Cursor shows AgentStack MCP — click **Connect** (G-A174 login). **Hooks / Device Code:** `/agentstack-authorize` still writes `~/.cursor/mcp.json` (`user-agentstack`). **Forbidden:** `${AGENTSTACK_ACCESS_TOKEN}` or any `Authorization` in the shipped plugin `mcp.json` (G-A162), and an **inline** `mcpServers` object in `plugin.json`.
+**Plugin panel:** `plugin.json` `mcpServers: "./mcp.json"` → URL-only streamable-http (no Bearer, **no** `variables` API-key form). Cursor shows AgentStack MCP — click **Connect** (G-A174 login). Status: sessionStart card + `/agentstack-status`. **Hooks / Device Code:** `/agentstack-authorize` still writes `~/.cursor/mcp.json` (`user-agentstack`). **Forbidden:** `${AGENTSTACK_ACCESS_TOKEN}` or any `Authorization` in the shipped plugin `mcp.json` (G-A162), an **inline** `mcpServers` object in `plugin.json`, and `variables.AGENTSTACK_ACCESS_TOKEN` (old Configure window).
 
 ```mermaid
 flowchart LR

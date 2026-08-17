@@ -83,12 +83,12 @@ The response contains `{ "api_key": "<JWT>", "key_id": "...", "actor_kind": "age
 
 ## Reading effective limits
 
-`projects.get_stats` returns current usage; cross-reference with `buffs.get_effective_limits` for the quota ceilings.
+`projects.get_stats` returns current usage; cross-reference with `buffs.get_effective_limits` for the quota ceilings. Omit `entity_kind` (must be the string `user` or `project`, never an object). Named read bootstrap: `mcp_read_bootstrap` with `continueOnError`. Do **not** add `apikeys.list` to that batch unless the token has L1 `api_keys` — `service_cap_denied` aborts `stopOnError` packs.
 
 ## Pitfalls
 
 - Under OAuth, forgetting `context.project_id` leaves the session on ecosystem project `1` — many tools then look like they “do nothing” or hit the wrong DNA slice.
-- `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand.
+- `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand. `apikeys.list` needs `api_keys` / `apikeys.read` — skip it on diagnose/bootstrap if the cap is absent.
 - `apikeys.create` requires the current session to already have the apikeys write capability — the OAuth Device Code flow grants this as part of approved scopes.
 - Anonymous project attach uses REST convert-anonymous (no MCP attach_to_user yet).
 

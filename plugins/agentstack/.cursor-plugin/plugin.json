@@ -27,16 +27,6 @@
     "agent",
     "boilerplate-free"
   ],
-  "variables": {
-    "type": "object",
-    "properties": {
-      "AGENTSTACK_ACCESS_TOKEN": {
-        "type": "string",
-        "title": "AgentStack access token",
-        "description": "Optional org inject into user ~/.cursor/mcp.json. Plugin MCP uses Cursor OAuth Connect (mcp.json has no Bearer placeholder)."
-      }
-    }
-  },
   "rules": "rules/",
   "skills": "skills/",
   "commands": "commands/",

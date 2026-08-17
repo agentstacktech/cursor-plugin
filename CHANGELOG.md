@@ -13,6 +13,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 - MCP absent from the plugin package (0.4.17 over-corrected G-A162). Empty `${AGENTSTACK_ACCESS_TOKEN}` remains forbidden.
 - Init/diagnose used dead `/api/auth/whoami`. Everyday smoke is `auth.get_profile`, not `system.ping`.
+- **Old Configure API-key form:** removed `plugin.json` `variables.AGENTSTACK_ACCESS_TOKEN`. Sign-in is **Connect** + Device Code; status is the sessionStart card / `/agentstack-status`.
 
 ### Changed
 
