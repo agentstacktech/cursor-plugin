@@ -3,9 +3,10 @@
  * @see repo.plugins.oauth_device_code.gen1
  */
 
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { spawn } from 'node:child_process';
 
 const DEFAULT_CLIENT_ID = 'cursor-plugin';
 
@@ -126,4 +127,103 @@ export async function pollDeviceToken({
     throw new Error(token.error_description || token.error || 'Device authorization failed');
   }
   throw new Error('Device code expired');
+}
+
+export const DEVICE_LOGIN_LOCK_FILE = 'agentstack-device.lock';
+const DEVICE_LOCK_STALE_MS = 15 * 60 * 1000;
+
+function pidAlive(pid) {
+  const n = Number(pid);
+  if (!Number.isInteger(n) || n <= 0) return false;
+  try {
+    process.kill(n, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * @param {string} cursorDir
+ * @returns {Promise<object|null>}
+ */
+export async function readDeviceLoginLock(cursorDir) {
+  try {
+    return JSON.parse(await readFile(join(cursorDir, DEVICE_LOGIN_LOCK_FILE), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/** True when a Device Code poller is still alive (sessionStart must not spawn another). */
+export async function isDeviceLoginLockBusy(cursorDir) {
+  const existing = await readDeviceLoginLock(cursorDir);
+  if (!existing) return false;
+  const started = Date.parse(existing.started_at || '') || 0;
+  const fresh = Date.now() - started < DEVICE_LOCK_STALE_MS;
+  return pidAlive(existing.pid) && fresh;
+}
+
+/**
+ * Patch lock fields (user_code / Activate URL) after device/authorize.
+ * @param {string} cursorDir
+ * @param {object} patch
+ */
+export async function updateDeviceLoginLock(cursorDir, patch) {
+  const existing = (await readDeviceLoginLock(cursorDir)) || {};
+  await mkdir(cursorDir, { recursive: true });
+  await writeFile(
+    join(cursorDir, DEVICE_LOGIN_LOCK_FILE),
+    JSON.stringify({ ...existing, ...patch }),
+    'utf8',
+  );
+}
+
+/**
+ * Single-flight lock so sessionStart does not spawn overlapping Device Code polls.
+ * @param {string} cursorDir
+ * @param {number} [pid]
+ * @returns {Promise<{ ok: true, rec: object } | { ok: false, existing: object }>}
+ */
+export async function beginDeviceLoginLock(cursorDir, pid = process.pid) {
+  if (await isDeviceLoginLockBusy(cursorDir)) {
+    return { ok: false, existing: await readDeviceLoginLock(cursorDir) };
+  }
+  const rec = { pid, started_at: new Date().toISOString() };
+  await mkdir(cursorDir, { recursive: true });
+  await writeFile(join(cursorDir, DEVICE_LOGIN_LOCK_FILE), JSON.stringify(rec), 'utf8');
+  return { ok: true, rec };
+}
+
+/**
+ * @param {string} cursorDir
+ * @param {number} [pid]
+ */
+export async function endDeviceLoginLock(cursorDir, pid = process.pid) {
+  const existing = await readDeviceLoginLock(cursorDir);
+  if (existing && Number(existing.pid) !== Number(pid)) return;
+  try {
+    await unlink(join(cursorDir, DEVICE_LOGIN_LOCK_FILE));
+  } catch {
+    /* gone */
+  }
+}
+
+/**
+ * Fire-and-forget Device Code poller (sessionStart). ESM imports resolve from the script path.
+ * @param {string} scriptPath
+ * @param {string[]} [args]
+ * @param {{ cwd?: string }} [opts]
+ * @returns {number|undefined} child pid
+ */
+export function spawnDetachedDeviceCode(scriptPath, args = ['--scope-preset=full'], { cwd } = {}) {
+  const child = spawn(process.execPath, [scriptPath, ...args], {
+    cwd,
+    detached: true,
+    stdio: 'ignore',
+    windowsHide: true,
+    env: process.env,
+  });
+  child.unref();
+  return child.pid;
 }

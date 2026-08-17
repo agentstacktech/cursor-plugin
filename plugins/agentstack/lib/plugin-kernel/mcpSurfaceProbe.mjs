@@ -68,9 +68,34 @@ export async function postToolsCallExecuteAlias(baseUrl, authHeaders) {
   if (!res.ok) throw new Error(`tools/call HTTP ${res.status}`);
   const body = await res.json();
   if (body?.result?.isError !== false) {
-    throw new Error(`tools/call ${MCP_EXECUTE_TOOL_ALIAS} isError=${body?.result?.isError}`);
+    throw new Error(`tools/call ${MCP_EXECUTE_TOOL_ALIAS}: ${toolsCallErrorDetail(body)}`);
   }
   return body;
+}
+
+/**
+ * Short, secret-free reason from JSON-RPC tools/call isError payload.
+ * @param {object} body
+ * @returns {string}
+ */
+export function toolsCallErrorDetail(body) {
+  const text = body?.result?.content?.[0]?.text;
+  if (typeof text === 'string' && text.trim()) {
+    const raw = text.trim();
+    try {
+      const parsed = JSON.parse(raw);
+      const code = parsed.error_code || parsed.code;
+      const err = parsed.error || parsed.message;
+      if (err) {
+        return [code, err].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
+      }
+    } catch {
+      /* plain text */
+    }
+    return raw.replace(/\s+/g, ' ').trim().slice(0, 280);
+  }
+  if (body?.error?.message) return String(body.error.message);
+  return `isError=${body?.result?.isError}`;
 }
 
 /**

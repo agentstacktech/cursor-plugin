@@ -22,7 +22,7 @@ sequenceDiagram
   participant Hooks as hooks lifecycle
   participant Snap as agentstack-capabilities.json
 
-  User->>Init: /agentstack-init
+  User->>Init: /agentstack-authorize (or sessionStart auto Device Code)
   Init->>DC: node hooks/scripts/device-code.mjs
   DC->>AS: POST /api/oauth2/device/authorize
   AS-->>DC: device_code + user_code
@@ -31,14 +31,15 @@ sequenceDiagram
     DC->>AS: POST /api/oauth2/token
     Note over AS: 400 + authorization_pending until approved
   end
-  AS-->>DC: access_token + refresh_token
+  AS-->>DC: access_token (user PAT JWT + service_caps; no refresh_token)
   DC->>MCP: write ~/.cursor/mcp.json Bearer
   DC->>AS: POST /mcp/cache/clear
   DC->>AS: GET /mcp/actions
   DC->>Snap: flat actions[] snapshot
-  Hooks->>MCP: sessionStart refresh if exp less than 120s (public cursor-plugin; secret only if env/DCR)
+  Hooks->>MCP: sessionStart refresh only if a leftover refresh_token file exists (device grant returns a long-lived PAT)
   Hooks->>Snap: refresh if older than 24h
   MCP->>AS: agentstack.execute steps
+  Note over MCP,AS: tools/list can succeed while tools/call fails (prod rejects JWT service_caps=null)
   Hooks->>Snap: beforeMCPExecution cap hint
 ```
 
@@ -49,6 +50,8 @@ sequenceDiagram
 | `~/.cursor/mcp.json` | device-code, session-start | Cursor MCP, hooks |
 | `~/.cursor/agentstack-refresh` | device-code, session-start | session-start |
 | `~/.cursor/agentstack-capabilities.json` | device-code, session-start, capability-refresh | pre-mcp-cap-check, diagnose |
+| `~/.cursor/agentstack-device.lock` | device-code | session-start, diagnose |
+| `~/.cursor/agentstack-project` | /agentstack-login | device-code, session-start |
 | `~/.cursor/agentstack-telemetry.jsonl` | post-tool-* (opt-in only) | session-end flush, diagnose |
 | `~/.cursor/plugins/local/agentstack` | `scripts/install-local.mjs` | Cursor local plugins |
 | `~/.cursor/plugins/cache/agentstack/…` | Cursor marketplace install | Cursor may prefer this over local — must not ship `$schema` |
@@ -68,11 +71,11 @@ node scripts/diagnose-local.mjs
 node scripts/diagnose-local.mjs --fix --seed-snapshot
 ```
 
-`sessionStart` normalizes lean `mcpServers.agentstack` and refreshes the flat capability snapshot using Bearer **or** `X-API-Key`.
+`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot using Bearer **or** `X-API-Key`, and emits JSON `additional_context` when unsigned / placeholder / `service_caps=null`. If the gate still needs login it spawns `device-code.mjs` once (lock file) so Activate opens without pasting a key. Tests must not pass `--from-hook`. Logs go to stderr so stdout stays valid JSON. Stale Cursor marketplace cache is synced with `scripts/refresh-cursor-runtime.mjs --fix`.
 
 ## MCP registration plane (0.4.16+)
 
-**Single path:** Device Code → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` **and must not ship `mcp.json`** (Cursor auto-registers it as `plugin-agentstack-*` with an empty token — G-A162).
+**Single path:** Device Code (`/agentstack-authorize`) → `~/.cursor/mcp.json` only. The plugin bundle **must not** declare `mcpServers` in `plugin.json` **and must not ship `mcp.json`** (Cursor auto-registers it as `plugin-agentstack-*` with an empty token — G-A162). Cursor plugins have no webview Connect button; `/agentstack-authorize` is the auth control. A missing MCP server *inside the plugin panel* is expected — look for **`user-agentstack`** from user config.
 
 ```mermaid
 flowchart LR

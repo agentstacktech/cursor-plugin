@@ -44,13 +44,15 @@ export const ACTION_COUNT_ALLOWLIST = new Set([
   'docs/plugins/CAPABILITY_MATRIX.md',
   'docs/CAPABILITY_MATRIX.md',
   'provided_plugins/cursor-plugin/VERIFICATION_CHECKLIST.md',
-  'provided_plugins/cursor-plugin/commands/agentstack-diagnose.md',
-  'provided_plugins/cursor-plugin/commands/agentstack-capability-matrix.md',
+  'provided_plugins/cursor-plugin/plugins/agentstack/commands/agentstack-diagnose.md',
+  'provided_plugins/cursor-plugin/plugins/agentstack/commands/agentstack-capability-matrix.md',
   'provided_plugins/cursor-plugin/docs/CAPABILITY_MATRIX.md',
   // Standalone publish repo (paths relative to plugin root)
   'VERIFICATION_CHECKLIST.md',
   'commands/agentstack-diagnose.md',
   'commands/agentstack-capability-matrix.md',
+  'plugins/agentstack/commands/agentstack-diagnose.md',
+  'plugins/agentstack/commands/agentstack-capability-matrix.md',
 ]);
 
 /** Skills that must appear in agentstack-backend router table. */

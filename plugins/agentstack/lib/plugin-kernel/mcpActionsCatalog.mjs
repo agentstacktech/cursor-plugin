@@ -4,7 +4,11 @@
  * @see repo.plugins.capability_routing.gen1
  */
 
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { filterTenantActions } from './docAudienceFilter.mjs';
+
+export const CAPABILITY_SNAPSHOT_FILENAME = 'agentstack-capabilities.json';
 
 /**
  * @param {unknown} payload
@@ -50,4 +54,35 @@ export function actionsFromSnapshot(snapshotFile) {
  */
 export function tenantActionsFromCatalog(payload) {
   return filterTenantActions(flattenMcpActionsCatalog(payload));
+}
+
+/**
+ * Disk shape for ~/.cursor/agentstack-capabilities.json (Device Code + sessionStart + diagnose).
+ * @param {unknown} catalog
+ * @param {{ now?: number }} [opts]
+ */
+export function buildTenantCapabilitySnapshot(catalog, { now = Date.now() } = {}) {
+  const actions = tenantActionsFromCatalog(catalog);
+  return {
+    fetched_at: now,
+    audience: 'tenant',
+    total_actions: actions.length,
+    actions,
+  };
+}
+
+/**
+ * @param {string} cursorDir — typically ~/.cursor
+ * @param {unknown} catalog
+ * @returns {Promise<number>} tenant action count
+ */
+export async function writeTenantCapabilitySnapshot(cursorDir, catalog) {
+  const snapshot = buildTenantCapabilitySnapshot(catalog);
+  await mkdir(cursorDir, { recursive: true });
+  await writeFile(
+    join(cursorDir, CAPABILITY_SNAPSHOT_FILENAME),
+    JSON.stringify(snapshot, null, 2),
+    'utf8',
+  );
+  return snapshot.total_actions;
 }

@@ -60,6 +60,44 @@ if (!/Usage:/.test(help.stdout || '')) {
 }
 console.log('OK   device-code.mjs --help');
 
+const sessionStart = spawnSync(process.execPath, ['hooks/scripts/session-start.mjs'], {
+  cwd: PLUGIN,
+  encoding: 'utf8',
+  env: { ...process.env, AGENTSTACK_DISABLE_AUTO_LOGIN: '1' },
+});
+if (sessionStart.status !== 0) {
+  console.error('FAIL session-start exit', sessionStart.status, sessionStart.stderr);
+  process.exit(1);
+}
+let sessionOut;
+try {
+  sessionOut = JSON.parse((sessionStart.stdout || '').trim().split(/\r?\n/).pop() || '{}');
+} catch {
+  console.error('FAIL session-start stdout is not JSON:', sessionStart.stdout);
+  process.exit(1);
+}
+if (sessionOut.additional_context != null && typeof sessionOut.additional_context !== 'string') {
+  console.error('FAIL session-start additional_context must be a string');
+  process.exit(1);
+}
+console.log('OK   session-start.mjs stdout JSON');
+
+const sessionFromHook = spawnSync(
+  process.execPath,
+  ['hooks/scripts/session-start.mjs', '--from-hook'],
+  {
+    cwd: PLUGIN,
+    encoding: 'utf8',
+    env: { ...process.env, AGENTSTACK_DISABLE_AUTO_LOGIN: '1' },
+  },
+);
+if (sessionFromHook.status !== 0) {
+  console.error('FAIL session-start --from-hook exit', sessionFromHook.status, sessionFromHook.stderr);
+  process.exit(1);
+}
+JSON.parse((sessionFromHook.stdout || '').trim().split(/\r?\n/).pop() || '{}');
+console.log('OK   session-start.mjs --from-hook + DISABLE_AUTO_LOGIN');
+
 const kernelTest = spawnSync(process.execPath, ['scripts/test-kernel-catalog.mjs'], {
   cwd: ROOT,
   encoding: 'utf8',

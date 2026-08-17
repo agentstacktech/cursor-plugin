@@ -17,10 +17,10 @@ If instead `X-API-Key` is present, ask the user: "Upgrade to OAuth Device Code (
 
 **Prerequisite:** Node.js on PATH (`node -v`). If missing, use the MCP deeplink fallback in `MCP_QUICKSTART.md` or set `AGENTSTACK_ACCESS_TOKEN` in the environment and map it into Cursor MCP settings.
 
-Resolve the plugin root (directory that contains `hooks/scripts/device-code.mjs` — often `~/.cursor/plugins/local/agentstack` or the marketplace install path). Then run:
+Prefer `/agentstack-authorize` when the user only wants to sign in (no SDK scaffold). Resolve the plugin root (directory that contains `hooks/scripts/device-code.mjs` — often `~/.cursor/plugins/local/agentstack` or the marketplace install path). Then run:
 
 ```bash
-node ./hooks/scripts/device-code.mjs
+node ./hooks/scripts/device-code.mjs --scope-preset=full
 ```
 
 (If cwd is not the plugin root, pass an absolute path to the script.)
@@ -47,7 +47,7 @@ After the token exchange succeeds, `device-code.mjs` writes:
 - `~/.cursor/mcp.json` → `mcpServers.agentstack.headers.Authorization = "Bearer <access_token>"` (short-lived; hook `session-start.mjs` refreshes ahead of expiry).
 - `~/.cursor/agentstack-refresh` (mode 0600) — refresh token fallback if OS keyring is unavailable.
 
-**Reload Window** after first install (plugin 0.4.17+ registers MCP only via `~/.cursor/mcp.json`). In MCP settings you should see **one** `agentstack` server from user config — **not** `plugin-agentstack-*` with an empty token.
+**Reload Window** after first install (plugin 0.4.17+ registers MCP only via `~/.cursor/mcp.json`). In MCP settings you should see **one** `agentstack` server from user config — **not** `plugin-agentstack-*` with an empty token. A missing server *inside the plugin panel* is expected.
 
 Optionally issue a long-lived scoped API key for CI (user choice):
 

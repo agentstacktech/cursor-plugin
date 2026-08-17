@@ -2,7 +2,7 @@
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
-**MCP dedupe (0.4.17):** plugin package must **not** include `mcp.json` or `plugin.json` `mcpServers`. Device Code writes `~/.cursor/mcp.json` only. After Reload Window expect **one** Cursor MCP server (`agentstack` from user config) and **one** `agentstack_execute` tool. A `plugin-agentstack-*` server with empty token is the G-A162 trap.
+**MCP dedupe (0.4.17):** plugin package must **not** include `mcp.json` or `plugin.json` `mcpServers`. Device Code (`/agentstack-authorize`) writes `~/.cursor/mcp.json` only. After Reload Window expect **one** Cursor MCP server (`agentstack` / `user-agentstack` from user config) and **one** `agentstack_execute` tool. A `plugin-agentstack-*` server with empty token is the G-A162 trap. MCP **missing inside the plugin panel** is expected.
 
 ```bash
 node scripts/diagnose-local.mjs --seed-snapshot

@@ -21,6 +21,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | support ticket, staff inbox, psup | `agentstack-support` | `social.support.*` |
 | upload, quota, attachment, media | `agentstack-storage` | `storage.*`, REST upload |
 | login, register, role, RBAC | `agentstack-auth-rbac` | `auth.*`, `rbac.*` |
+| authorize plugin / Device Code / MCP missing in plugin | `/agentstack-authorize` | Device Code → `~/.cursor/mcp.json` (not tenant `auth.login`) |
 | when X then Y, automation, workflow | `agentstack-logic` | `logic.*`, `commands.*` |
 | payment, wallet balance, checkout, buffs (not project treasury) | `agentstack-commerce` | `payments.*`, `wallets.*`, `buffs.*` |
 | digital goods, asset wizard | `agentstack-commerce-assets` | `assets.*` |
@@ -38,7 +39,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 
 Pick the **primary** bucket first; consult others by reference for multi-step flows.
 
-**Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-signals` / integrations (never `@stripe/stripe-js` for AgentStack checkout).
+**Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-signals` / integrations (never `@stripe/stripe-js` for AgentStack checkout). Cursor plugin sign-in / “MCP not in the plugin” → `/agentstack-authorize`, not `auth.login`.
 
 ## Universal MCP contract
 

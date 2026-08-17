@@ -23,6 +23,18 @@ const SOT_MARKETPLACE = path.join(ROOT, '.cursor-plugin', 'marketplace.json');
 const SOT_HOOKS = path.join(PLUGIN, 'hooks', 'hooks.json');
 const CURSOR_PLUGINS = path.join(os.homedir(), '.cursor', 'plugins');
 
+/** Auth/MCP slice Cursor cache often keeps from marketplace 0.4.16 while local is newer. */
+const AUTH_SLICE = [
+  'hooks/hooks.json',
+  'hooks/scripts/session-start.mjs',
+  'hooks/scripts/device-code.mjs',
+  'lib/plugin-kernel/mcpConfig.mjs',
+  'lib/plugin-kernel/deviceCodeClient.mjs',
+  'commands/agentstack-authorize.md',
+  'rules/agentstack-prefer.mdc',
+  'skills/agentstack-auth-rbac/SKILL.md',
+];
+
 const fix = process.argv.includes('--fix');
 const purge = process.argv.includes('--purge');
 
@@ -62,6 +74,10 @@ function loadJson(p) {
   }
 }
 
+function samePath(a, b) {
+  return path.resolve(a).replace(/\\/g, '/').toLowerCase() === path.resolve(b).replace(/\\/g, '/').toLowerCase();
+}
+
 function stripSchemaWrite(filePath, sotPath) {
   const sot = loadJson(sotPath);
   if (!sot) {
@@ -74,6 +90,30 @@ function stripSchemaWrite(filePath, sotPath) {
   fixed += 1;
   ok(`wrote SoT → ${filePath}`);
   return true;
+}
+
+function syncAuthSlice(pluginRoot) {
+  if (samePath(pluginRoot, PLUGIN)) return;
+  for (const rel of AUTH_SLICE) {
+    const src = path.join(PLUGIN, rel);
+    const dest = path.join(pluginRoot, rel);
+    if (!fs.existsSync(src)) continue;
+    const a = fs.readFileSync(src);
+    let b = null;
+    try {
+      b = fs.readFileSync(dest);
+    } catch {
+      /* missing in cache */
+    }
+    if (b && a.equals(b)) continue;
+    fail(`${dest}: auth-slice drift (${rel})`);
+    if (fix) {
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, a);
+      fixed += 1;
+      ok(`synced ${rel} → ${dest}`);
+    }
+  }
 }
 
 function scanAndFix() {
@@ -137,6 +177,14 @@ function scanAndFix() {
       ok(`clean plugin.json version=${j.version || '?'} @ ${rel}`);
     }
   }
+
+  const pluginRoots = new Set();
+  for (const file of files) {
+    const n = file.replace(/\\/g, '/').toLowerCase();
+    if (path.basename(n) !== 'hooks.json' || !n.includes('agentstack')) continue;
+    pluginRoots.add(path.dirname(path.dirname(file)));
+  }
+  for (const root of pluginRoots) syncAuthSlice(root);
 
   for (const file of walkJson(CURSOR_PLUGINS)) {
     const n = file.replace(/\\/g, '/').toLowerCase();

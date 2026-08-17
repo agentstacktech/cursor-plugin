@@ -21,7 +21,7 @@ node provided_plugins/scripts/sync-cursor-plugin-publish.mjs ../cursor-plugin-pu
 
 ## Rules of the road
 
-1. **One MCP registration path** — never add `mcpServers` to `plugin.json` and never ship `plugins/agentstack/mcp.json` (Cursor auto-registers it). Device Code writes `~/.cursor/mcp.json`.
+1. **One MCP registration path** — never add `mcpServers` to `plugin.json` and never ship `plugins/agentstack/mcp.json` (Cursor auto-registers it). Device Code (`/agentstack-authorize`) writes `~/.cursor/mcp.json`.
 2. **Live catalog only** — do not hard-code action counts in skills (see monorepo `docs/plugins/CANONICAL_COPY.md`).
 3. **Bump together** — `plugins/agentstack/.cursor-plugin/plugin.json` version + `CHANGELOG.md`.
 4. **Kernel changes** — edit `provided_plugins/shared/plugin-kernel/` then `sync-plugin-kernel.mjs` (do not hand-edit vendored files only).

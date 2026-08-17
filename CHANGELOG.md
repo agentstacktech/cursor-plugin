@@ -2,6 +2,24 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- **`/agentstack-authorize`:** one-shot Device Code sign-in (no API key, default full scopes). Cursor plugins have no webview Connect button; this slash command is the auth control.
+- **`sessionStart` additional_context:** when unsigned, placeholder token, or `service_caps=null`, inject `/agentstack-authorize` into the conversation. Hook stdout is now a single JSON object (logs on stderr) so Cursor can apply the context.
+- **sessionStart auto Device Code:** Cursor hook (`--from-hook`) spawns `device-code.mjs` when the auth gate needs login. Single-flight lock `~/.cursor/agentstack-device.lock`. Tests/diagnose do not pass `--from-hook`. Opt out: `AGENTSTACK_DISABLE_AUTO_LOGIN=1`.
+- **Tenant pin file is live:** `~/.cursor/agentstack-project` is read by Device Code and sessionStart (`readPinnedTenantProjectId`). Ecosystem `1` is ignored.
+- **Normalize scrubs ecosystem `X-Project-ID=1`** (same helper as Device Code Bearer apply). `agentstackAuthHeaders` no longer forwards pid `1`.
+- **`refresh-cursor-runtime --fix` syncs the auth slice** (hooks + Device Code + kernel) into Cursor marketplace cache so auto-login is not stuck on 0.4.16.
+- **Capability snapshot SoT:** Device Code, sessionStart, capability-refresh, and diagnose `--seed-snapshot` share `writeTenantCapabilitySnapshot` in plugin-kernel (no per-hook JSON shape).
+
+### Fixed
+
+- **Diagnose was green while execute was dead (G-A171):** `tools/list` is public-shaped; prod still rejects JWT `service_caps=null` on `tools/call`. Diagnose now peeks JWT caps (no secret), probes `system.ping`, and prints the MCP error text. Device Code no longer overwrites a tenant `X-Project-ID` with ecosystem `1`.
+- **Scope-map test** pointed at the pre-2.6 `hooks/scripts/device-code.mjs` path (file gone). Atlas gene `repo.plugins.oauth_device_code.gen1` now runs `test_device_code_scope_map.py`.
+- **`test-device-code.ps1`** used the same stale plugin-root `hooks/` path; Device Code e2e script now runs `plugins/agentstack/hooks/scripts/device-code.mjs`. Token grant is a long-lived PAT (no `refresh_token`) — FLOW.md matches.
+
 ## [0.4.17] - 2026-08-13
 
 ### Fixed

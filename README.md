@@ -12,7 +12,7 @@
 /agentstack-init
 ```
 
-The plugin prints a short code, opens `https://agentstack.tech/activate`, and after you approve writes a scoped Bearer into `~/.cursor/mcp.json`. No copy-pasting API keys. (OAuth 2.1 Device Authorization Grant — RFC 8628.)
+The plugin prints a short code, opens `https://agentstack.tech/activate`, and after you approve writes a scoped Bearer into `~/.cursor/mcp.json`. No copy-pasting API keys. (OAuth 2.1 Device Authorization Grant — RFC 8628.) Quick re-auth: `/agentstack-authorize`. New chats auto-open Activate when MCP is unsigned or the JWT has `service_caps=null` (`sessionStart --from-hook`).
 
 **MCP surface (0.4.16+):**
 
@@ -55,7 +55,7 @@ provided_plugins/cursor-plugin/
 │   ├── (no mcp.json)        # Cursor would auto-register it; use ~/.cursor/mcp.json
 │   ├── rules/               # 9 .mdc (1 alwaysApply: agentstack-prefer)
 │   ├── skills/              # 24 domains + optional solana
-│   ├── commands/            # 13 slash workflows
+│   ├── commands/            # 14 slash workflows
 │   ├── agents/              # 3 marketplace agents (+2 maintainer overlay)
 │   ├── hooks/               # lifecycle + policy scripts
 │   ├── lib/plugin-kernel/   # vendored Device Code + MCP helpers
@@ -74,7 +74,7 @@ Catalog plane: live `GET /mcp/actions` (never hard-code action counts in skills)
 ## First 5 minutes
 
 1. `node scripts/install-local.mjs` → **Developer: Reload Window**
-2. `/agentstack-init` (Node on PATH) → approve at `/activate`
+2. `/agentstack-authorize` (or `/agentstack-init`) → approve at `/activate`
 3. `/agentstack-diagnose` then `/agentstack-capability-matrix`
 4. Optional: `/agentstack-host-site` for a live `/s/` URL
 
@@ -86,8 +86,9 @@ Primary auth is Device Code → Bearer in `~/.cursor/mcp.json`. Fallback: API ke
 
 | Command | What it does |
 |---------|--------------|
-| `/agentstack-init` | Device Code auth + lean MCP write (canonical install) |
-| `/agentstack-login` | Re-auth or switch project |
+| `/agentstack-authorize` | Device Code sign-in (no API key) — plugin auth control |
+| `/agentstack-init` | Device Code auth + lean MCP write + SDK scaffold |
+| `/agentstack-login` | Re-auth or switch project / scopes |
 | `/agentstack-scaffold-auth` | Minimal login/register UI on `auth.*` |
 | `/agentstack-scaffold-backend` | RBAC + Buffs gates + AgentPay + admin panel |
 | `/agentstack-sync-schema` | Prisma/Drizzle → 8DNA + FAP + Logic |
@@ -106,7 +107,7 @@ Primary auth is Device Code → Bearer in `~/.cursor/mcp.json`. Fallback: API ke
 
 | Intent signal | First port of call |
 |---------------|-------------------|
-| login / register / sessions | `auth.*` |
+| login / register / sessions | `auth.*` (tenant app). Plugin MCP sign-in → `/agentstack-authorize` |
 | permissions / roles | `rbac.*` + `protected.*` 8DNA |
 | store / read app data | `project.data.*` / `user.data.*` |
 | files / blobs | `storage.*` |
@@ -189,9 +190,9 @@ Submit URL: https://cursor.com/marketplace/publish
 
 1. `POST /api/oauth2/device/authorize` → `device_code` + `user_code`  
 2. Browser: `/activate?user_code=…` → user approves  
-3. Poll `POST /api/oauth2/token` until `access_token` (+ `refresh_token`)  
+3. Poll `POST /api/oauth2/token` until a long-lived PAT JWT (`service_caps` from Device Code scopes; usually no `refresh_token`)  
 4. Plugin writes `Authorization: Bearer …` into `~/.cursor/mcp.json`  
-5. `session-start` refreshes Bearer near expiry and keeps a flat capability snapshot  
+5. `session-start` keeps a flat capability snapshot; auto Device Code if the gate is unsigned / placeholder / `service_caps=null`
 
 Full sequence diagram: [FLOW.md](FLOW.md).
 

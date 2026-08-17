@@ -7,9 +7,16 @@ import { join } from 'node:path';
 import { homedir, platform } from 'node:os';
 import { exec } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { pollDeviceToken, loadConfidentialClient, deviceCodeActivateUrl } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
-import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
-import { applyAgentstackMcpBearer } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import {
+  pollDeviceToken,
+  loadConfidentialClient,
+  deviceCodeActivateUrl,
+  beginDeviceLoginLock,
+  endDeviceLoginLock,
+  updateDeviceLoginLock,
+} from '../../lib/plugin-kernel/deviceCodeClient.mjs';
+import { writeTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { applyAgentstackMcpBearer, readPinnedTenantProjectId } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -34,7 +41,6 @@ const SCOPE_PRESETS = {
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
 const REFRESH_PATH = join(CURSOR_DIR, 'agentstack-refresh');
-const SNAPSHOT_PATH = join(CURSOR_DIR, 'agentstack-capabilities.json');
 
 function parseArgs(argv) {
   const out = { scopes: DEFAULT_SCOPES };
@@ -62,12 +68,14 @@ Options:
   --scopes="a b c"       Explicit space-separated scopes
 
 Env:
-  AGENTSTACK_BASE_URL    Default https://agentstack.tech
+  AGENTSTACK_BASE_URL            Default https://agentstack.tech
+  AGENTSTACK_DISABLE_AUTO_LOGIN  Set 1 to skip sessionStart auto Device Code
 
 Writes:
   ~/.cursor/mcp.json              Bearer for mcpServers.agentstack
   ~/.cursor/agentstack-refresh    Refresh token (0600 when supported)
   ~/.cursor/agentstack-capabilities.json  Flat action snapshot
+  ~/.cursor/agentstack-device.lock  Single-flight poller (pid + Activate URL)
 `);
 }
 
@@ -107,7 +115,7 @@ async function writeMcpJson(accessToken, token = {}) {
   applyAgentstackMcpBearer(cfg, {
     accessToken,
     baseUrl: BASE_URL,
-    projectId: token.project_id,
+    projectId: (await readPinnedTenantProjectId(CURSOR_DIR)) ?? token.project_id,
   });
   await mkdir(CURSOR_DIR, { recursive: true });
   await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
@@ -140,19 +148,7 @@ async function seedCapabilitySnapshot(accessToken) {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!res.ok) return;
-    const catalog = await res.json();
-    const actions = tenantActionsFromCatalog(catalog);
-    await mkdir(CURSOR_DIR, { recursive: true });
-    await writeFile(
-      SNAPSHOT_PATH,
-      JSON.stringify({
-        fetched_at: Date.now(),
-        audience: 'tenant',
-        total_actions: actions.length,
-        actions,
-      }, null, 2),
-      'utf8',
-    );
+    await writeTenantCapabilitySnapshot(CURSOR_DIR, await res.json());
   } catch { /* next sessionStart */ }
 }
 
@@ -163,43 +159,59 @@ async function main() {
     process.exit(0);
   }
 
-  const traceId = randomUUID();
+  const lock = await beginDeviceLoginLock(CURSOR_DIR);
+  if (!lock.ok) {
+    console.warn('Device Code already running. Approve the open Activate tab, then Reload Window.');
+    if (lock.existing?.verification_uri) console.warn('  Open: ' + lock.existing.verification_uri);
+    if (lock.existing?.user_code) console.warn('  Code: ' + lock.existing.user_code);
+    return;
+  }
 
-  console.log('\nRequesting device code from AgentStack...');
-  console.log('  Trace: ' + traceId);
-  const init = await authorize(scopes, traceId);
+  try {
+    const traceId = randomUUID();
 
-  const activateLink = deviceCodeActivateUrl(BASE_URL, init.user_code);
-  console.log('\n  Open: ' + activateLink);
-  console.log('  Code: ' + init.user_code + '\n');
-  console.log('  (Waiting for approval — this will return automatically.)\n');
+    console.log('\nRequesting device code from AgentStack...');
+    console.log('  Trace: ' + traceId);
+    const init = await authorize(scopes, traceId);
 
-  if (!headless) await openBrowser(activateLink);
+    const activateLink = deviceCodeActivateUrl(BASE_URL, init.user_code);
+    await updateDeviceLoginLock(CURSOR_DIR, {
+      user_code: init.user_code,
+      verification_uri: activateLink,
+      trace_id: traceId,
+    });
+    console.log('\n  Open: ' + activateLink);
+    console.log('  Code: ' + init.user_code + '\n');
+    console.log('  (Waiting for approval — this will return automatically.)\n');
 
-  const token = await pollDeviceToken({
-    tokenUrl: `${BASE_URL}/api/oauth2/token`,
-    clientId: init.__client_id || CLIENT_ID,
-    deviceCode: init.device_code,
-    intervalSec: init.interval,
-    expiresInSec: init.expires_in,
-    traceId,
-    clientSecret: init.__client_secret || null,
-  });
+    if (!headless) await openBrowser(activateLink);
 
-  await writeMcpJson(token.access_token, token);
-  await writeRefreshToken(token.refresh_token, token);
-  await clearMcpCache(token.access_token, traceId);
-  await seedCapabilitySnapshot(token.access_token);
+    const token = await pollDeviceToken({
+      tokenUrl: `${BASE_URL}/api/oauth2/token`,
+      clientId: init.__client_id || CLIENT_ID,
+      deviceCode: init.device_code,
+      intervalSec: init.interval,
+      expiresInSec: init.expires_in,
+      traceId,
+      clientSecret: init.__client_secret || null,
+    });
 
-  const scope = token.scope || scopes;
-  const expiresIn = token.expires_in || 'unknown';
-  console.log(`\n  AgentStack MCP connected.`);
-  console.log(`  Scope:   ${scope}`);
-  console.log(`  Trace:   ${traceId}`);
-  console.log(`  Expires: in ${expiresIn}s (hook 'session-start.mjs' refreshes automatically)`);
-  console.log(`  Config:  ${MCP_PATH}\n`);
-  console.log('  Next: whoami smoke + /agentstack-capability-matrix (see /agentstack-init).\n');
-  console.log('  Restart Cursor if the MCP server does not auto-reload.\n');
+    await writeMcpJson(token.access_token, token);
+    await writeRefreshToken(token.refresh_token, token);
+    await clearMcpCache(token.access_token, traceId);
+    await seedCapabilitySnapshot(token.access_token);
+
+    const scope = token.scope || scopes;
+    const expiresIn = token.expires_in || 'unknown';
+    console.log(`\n  AgentStack MCP connected.`);
+    console.log(`  Scope:   ${scope}`);
+    console.log(`  Trace:   ${traceId}`);
+    console.log(`  Expires: in ${expiresIn}s (long-lived PAT; session-start refreshes only if a leftover refresh file exists)`);
+    console.log(`  Config:  ${MCP_PATH}\n`);
+    console.log('  Next: Developer: Reload Window, then system.ping via user-agentstack.\n');
+  } finally {
+    await endDeviceLoginLock(CURSOR_DIR);
+  }
 }
 
 main().catch((err) => {

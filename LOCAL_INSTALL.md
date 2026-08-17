@@ -49,7 +49,7 @@ node scripts/uninstall-local.mjs
 0b. If you still see **`$schema` load error**: `node scripts/refresh-cursor-runtime.mjs --fix` (marketplace cache), then Reload.
 1. **Reload:** Command Palette → `Developer: Reload Window`
 2. Confirm plugin loads (rules/skills appear; or run a slash command).
-3. **Auth:** `/agentstack-init`  
+3. **Auth:** `/agentstack-authorize` (or `/agentstack-init`)  
    - Requires **Node on PATH**  
    - Browser → `https://agentstack.tech/activate`  
    - Prefer Device Code over a lone `X-API-Key` (refresh + snapshot stay in sync).

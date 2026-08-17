@@ -2,7 +2,7 @@
   "version": 1,
   "hooks": {
     "sessionStart": [
-      { "command": "node ./hooks/scripts/session-start.mjs" }
+      { "command": "node ./hooks/scripts/session-start.mjs --from-hook" }
     ],
     "sessionEnd": [
       { "command": "node ./hooks/scripts/session-end.mjs" }

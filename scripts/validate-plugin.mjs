@@ -379,7 +379,7 @@ const shippedMcp = path.join(PLUGIN, 'mcp.json');
 if (fs.existsSync(shippedMcp)) {
   fail(
     'plugins/agentstack/mcp.json must not ship (Cursor auto-registers plugin MCP). ' +
-      'Keep the example at mcp.example.json and write ~/.cursor/mcp.json via /agentstack-init.',
+      'Keep the example at mcp.example.json and write ~/.cursor/mcp.json via /agentstack-authorize.',
   );
 } else {
   ok('no plugins/agentstack/mcp.json (MCP via ~/.cursor/mcp.json only)');
@@ -481,6 +481,13 @@ if (fs.existsSync(initPath)) {
   if (/##\s*3\.\s*Persist scoped API key/i.test(initBody)) {
     fail('commands/agentstack-init.md: rename step 3 to Persist tokens (OAuth primary)');
   } else ok('commands/agentstack-init.md: step 3 title OK');
+}
+
+const authzPath = path.join(PLUGIN, 'commands/agentstack-authorize.md');
+if (!fs.existsSync(authzPath)) {
+  fail('commands/agentstack-authorize.md missing (Device Code auth control)');
+} else {
+  ok('commands/agentstack-authorize.md present');
 }
 
 // 8. Agents — frontmatter required

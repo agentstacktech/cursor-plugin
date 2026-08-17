@@ -129,7 +129,7 @@ console.log(`
 Next steps:
   1. node scripts/refresh-cursor-runtime.mjs --fix   # clear stale marketplace $schema cache
   2. Cursor → Developer: Reload Window
-  3. Chat: /agentstack-init  (Node must be on PATH)
+  3. Chat: /agentstack-authorize  (Node must be on PATH; no API key)
   4. Approve at https://agentstack.tech/activate
   5. /agentstack-diagnose then /agentstack-capability-matrix
 

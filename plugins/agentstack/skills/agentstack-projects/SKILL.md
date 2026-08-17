@@ -25,7 +25,7 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 
 ## Working project under OAuth
 
-Cursor `/agentstack-init` issues a **user-scoped** Bearer (ecosystem `project_id=1`). For any session-scoped work on a tenant project, pass **`context.project_id`** on `agentstack.execute`:
+Cursor `/agentstack-authorize` issues a **user-scoped** Bearer (ecosystem `project_id=1`). For any session-scoped work on a tenant project, pass **`context.project_id`** on `agentstack.execute`:
 
 ```json
 {
@@ -79,7 +79,7 @@ The response contains `{ "api_key": "<JWT>", "key_id": "...", "actor_kind": "age
 
 - **DO NOT** build a multi-tenant schema from scratch — projects are the tenancy unit.
 - **DO NOT** share one unrestricted PAT across environments — issue an **agent PAT** (`apikeys.create`) per agent / CI / env with `context.project_id`. There are no product project `ask_` keys.
-- **DO NOT** copy-paste a key from the dashboard — use **OAuth Device Code flow** (`/agentstack-init`), which creates the scoped key for you.
+- **DO NOT** copy-paste a key from the dashboard — use **OAuth Device Code** (`/agentstack-authorize` or `/agentstack-init`), which writes a scoped Bearer into `~/.cursor/mcp.json`.
 
 ## Reading effective limits
 

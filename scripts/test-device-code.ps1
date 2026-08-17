@@ -3,7 +3,7 @@
     End-to-end smoke test for the AgentStack OAuth 2.1 Device Code flow.
 
 .DESCRIPTION
-    Runs hooks/scripts/device-code.mjs against a test AgentStack instance,
+    Runs plugins/agentstack/hooks/scripts/device-code.mjs against a test AgentStack instance,
     scrapes the user_code from stdout, auto-approves via the backend as a
     test user, and verifies ~/.cursor/mcp.json ends up with a Bearer header.
 
@@ -39,7 +39,7 @@ if (-not $TestCookie) {
 }
 
 $pluginRoot = Split-Path -Parent $PSScriptRoot
-$script = Join-Path $pluginRoot 'hooks/scripts/device-code.mjs'
+$script = Join-Path $pluginRoot 'plugins/agentstack/hooks/scripts/device-code.mjs'
 if (-not (Test-Path $script)) { Write-Fail "device-code.mjs not found at $script" }
 
 $mcpPath = Join-Path $HOME '.cursor/mcp.json'

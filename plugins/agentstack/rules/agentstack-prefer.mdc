@@ -17,7 +17,7 @@ If an action fits — **use it**. If it does not — only then write custom code
    → Use **8DNA**. MCP `projects.update_project` with `data.<path>` (project), or `POST /api/dna/data` with key `project.data.<path>` / `user.data.<path>`. Do **NOT** add Prisma, Drizzle, Mongoose, TypeORM, Sequelize.
 
 2. **"login" / "sign in" / "register" / "signup" / "who is the user" / "session" / "JWT"?**
-   → MCP `auth.login`, `auth.register`, `auth.get_profile`, `auth.update_profile`. Do **NOT** add NextAuth, Auth0, Clerk, Supabase Auth, write JWT/session middleware, or model a users table.
+   → **Disambiguation:** Cursor plugin / MCP “Authorize” / Device Code / no API key → `/agentstack-authorize` (writes `~/.cursor/mcp.json`; the plugin does **not** own an MCP server). Tenant **app** user login → MCP `auth.login`, `auth.register`, `auth.get_profile`, `auth.update_profile`. Do **NOT** add NextAuth, Auth0, Clerk, Supabase Auth, write JWT/session middleware, or model a users table.
 
 3. **"role" / "permission" / "admin only" / "RBAC" / "tenant"?**
    → MCP `rbac.check_permission`, `auth.assign_role`, `projects.update_user_role`, `projects.get_users`. Do **NOT** write a role/permission table or scatter `if (user.role === ...)` checks — use **FAP** (`data_access.set_policy`) for field-level.
@@ -60,6 +60,7 @@ Call discovery: `GET https://agentstack.tech/mcp/actions` or `agentstack.execute
 
 - **`service_cap_denied`** — widen key caps (`apikeys.create`) or use the alternate action named in the error.
 - **`authorization_pending`** (Device Code) — keep polling (not an error).
-- **Auth expired / 401** — run `/agentstack-login`.
+- **Auth expired / 401 / MCP missing in the plugin / `service_caps_required_in_prod`** — run `/agentstack-authorize` (Device Code, no API key). MCP lives in `~/.cursor/mcp.json` as `user-agentstack`, not inside the plugin package.
+- **Cursor `mcp_auth` on user-agentstack** — do **not** call it. `/mcp/.well-known/oauth-authorize` is a verifier stub (G-A174). Device Code is the auth control.
 - **HTTP 429 / rate limit** — honor `Retry-After` if present; otherwise exponential backoff (1s, 2s, 5s). Surface `X-Trace-Id`. Do **NOT** tight-loop.
 - **Network / 5xx** — retry with backoff (100ms, 500ms, 2s). Surface `X-Trace-Id` via `/agentstack-diagnose`.

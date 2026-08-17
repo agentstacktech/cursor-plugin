@@ -15,18 +15,27 @@ import { spawnSync } from 'child_process';
 import {
   normalizeAgentstackMcpConfig,
   agentstackAuthHeaders,
+  describeAgentstackMcpAuth,
+  describeAgentstackAuthGate,
+  AUTHORIZE_SLASH,
+  isTenantProjectId,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   evaluateSingleToolSurface,
   postToolsList,
+  postToolsCallExecuteAlias,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
-import { tenantActionsFromCatalog } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+import {
+  writeTenantCapabilitySnapshot,
+  CAPABILITY_SNAPSHOT_FILENAME,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { readDeviceLoginLock } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
 const LINK = path.join(os.homedir(), '.cursor', 'plugins', 'local', 'agentstack');
 const MCP = path.join(os.homedir(), '.cursor', 'mcp.json');
-const SNAP = path.join(os.homedir(), '.cursor', 'agentstack-capabilities.json');
+const SNAP = path.join(os.homedir(), '.cursor', CAPABILITY_SNAPSHOT_FILENAME);
 const REFRESH = path.join(os.homedir(), '.cursor', 'agentstack-refresh');
 const TELEMETRY = path.join(os.homedir(), '.cursor', 'agentstack-telemetry.jsonl');
 const SETTINGS = path.join(os.homedir(), '.cursor', 'settings.json');
@@ -158,9 +167,23 @@ if (fs.existsSync(cacheRoot)) {
   }
 }
 
+const dlock = await readDeviceLoginLock(path.dirname(MCP));
+if (dlock?.user_code || dlock?.pid) {
+  warn(
+    `Device Code lock pid=${dlock.pid || '?'} code=${dlock.user_code || 'pending'} ` +
+      (dlock.verification_uri || ''),
+  );
+}
+const pinPath = path.join(os.homedir(), '.cursor', 'agentstack-project');
+if (fs.existsSync(pinPath)) {
+  const pinRaw = fs.readFileSync(pinPath, 'utf8').trim();
+  if (isTenantProjectId(pinRaw)) ok(`agentstack-project tenant pin=${pinRaw}`);
+  else warn(`agentstack-project=${pinRaw || '(empty)'} is not a tenant workspace — pin e.g. 1444, not 1`);
+}
+
 // mcp.json
 if (!fs.existsSync(MCP)) {
-  fail('~/.cursor/mcp.json missing — run /agentstack-init');
+  fail('~/.cursor/mcp.json missing — run /agentstack-authorize');
 } else {
   let cfg = JSON.parse(fs.readFileSync(MCP, 'utf8'));
   const entry = cfg.mcpServers?.agentstack;
@@ -184,15 +207,31 @@ if (!fs.existsSync(MCP)) {
       ok('mcp entry lean (no tools key)');
     }
     const auth = agentstackAuthHeaders(cfg);
-    if (!auth) fail('no Bearer and no X-API-Key — run /agentstack-init');
-    else if (auth.Authorization) {
-      if (auth.Authorization.includes('${') || /AGENTSTACK_ACCESS_TOKEN/i.test(auth.Authorization)) {
-        fail('mcp.json Authorization is a placeholder — plugin MCP shadowed user config (G-A162). Upgrade 0.4.17 + Reload Window.');
-      } else {
-        ok('auth=Bearer (Device Code path)');
-      }
+    const gate = describeAgentstackAuthGate(cfg);
+    if (gate.kind === 'unsigned') fail(`no Bearer and no X-API-Key — run ${AUTHORIZE_SLASH}`);
+    else if (gate.kind === 'placeholder') {
+      fail('mcp.json Authorization is a placeholder — plugin MCP shadowed user config (G-A162). Upgrade 0.4.17 + Reload Window.');
+    } else if (auth?.Authorization) ok('auth=Bearer (Device Code path)');
+    else ok(`auth=X-API-Key (legacy/CI path; prefer ${AUTHORIZE_SLASH} for Device Code)`);
+    const claims = describeAgentstackMcpAuth(cfg);
+    if (claims.jwtType) {
+      ok(
+        `jwt type=${claims.jwtType} uid=${claims.userId} caps=${claims.serviceCaps} ` +
+          `project=${claims.projectHeader || 'unset'} exp_in=${claims.expInSec}s`,
+      );
     }
-    else ok('auth=X-API-Key (legacy/CI path; prefer /agentstack-init for Device Code)');
+    if (gate.kind === 'null_caps' && /agentstack\.tech/i.test(String(cur.url || ''))) {
+      fail(
+        'Bearer JWT has service_caps=null — prod MCP rejects unrestricted tenant keys ' +
+          `(service_caps_required_in_prod). Run ${AUTHORIZE_SLASH} (Device Code), or deploy shared+core G-A169/170.`,
+      );
+    }
+    if (String(claims.projectHeader || '') === '1') {
+      warn(
+        'X-Project-ID=1 is identity home, not a workspace. Pin tenant project ' +
+          '(AGENTSTACK_PROJECT_ID or mcp.json) e.g. 1444.',
+      );
+    }
     if (auth) {
       try {
         const tools = await postToolsList(BASE_URL, auth);
@@ -204,6 +243,12 @@ if (!fs.existsSync(MCP)) {
         }
       } catch (e) {
         warn(`tools/list probe failed: ${e.message}`);
+      }
+      try {
+        await postToolsCallExecuteAlias(BASE_URL, auth);
+        ok('tools/call agentstack_execute (system.ping) succeeds');
+      } catch (e) {
+        fail(`tools/call execute failed: ${e.message}`);
       }
     }
   }
@@ -234,23 +279,11 @@ if (wantSeed) {
     if (!res.ok) {
       fail(`GET /mcp/actions HTTP ${res.status}`);
     } else {
-      const catalog = await res.json();
-      const actions = tenantActionsFromCatalog(catalog);
-      fs.writeFileSync(
-        SNAP,
-        JSON.stringify(
-          {
-            fetched_at: Date.now(),
-            audience: 'tenant',
-            total_actions: actions.length,
-            actions,
-          },
-          null,
-          2,
-        ),
-        'utf8',
+      const n = await writeTenantCapabilitySnapshot(
+        path.join(os.homedir(), '.cursor'),
+        await res.json(),
       );
-      ok(`seeded flat snapshot actions=${actions.length}`);
+      ok(`seeded flat snapshot actions=${n}`);
     }
   }
 }
@@ -284,8 +317,8 @@ console.log(`\nsummary: failed=${fails}`);
 console.log(`
 Next (human):
   1. If $schema error: node scripts/refresh-cursor-runtime.mjs --fix && Reload Window
-  2. /agentstack-init   (Device Code — recommended over X-API-Key alone)
-  3. /agentstack-diagnose
-  4. /agentstack-capability-matrix
+  2. /agentstack-authorize   (Device Code — no API key; MCP is user-agentstack, not plugin-owned)
+  3. Pin tenant X-Project-ID (not 1), then Reload Window
+  4. /agentstack-diagnose
 `);
 process.exit(fails ? 1 : 0);

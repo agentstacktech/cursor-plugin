@@ -2,16 +2,15 @@
 // hooks/scripts/capability-refresh.mjs
 // afterFileEdit matcher mcp.json$ — clear MCP cache + refresh flat capability snapshot.
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { tenantActionsFromCatalog } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { writeTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { agentstackAuthHeaders } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
-const SNAPSHOT_PATH = join(CURSOR_DIR, 'agentstack-capabilities.json');
 
 async function getAuthHeaders() {
   try {
@@ -35,19 +34,7 @@ async function main() {
   try {
     const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: { ...auth } });
     if (!res.ok) return;
-    const catalog = await res.json();
-    const actions = tenantActionsFromCatalog(catalog);
-    await mkdir(CURSOR_DIR, { recursive: true });
-    await writeFile(
-      SNAPSHOT_PATH,
-      JSON.stringify({
-        fetched_at: Date.now(),
-        audience: 'tenant',
-        total_actions: actions.length,
-        actions,
-      }, null, 2),
-      'utf8',
-    );
+    await writeTenantCapabilitySnapshot(CURSOR_DIR, await res.json());
   } catch {
     /* next time */
   }

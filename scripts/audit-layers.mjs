@@ -109,7 +109,7 @@ for (const f of cmds) {
   if (!fm?.name || !fm?.description) fail(`commands/${f}: frontmatter needs name + description`);
   else ok(`command ${fm.name}`);
 }
-for (const need of ['agentstack-init.md', 'agentstack-login.md', 'agentstack-diagnose.md']) {
+for (const need of ['agentstack-init.md', 'agentstack-login.md', 'agentstack-authorize.md', 'agentstack-diagnose.md']) {
   if (!cmds.includes(need)) fail(`missing command ${need}`);
 }
 
