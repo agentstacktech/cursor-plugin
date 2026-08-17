@@ -5,7 +5,7 @@ description: Authorize AgentStack MCP via Device Code (browser, no API key). Wri
 
 # /agentstack-authorize
 
-One-shot plugin sign-in. This **is** the auth control — Cursor plugins have no webview Connect button, and the package **must not** ship `mcp.json` (that creates empty `plugin-agentstack-*` and shadows user MCP).
+One-shot plugin sign-in (Device Code). Plugin MCP also appears after Reload — click **Connect** (G-A174). This command writes `~/.cursor/mcp.json` for hooks. Do **not** ship an empty `${AGENTSTACK_ACCESS_TOKEN}` in plugin `mcp.json`.
 
 Do **not** ask which scopes. Do **not** paste an API key. Do **not** call tenant `auth.login`.
 
@@ -20,7 +20,7 @@ node ./hooks/scripts/device-code.mjs --scope-preset=full
 ```
 
 4. The script prints `Open:` + `Code:`, opens `https://agentstack.tech/activate?user_code=…`, and polls until approved. New agent chats also auto-spawn this script via `sessionStart --from-hook` when MCP is unsigned / placeholder / `service_caps=null` (opt out: `AGENTSTACK_DISABLE_AUTO_LOGIN=1`).
-5. After success: tell the user **Developer: Reload Window**. MCP appears as **`user-agentstack`** from `~/.cursor/mcp.json`, not as a plugin-owned server.
+5. After success: tell the user **Developer: Reload Window**. Expect **plugin AgentStack MCP** (click Connect if needed) **and** `user-agentstack` from `~/.cursor/mcp.json`.
 6. If `projects.get_projects` returns more than one tenant workspace, persist the chosen id to `~/.cursor/agentstack-project` and keep `X-Project-ID` off ecosystem `1`.
 7. Smoke: `agentstack.execute` `{ "steps": [{ "id": "p", "action": "system.ping", "params": {} }] }`. `tools/list` alone is a false green.
 
@@ -31,7 +31,7 @@ node ./hooks/scripts/device-code.mjs --scope-preset=full
 - **Limit exceeded / `invalid_grant`** — Device Code rotates the plugin PAT after G-A166/167 deploy. On current prod a Profile user key still counts as Free `1/1`: revoke the extra key at https://agentstack.tech/me/keys, retry once, Reload. If it persists, `/agentstack-diagnose`.
 - **`service_caps_required_in_prod`** — old user PAT with `service_caps=null`. This command mints a Device Code token with explicit caps. Reload after it finishes.
 - **Browser did not open** — print the Activate URL + user code.
-- **MCP still missing in the plugin panel** — expected. Look under user MCP (`agentstack` / `user-agentstack`), not `plugin-agentstack-*`.
+- **MCP still missing in the plugin panel** — Reload Window. Plugin 0.4.18 ships URL-only `mcp.json`. Click **Connect**. If Connect fails, this command still writes `user-agentstack`.
 
 ## Related
 

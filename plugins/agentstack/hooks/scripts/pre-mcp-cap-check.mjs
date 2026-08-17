@@ -29,14 +29,10 @@ async function readStdinJson() {
   });
 }
 
-function extractAction(event) {
-  return extractMcpAction(event);
-}
-
 async function main() {
   const event = await readStdinJson();
   if (!event) process.exit(0);
-  const action = extractAction(event);
+  const action = extractMcpAction(event);
   if (!action || !String(action).includes('.')) process.exit(0);
 
   let snapshot;

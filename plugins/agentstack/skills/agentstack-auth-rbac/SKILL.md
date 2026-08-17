@@ -11,8 +11,8 @@ One authentication surface, one role model, one permission check — delivered v
 
 | User says                                              | MCP action                                                         |
 |--------------------------------------------------------|--------------------------------------------------------------------|
-| "authorize Cursor plugin / Device Code / no API key"   | `/agentstack-authorize` — not `auth.login`; writes `~/.cursor/mcp.json` |
-| "Cursor mcp_auth / Connect MCP"                        | `/agentstack-authorize` — never native `mcp_auth` (oauth stub) |
+| "authorize Cursor plugin / Device Code / no API key"   | Click **Connect** on plugin MCP (G-A174) or `/agentstack-authorize` — not `auth.login` |
+| "Cursor mcp_auth / Connect MCP"                        | User clicks Connect in the plugin panel. Do not call native `mcp_auth` from the agent. |
 | "let user sign in with email + password"               | `auth.login` (email, password) — returns token                     |
 | "register new user"                                    | `auth.register`                                                    |
 | "who is the current user"                              | `auth.get_profile`                                                 |

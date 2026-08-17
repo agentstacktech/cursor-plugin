@@ -17,6 +17,8 @@ import {
   agentstackAuthHeaders,
   describeAgentstackMcpAuth,
   describeAgentstackAuthGate,
+  pluginMcpOAuthError,
+  pluginMcpPointerError,
   AUTHORIZE_SLASH,
   isTenantProjectId,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
@@ -74,7 +76,7 @@ function maybeEmitDuplicateSurfaceBeacon(tools) {
     event: 'plugin_mcp_duplicate_surface',
     tool_count: tools?.length ?? 0,
     tool_names: (tools || []).map((t) => t?.name).filter(Boolean),
-    plugin_version: '0.4.17',
+    plugin_version: '0.4.18',
     base_url: BASE_URL,
   };
   try {
@@ -111,14 +113,18 @@ if (!fs.existsSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'))) {
 } else {
   ok('plugin package plugin.json present');
   const pj = JSON.parse(fs.readFileSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'), 'utf8'));
-  if (pj.mcpServers) fail('plugin.json declares mcpServers — forbidden since 0.4.16');
-  else ok('plugin.json has no mcpServers (single registration plane)');
+  const ptrErr = pluginMcpPointerError(pj);
+  if (ptrErr) fail(`plugin.json: ${ptrErr}`);
+  else ok(`plugin.json mcpServers=${pj.mcpServers}`);
 }
 
-if (fs.existsSync(path.join(PLUGIN, 'mcp.json'))) {
-  fail('plugins/agentstack/mcp.json must not ship (G-A162)');
+const repoMcp = path.join(PLUGIN, 'mcp.json');
+if (!fs.existsSync(repoMcp)) {
+  fail('plugins/agentstack/mcp.json missing (plugin Connect)');
 } else {
-  ok('repo plugin package has no mcp.json');
+  const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(repoMcp, 'utf8')));
+  if (mcpErr) fail(`plugins/agentstack/mcp.json: ${mcpErr}`);
+  else ok('repo plugin mcp.json is OAuth URL-only');
 }
 
 const target = resolveLink(LINK);
@@ -141,10 +147,12 @@ for (const rel of [
 }
 if (target) {
   const linkedMcp = path.join(LINK, 'mcp.json');
-  if (fs.existsSync(linkedMcp)) {
-    fail(`linked mcp.json present (G-A162 trap) — delete it; plugin 0.4.17+ must not ship MCP config`);
+  if (!fs.existsSync(linkedMcp)) {
+    fail('linked mcp.json missing — run install-local --force');
   } else {
-    ok('linked plugin has no mcp.json (MCP via ~/.cursor/mcp.json only)');
+    const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(linkedMcp, 'utf8')));
+    if (mcpErr) fail(`linked mcp.json: ${mcpErr}`);
+    else ok('linked plugin mcp.json is OAuth URL-only');
   }
 }
 
@@ -161,9 +169,17 @@ if (fs.existsSync(cacheRoot)) {
     }
   }
   if (cachedMcp.length) {
-    fail(`cached plugin mcp.json (${cachedMcp.length}) — run: node scripts/refresh-cursor-runtime.mjs --fix`);
+    let bad = 0;
+    for (const p of cachedMcp) {
+      const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(p, 'utf8')));
+      if (mcpErr) {
+        fail(`${p}: ${mcpErr}`);
+        bad += 1;
+      }
+    }
+    if (!bad) ok(`cached plugin mcp.json (${cachedMcp.length}) OAuth-safe`);
   } else {
-    ok('no mcp.json in marketplace plugin cache');
+    warn('no mcp.json in marketplace plugin cache yet (Reload Window after install)');
   }
 }
 
@@ -210,7 +226,7 @@ if (!fs.existsSync(MCP)) {
     const gate = describeAgentstackAuthGate(cfg);
     if (gate.kind === 'unsigned') fail(`no Bearer and no X-API-Key — run ${AUTHORIZE_SLASH}`);
     else if (gate.kind === 'placeholder') {
-      fail('mcp.json Authorization is a placeholder — plugin MCP shadowed user config (G-A162). Upgrade 0.4.17 + Reload Window.');
+      fail('user mcp.json Authorization is a placeholder — run /agentstack-authorize');
     } else if (auth?.Authorization) ok('auth=Bearer (Device Code path)');
     else ok(`auth=X-API-Key (legacy/CI path; prefer ${AUTHORIZE_SLASH} for Device Code)`);
     const claims = describeAgentstackMcpAuth(cfg);
@@ -317,7 +333,7 @@ console.log(`\nsummary: failed=${fails}`);
 console.log(`
 Next (human):
   1. If $schema error: node scripts/refresh-cursor-runtime.mjs --fix && Reload Window
-  2. /agentstack-authorize   (Device Code — no API key; MCP is user-agentstack, not plugin-owned)
+  2. Reload Window — plugin MCP should appear; click Connect (G-A174) or /agentstack-authorize
   3. Pin tenant X-Project-ID (not 1), then Reload Window
   4. /agentstack-diagnose
 `);

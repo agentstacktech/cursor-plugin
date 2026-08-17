@@ -21,6 +21,8 @@ import {
   decodeJwtPayload,
   describeAgentstackMcpAuth,
   describeAgentstackAuthGate,
+  pluginMcpOAuthError,
+  pluginMcpPointerError,
   AUTHORIZE_SLASH,
   isTenantProjectId,
   gateNeedsDeviceLogin,
@@ -181,6 +183,27 @@ assert.equal(
     mcpServers: { agentstack: { headers: { 'X-API-Key': 'ask_test' } } },
   }).kind,
   'ok',
+);
+
+assert.equal(pluginMcpPointerError({ mcpServers: './mcp.json' }), null);
+assert.match(pluginMcpPointerError({ mcpServers: { agentstack: {} } }), /string path/);
+assert.equal(
+  pluginMcpOAuthError({
+    mcpServers: { agentstack: { type: 'streamable-http', url: 'https://agentstack.tech/mcp' } },
+  }),
+  null,
+);
+assert.match(
+  pluginMcpOAuthError({
+    mcpServers: {
+      agentstack: {
+        type: 'streamable-http',
+        url: 'https://agentstack.tech/mcp',
+        headers: { Authorization: 'Bearer ${AGENTSTACK_ACCESS_TOKEN}' },
+      },
+    },
+  }),
+  /placeholder|Authorization/,
 );
 
 const keptPin = applyAgentstackMcpBearer(

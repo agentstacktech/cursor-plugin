@@ -1,7 +1,7 @@
 # AgentStack Cursor Plugin
 
 > Turn every Cursor agent into an AgentStack-native engineer.  
-> **v0.4.17** (gen3) · OAuth Device Code install · one MCP tool
+> **v0.4.18** (gen3) · Plugin MCP Connect + Device Code · one MCP tool
 
 ---
 
@@ -14,16 +14,17 @@
 
 The plugin prints a short code, opens `https://agentstack.tech/activate`, and after you approve writes a scoped Bearer into `~/.cursor/mcp.json`. No copy-pasting API keys. (OAuth 2.1 Device Authorization Grant — RFC 8628.) Quick re-auth: `/agentstack-authorize`. New chats auto-open Activate when MCP is unsigned or the JWT has `service_caps=null` (`sessionStart --from-hook`).
 
-**MCP surface (0.4.16+):**
+**MCP surface (0.4.18):**
 
 | What | Contract |
 |------|----------|
-| Registration | `~/.cursor/mcp.json` only (Device Code / session-start) |
+| Plugin MCP | `plugin.json` `mcpServers: "./mcp.json"` — URL-only, click **Connect** (G-A174) |
+| User MCP | `~/.cursor/mcp.json` from Device Code / session-start (hooks) |
 | `tools/list` | **One** tool: `agentstack.execute` (Cursor UI may show `agentstack_execute`) |
 | `tools/call` | Accepts `agentstack.execute` **and** `agentstack_execute` |
 | Actions | Live catalog: `GET https://agentstack.tech/mcp/actions` |
 
-The package **must not** ship `mcp.json`. Cursor auto-registers it as a second MCP server (`plugin-agentstack-*`) with an empty `${AGENTSTACK_ACCESS_TOKEN}` placeholder — `discovery.list` still works, `projects.get_projects` does not. Device Code writes `~/.cursor/mcp.json` only. Example: [`mcp.example.json`](mcp.example.json).
+Plugin `mcp.json` must **not** contain `Authorization` or `${AGENTSTACK_ACCESS_TOKEN}` (G-A162 empty Bearer). Device Code still writes a Bearer into `~/.cursor/mcp.json`. User template: [`mcp.example.json`](mcp.example.json).
 
 ---
 
@@ -52,7 +53,7 @@ provided_plugins/cursor-plugin/
 │   └── VALIDATION.md
 ├── plugins/agentstack/      # ← the plugin package Cursor loads
 │   ├── .cursor-plugin/plugin.json
-│   ├── (no mcp.json)        # Cursor would auto-register it; use ~/.cursor/mcp.json
+│   ├── mcp.json             # URL-only plugin MCP (Connect); no Bearer placeholder
 │   ├── rules/               # 9 .mdc (1 alwaysApply: agentstack-prefer)
 │   ├── skills/              # 24 domains + optional solana
 │   ├── commands/            # 14 slash workflows
@@ -78,7 +79,7 @@ Catalog plane: live `GET /mcp/actions` (never hard-code action counts in skills)
 3. `/agentstack-diagnose` then `/agentstack-capability-matrix`
 4. Optional: `/agentstack-host-site` for a live `/s/` URL
 
-Primary auth is Device Code → Bearer in `~/.cursor/mcp.json`. Fallback: API key via [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
+Primary auth: click **Connect** on plugin MCP (G-A174) **or** Device Code → Bearer in `~/.cursor/mcp.json`. Fallback: API key via [MCP_QUICKSTART.md](MCP_QUICKSTART.md).
 
 ---
 

@@ -214,12 +214,62 @@ export function agentstackAuthHeaders(cfg) {
   return null;
 }
 
-/** Slash command that is the plugin auth control (Cursor has no webview Connect button). */
+/** Slash command that is the plugin Device Code auth control. */
 export const AUTHORIZE_SLASH = '/agentstack-authorize';
+
+/** Figma-style pointer in plugin.json — Cursor Connect, not an inline servers object. */
+export const PLUGIN_MCP_POINTER = './mcp.json';
+
+/**
+ * plugin.json ``mcpServers`` must be a path string (not an inline object).
+ * @param {object|null} pluginJson
+ * @returns {string|null}
+ */
+export function pluginMcpPointerError(pluginJson) {
+  const p = pluginJson?.mcpServers;
+  if (p == null || p === '') {
+    return 'plugin.json mcpServers must point at ./mcp.json (Cursor Connect)';
+  }
+  if (typeof p === 'object') {
+    return 'mcpServers must be a string path, not an inline object (G-A162 duplicate)';
+  }
+  if (typeof p !== 'string') return 'mcpServers must be a string path to mcp.json';
+  const n = p.replace(/\\/g, '/');
+  if (n !== PLUGIN_MCP_POINTER && n !== 'mcp.json') {
+    return `mcpServers path must be ./mcp.json (got ${p})`;
+  }
+  return null;
+}
+
+/**
+ * Plugin-owned MCP file (Cursor gen3 ``plugin.json`` ``mcpServers: "./mcp.json"``).
+ * G-A162 is an empty ``Authorization`` placeholder — OAuth URL-only is required.
+ * @param {object|null} cfg
+ * @returns {string|null} error or null when safe to ship
+ */
+export function pluginMcpOAuthError(cfg) {
+  const entry = cfg?.mcpServers?.agentstack;
+  if (!entry || typeof entry !== 'object') return 'missing mcpServers.agentstack';
+  if (entry.type !== 'streamable-http' && entry.type !== 'http') {
+    return `type must be streamable-http (got ${entry.type || 'missing'})`;
+  }
+  const url = String(entry.url || '');
+  if (!/^https:\/\/agentstack\.tech\/mcp\/?$/.test(url) && !url.endsWith('/mcp')) {
+    return 'url must be the AgentStack /mcp endpoint';
+  }
+  const blob = JSON.stringify(entry);
+  if (blob.includes('${')) return 'no ${placeholders} (G-A162 empty Bearer trap)';
+  const auth = entry.headers?.Authorization || entry.headers?.authorization;
+  if (typeof auth === 'string' && auth.trim()) {
+    return 'do not ship Authorization; Cursor OAuth Connect (G-A174)';
+  }
+  if (entry.auth?.CLIENT_SECRET) return 'do not ship CLIENT_SECRET';
+  return null;
+}
 
 /**
  * SessionStart / diagnose gate: unsigned MCP vs placeholder vs null-caps JWT vs ok.
- * Plugin packages must not ship mcp.json (G-A162); Device Code writes ~/.cursor/mcp.json.
+ * Plugin MCP is OAuth URL-only; Device Code still writes ~/.cursor/mcp.json for hooks.
  *
  * @param {object|null} cfg
  * @returns {{ kind: 'unsigned'|'placeholder'|'null_caps'|'ok', additionalContext: string|null }}
@@ -230,10 +280,9 @@ export function describeAgentstackAuthGate(cfg) {
     return {
       kind: 'unsigned',
       additionalContext:
-        'AgentStack MCP is not signed in. The plugin does not register an MCP server ' +
-        '(Cursor would auto-register empty plugin-agentstack-* and shadow user config). ' +
-        `Run ${AUTHORIZE_SLASH} — Device Code in the browser, no API key. ` +
-        'After approve: Developer: Reload Window. Live server is user-agentstack from ~/.cursor/mcp.json.',
+        'AgentStack MCP is not signed in. After Reload, the plugin shows an AgentStack MCP server — ' +
+        'click Connect (site login, G-A174) or run ' +
+        `${AUTHORIZE_SLASH} (Device Code). Then Developer: Reload Window.`,
     };
   }
   const desc = describeAgentstackMcpAuth(cfg);
@@ -242,8 +291,7 @@ export function describeAgentstackAuthGate(cfg) {
       kind: 'placeholder',
       additionalContext:
         'AgentStack MCP Authorization is a placeholder (${AGENTSTACK_ACCESS_TOKEN}). ' +
-        `That shadows a real key. Run ${AUTHORIZE_SLASH} to write a Bearer into ~/.cursor/mcp.json, ` +
-        'then Reload Window. Do not ship plugin mcp.json.',
+        `Run ${AUTHORIZE_SLASH} or click Connect on the plugin MCP, then Reload Window.`,
     };
   }
   if (desc.serviceCaps === 'null' && desc.jwtType === 'user_api_key') {

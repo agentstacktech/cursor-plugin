@@ -21,7 +21,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | support ticket, staff inbox, psup | `agentstack-support` | `social.support.*` |
 | upload, quota, attachment, media | `agentstack-storage` | `storage.*`, REST upload |
 | login, register, role, RBAC | `agentstack-auth-rbac` | `auth.*`, `rbac.*` |
-| authorize plugin / Device Code / MCP missing in plugin | `/agentstack-authorize` | Device Code → `~/.cursor/mcp.json` (not tenant `auth.login`) |
+| authorize plugin / Device Code / MCP missing in plugin | Connect on plugin MCP or `/agentstack-authorize` | Plugin `mcp.json` (OAuth) + Device Code → `~/.cursor/mcp.json` |
 | when X then Y, automation, workflow | `agentstack-logic` | `logic.*`, `commands.*` |
 | payment, wallet balance, checkout, buffs (not project treasury) | `agentstack-commerce` | `payments.*`, `wallets.*`, `buffs.*` |
 | digital goods, asset wizard | `agentstack-commerce-assets` | `assets.*` |

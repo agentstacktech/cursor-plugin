@@ -23,6 +23,10 @@ import {
   ROUTER_SKILLS_REQUIRED,
   ROUTER_SKILLS_OPTIONAL,
 } from './lib/stale-actions.mjs';
+import {
+  pluginMcpOAuthError,
+  pluginMcpPointerError,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 /** Publish / monorepo package root (has marketplace.json + scripts/). */
@@ -66,6 +70,7 @@ const REQUIRED_REPO_FILES = [
 
 const REQUIRED_PLUGIN_FILES = [
   '.cursor-plugin/plugin.json',
+  'mcp.json',
   'hooks/hooks.json',
   'hooks/scripts/device-code.mjs',
   'hooks/scripts/session-start.mjs',
@@ -96,7 +101,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.17';
+const TARGET_VERSION = '0.4.18';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
@@ -285,9 +290,9 @@ if (fs.existsSync(pluginPath)) {
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);
-    if (plugin.mcpServers) {
-      fail('plugin.json: mcpServers must not be set — MCP via ~/.cursor/mcp.json only (0.4.16+)');
-    }
+    const ptrErr = pluginMcpPointerError(plugin);
+    if (ptrErr) fail(`plugin.json: ${ptrErr}`);
+    else ok(`plugin.json: mcpServers=${plugin.mcpServers}`);
     if (plugin.variables?.type !== 'object') {
       warn('plugin.json: variables JSON Schema optional (Device Code writes ~/.cursor/mcp.json)');
     } else {
@@ -373,16 +378,15 @@ if (fs.existsSync(listingPath)) {
   }
 }
 
-// 4. Plugin must NOT ship mcp.json — Cursor auto-registers it as plugin-agentstack-*
-// with empty ${AGENTSTACK_ACCESS_TOKEN} and shadows ~/.cursor/mcp.json (G-A162).
+// 4. Plugin MCP is OAuth URL-only (Figma-style). G-A162 is empty Authorization, not the file.
 const shippedMcp = path.join(PLUGIN, 'mcp.json');
-if (fs.existsSync(shippedMcp)) {
-  fail(
-    'plugins/agentstack/mcp.json must not ship (Cursor auto-registers plugin MCP). ' +
-      'Keep the example at mcp.example.json and write ~/.cursor/mcp.json via /agentstack-authorize.',
-  );
+if (!fs.existsSync(shippedMcp)) {
+  fail('plugins/agentstack/mcp.json missing — plugin panel MCP requires it');
 } else {
-  ok('no plugins/agentstack/mcp.json (MCP via ~/.cursor/mcp.json only)');
+  const mcpCfg = loadJson(shippedMcp);
+  const mcpErr = mcpCfg ? pluginMcpOAuthError(mcpCfg) : 'invalid JSON';
+  if (mcpErr) fail(`plugins/agentstack/mcp.json: ${mcpErr}`);
+  else ok('plugins/agentstack/mcp.json OAuth URL-only (no Authorization placeholder)');
 }
 const exampleMcpPath = path.join(ROOT, 'mcp.example.json');
 if (!fs.existsSync(exampleMcpPath)) {

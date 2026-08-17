@@ -33,7 +33,7 @@
 
 Run `node scripts/verify-mcp-surface-e2e.mjs` for automated API checks (tools/list, alias `tools/call`, plugin plane).
 
-- [ ] Cursor discovers **one** `agentstack` MCP server (not `plugin-agentstack-*` + `user-agentstack`). *Human: Reload Window after `refresh-cursor-runtime.mjs --fix`.*
+- [ ] Cursor shows AgentStack MCP **in the plugin panel** (0.4.18 URL-only `mcp.json`). Click **Connect** if needed. Device Code `user-agentstack` may also be present. Empty Bearer on `plugin-agentstack-*` is still G-A162. *Human: Reload Window after `refresh-cursor-runtime.mjs --fix`.*
 - [ ] Tools panel shows **one** `agentstack_execute` tool. *Human: confirm in Cursor UI.*
 - [x] `POST /mcp` `tools/list` returns exactly 1 tool named `agentstack.execute` — **verified prod 2026-08-07**.
 - [x] `tools/call` with `agentstack_execute` succeeds (Postel backward compat) — **verified prod 2026-08-07**.

@@ -10,7 +10,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { agentstackAuthHeaders } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import { agentstackAuthHeaders, pluginMcpOAuthError, pluginMcpPointerError } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   evaluateSingleToolSurface,
   fetchMcpHealth,
@@ -36,11 +36,20 @@ function fail(msg) {
 }
 
 const pj = JSON.parse(fs.readFileSync(PLUGIN_JSON, 'utf8'));
-if (pj.mcpServers) fail('plugin.json must not declare mcpServers (0.4.16+)');
-else ok('plugin.json has no mcpServers');
+const ptrErr = pluginMcpPointerError(pj);
+if (ptrErr) fail(`plugin.json: ${ptrErr}`);
+else ok(`plugin.json mcpServers=${pj.mcpServers}`);
 
-if (String(pj.version || '').startsWith('0.4.17')) ok(`plugin version ${pj.version}`);
-else warn(`plugin version ${pj.version} — expected 0.4.17 (G-A162 MCP dedupe)`);
+if (String(pj.version || '').startsWith('0.4.18')) ok(`plugin version ${pj.version}`);
+else warn(`plugin version ${pj.version} — expected 0.4.18 (plugin MCP Connect)`);
+
+const pluginMcp = path.join(ROOT, 'plugins', 'agentstack', 'mcp.json');
+if (!fs.existsSync(pluginMcp)) fail('plugins/agentstack/mcp.json missing');
+else {
+  const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(pluginMcp, 'utf8')));
+  if (mcpErr) fail(`plugin mcp.json: ${mcpErr}`);
+  else ok('plugin mcp.json OAuth URL-only');
+}
 
 if (fs.existsSync(MCP)) {
   const cfg = JSON.parse(fs.readFileSync(MCP, 'utf8'));
@@ -88,8 +97,8 @@ if (fs.existsSync(MCP)) {
 
 console.log(`\nsummary: failed=${fails}`);
 if (fails) {
-  console.log('\nHuman UI (cannot automate): Reload Window → Settings → MCP → one plugin server (no plugin-agentstack-* duplicate); Tools panel → one agentstack_execute.');
+  console.log('\nHuman UI (cannot automate): Reload Window → plugin AgentStack MCP appears; click Connect (no empty Bearer).');
   process.exit(1);
 }
-console.log('\nAPI slice PASS. Human: Reload Window and confirm Cursor MCP UI §3 (one server, one tool).');
+console.log('\nAPI slice PASS. Human: Reload Window — plugin MCP should appear; click Connect if needed.');
 process.exit(0);

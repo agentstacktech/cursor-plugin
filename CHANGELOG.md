@@ -2,6 +2,20 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.18] - 2026-08-17
+
+### Added
+
+- **Plugin MCP in the panel:** `plugin.json` `mcpServers: "./mcp.json"` (Figma-style path string) plus URL-only `plugins/agentstack/mcp.json` (no `Authorization`). Click **Connect** — G-A174 login on prod. Device Code still writes `~/.cursor/mcp.json` for hooks.
+
+### Fixed
+
+- MCP absent from the plugin package (0.4.17 over-corrected G-A162). Empty `${AGENTSTACK_ACCESS_TOKEN}` remains forbidden.
+
+### Changed
+
+- Validators / diagnose / refresh require OAuth-safe plugin MCP; `--fix` syncs `mcp.json` instead of deleting it.
+
 ## [Unreleased]
 
 ### Added

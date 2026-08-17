@@ -11,7 +11,7 @@
 |-------|------:|------|--------|
 | Skills | 25 | 24 domains + optional `solana`; frontmatter + live catalog | [x] `audit-layers.mjs` |
 | Rules | 9 | exactly 1 `alwaysApply` (prefer) | [x] |
-| Commands | 13 | name/description + init/login/diagnose | [x] |
+| Commands | 14 | name/description + init/login/authorize/diagnose | [x] |
 | Agents | 3 | name/description; no oncall/fleet-operator | [x] |
 | Maintainer overlay | 2 agents | `cursor-plugin-maintainer/` — LOCAL_INSTALL only | [x] |
 | Hooks | 7 events | scripts resolve under package | [x] |
@@ -39,7 +39,7 @@
 | MCP lean write | no `tools` key; Bearer or API key | [x] |
 | Snapshot | flat `actions[]` | [x] |
 | beforeMCPExecution | cap hint from snapshot | [x] |
-| sessionStart | normalize + seed catalog | [x] |
+| sessionStart | normalize + auto Device Code + seed catalog | [x] |
 | afterFileEdit mcp.json | cache clear + snapshot | [x] |
 | Telemetry | opt-in only | [x] |
 | Plugin variables | `${AGENTSTACK_ACCESS_TOKEN}` ↔ Configure UI | [x] |
@@ -71,11 +71,12 @@ node scripts/smoke-local.mjs
 
 In Cursor after **Reload Window**:
 
-- [ ] Plugin loads without "$schema version" error (version 0.4.16)
-- [ ] `/agentstack-init` (upgrade X-API-Key → Device Code)
+- [ ] Plugin loads without "$schema version" error (local 0.4.18)
+- [ ] Plugin panel shows AgentStack MCP — click **Connect**
+- [ ] `/agentstack-authorize` then Reload; `user-agentstack` still works for hooks
 - [ ] `/agentstack-diagnose`
 - [ ] `/agentstack-capability-matrix`
-- [ ] Spot-check one skill route (e.g. hosting or auth)
+- [ ] Smoke `system.ping` (not tools/list alone)
 
 Form: [`SUBMIT_FORM.md`](SUBMIT_FORM.md)
 

@@ -127,11 +127,10 @@ if (maintainer) {
 
 console.log(`
 Next steps:
-  1. node scripts/refresh-cursor-runtime.mjs --fix   # clear stale marketplace $schema cache
+  1. node scripts/refresh-cursor-runtime.mjs --fix
   2. Cursor → Developer: Reload Window
-  3. Chat: /agentstack-authorize  (Node must be on PATH; no API key)
-  4. Approve at https://agentstack.tech/activate
-  5. /agentstack-diagnose then /agentstack-capability-matrix
+  3. Plugin MCP should appear — click Connect (or /agentstack-authorize)
+  4. /agentstack-diagnose then /agentstack-capability-matrix
 
 Uninstall: node scripts/uninstall-local.mjs
 Verify:    node scripts/install-local.mjs --check

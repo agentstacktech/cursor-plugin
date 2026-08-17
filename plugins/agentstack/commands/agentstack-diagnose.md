@@ -19,7 +19,7 @@ Run these in order and present results as a single Markdown table.
 8. **Hooks** — verify `hooks/hooks.json` lists sessionStart, beforeShellExecution, beforeMCPExecution, postToolUse, postToolUseFailure, sessionEnd, afterFileEdit; scripts under `hooks/scripts/` resolve from plugin root (`~/.cursor/plugins/local/agentstack` or marketplace install).
 9. **Capability snapshot** — age of `~/.cursor/agentstack-capabilities.json` (mtime); if missing or >24h, refresh via session-start or `GET /mcp/actions`. Confirm `actions` is a **flat array** (not nested `domains`).
 10. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
-11. **MCP surface** — `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`) **and** `tools/call` `system.ping`. List-only green is a false OK. If Cursor shows two servers, Reload after plugin 0.4.16+ and run `refresh-cursor-runtime.mjs --fix`.
+11. **MCP surface** — plugin 0.4.18 shows AgentStack MCP in the plugin panel (click **Connect** if needed). `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`) **and** `tools/call` `system.ping`. List-only green is a false OK. Cursor may show native `mcp_auth` — do **not** call it from the agent; user clicks Connect (G-A174). Device Code `user-agentstack` may coexist. Empty Bearer on `plugin-agentstack-*` is G-A162.
 12. **Local layout (optional)** — from the publish checkout: `node scripts/diagnose-local.mjs` and `node scripts/audit-layers.mjs`.
 
 ## Output

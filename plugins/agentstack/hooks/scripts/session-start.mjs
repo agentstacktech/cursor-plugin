@@ -190,7 +190,7 @@ async function maybeAutoDeviceLogin(gateKind) {
     log('auto Device Code skipped (lock busy)');
     return (
       'AgentStack Device Code is already waiting for Activate approval. ' +
-      'Finish that tab, then Developer: Reload Window. Live MCP is user-agentstack.'
+      'Finish that tab, then Developer: Reload Window. Plugin MCP: click Connect; Device Code also writes user-agentstack.'
     );
   }
   const scriptsDir = dirname(fileURLToPath(import.meta.url));
@@ -201,7 +201,7 @@ async function maybeAutoDeviceLogin(gateKind) {
   log(`auto Device Code spawned pid=${pid}`);
   return (
     'Opened AgentStack Activate in the browser (auto Device Code). Approve it, then ' +
-    'Developer: Reload Window. MCP is user-agentstack from ~/.cursor/mcp.json — not plugin-agentstack-*. ' +
+    'Developer: Reload Window. Plugin MCP should appear — click Connect (G-A174), or use user-agentstack from ~/.cursor/mcp.json. ' +
     `If no tab opened, run ${AUTHORIZE_SLASH}. Free 1/1 keys: revoke an extra PAT at ` +
     'https://agentstack.tech/me/keys first. Set AGENTSTACK_DISABLE_AUTO_LOGIN=1 to skip auto-login.'
   );

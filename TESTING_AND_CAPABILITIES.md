@@ -2,7 +2,7 @@
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
-**MCP dedupe (0.4.17):** plugin package must **not** include `mcp.json` or `plugin.json` `mcpServers`. Device Code (`/agentstack-authorize`) writes `~/.cursor/mcp.json` only. After Reload Window expect **one** Cursor MCP server (`agentstack` / `user-agentstack` from user config) and **one** `agentstack_execute` tool. A `plugin-agentstack-*` server with empty token is the G-A162 trap. MCP **missing inside the plugin panel** is expected.
+**MCP (0.4.18):** plugin ships URL-only `mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). After Reload, click **Connect** on plugin AgentStack MCP. Empty `${AGENTSTACK_ACCESS_TOKEN}` is still the G-A162 trap. Device Code writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks. Expect **one** `agentstack.execute` tool per server.
 
 ```bash
 node scripts/diagnose-local.mjs --seed-snapshot
@@ -22,7 +22,7 @@ node scripts/verify-mcp-surface-e2e.mjs
 | Agents | `agents/*.md` | **3** marketplace presets (see matrix) |
 | Hooks | `hooks/hooks.json` + `hooks/scripts/` | Lifecycle + policy + contract fixtures |
 | Kernel | `lib/plugin-kernel/` | Vendored Device Code + MCP config/probes |
-| MCP template | `mcp.example.json` | Lean streamable-http example for `~/.cursor/mcp.json` (not shipped in plugin package) |
+| MCP | `mcp.json` | URL-only plugin MCP (Connect). User Device Code template: `mcp.example.json` |
 
 ## Skills (gen3)
 

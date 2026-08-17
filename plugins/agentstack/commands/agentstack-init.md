@@ -30,7 +30,7 @@ The script will:
 1. `POST /api/oauth2/device/authorize` with `client_id=cursor-plugin` and requested scopes.
 2. Print `verification_uri_complete` and `user_code` to the terminal.
 3. Attempt to open the browser automatically (`start` / `open` / `xdg-open`).
-4. Poll `POST /api/oauth2/token` every `interval` seconds until `access_token` + `refresh_token` arrive.
+4. Poll `POST /api/oauth2/token` every `interval` seconds until a long-lived PAT JWT arrives (Device grant typically has no `refresh_token`).
 
 User approves in the browser at `https://agentstack.tech/activate`.
 
@@ -47,7 +47,7 @@ After the token exchange succeeds, `device-code.mjs` writes:
 - `~/.cursor/mcp.json` → `mcpServers.agentstack.headers.Authorization = "Bearer <access_token>"` (short-lived; hook `session-start.mjs` refreshes ahead of expiry).
 - `~/.cursor/agentstack-refresh` (mode 0600) — refresh token fallback if OS keyring is unavailable.
 
-**Reload Window** after first install (plugin 0.4.17+ registers MCP only via `~/.cursor/mcp.json`). In MCP settings you should see **one** `agentstack` server from user config — **not** `plugin-agentstack-*` with an empty token. A missing server *inside the plugin panel* is expected.
+**Reload Window** after first install (plugin 0.4.18). The plugin panel should show AgentStack MCP — click **Connect** (no empty Bearer). Device Code also writes `user-agentstack` in `~/.cursor/mcp.json`. A `plugin-agentstack-*` server with `${AGENTSTACK_ACCESS_TOKEN}` is still the G-A162 trap.
 
 Optionally issue a long-lived scoped API key for CI (user choice):
 

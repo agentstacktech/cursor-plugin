@@ -100,10 +100,10 @@ Cursor may keep a snapshot under:
 | Step | Action |
 |------|--------|
 | 1 | Upgrade local plugin tree to **0.4.16+** (`git pull` or marketplace refresh) |
-| 2 | `node scripts/refresh-cursor-runtime.mjs --fix` — strip cached `mcpServers` from plugin manifests |
+| 2 | `node scripts/refresh-cursor-runtime.mjs --fix` — sync OAuth-safe plugin `mcp.json` |
 | 3 | **Reload Window** in Cursor |
-| 4 | Confirm Settings → MCP shows **one** `agentstack` server (not `plugin-agentstack-*` + `user-agentstack`) |
-| 5 | `node scripts/diagnose-local.mjs` — must pass `plugin.json has no mcpServers` |
+| 4 | Confirm plugin panel shows AgentStack MCP — click **Connect**. Device Code `user-agentstack` may also be present |
+| 5 | `node scripts/diagnose-local.mjs` — must pass `mcpServers=./mcp.json` and OAuth-safe plugin mcp.json |
 | 6 | After **core** deploy: `POST /mcp/cache/clear`; `tools/list` must return 1 tool |
 | 7 | If prod still lists 2 tools, core is not on 0.4.16 yet — wait for deploy before re-testing Cursor |
 

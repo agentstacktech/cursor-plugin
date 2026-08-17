@@ -15,12 +15,14 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
+import { pluginMcpOAuthError, pluginMcpPointerError } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
 const SOT_PLUGIN_JSON = path.join(PLUGIN, '.cursor-plugin', 'plugin.json');
 const SOT_MARKETPLACE = path.join(ROOT, '.cursor-plugin', 'marketplace.json');
 const SOT_HOOKS = path.join(PLUGIN, 'hooks', 'hooks.json');
+const SOT_MCP = path.join(PLUGIN, 'mcp.json');
 const CURSOR_PLUGINS = path.join(os.homedir(), '.cursor', 'plugins');
 
 /** Auth/MCP slice Cursor cache often keeps from marketplace 0.4.16 while local is newer. */
@@ -30,6 +32,8 @@ const AUTH_SLICE = [
   'hooks/scripts/device-code.mjs',
   'lib/plugin-kernel/mcpConfig.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
+  'mcp.json',
+  '.cursor-plugin/plugin.json',
   'commands/agentstack-authorize.md',
   'rules/agentstack-prefer.mdc',
   'skills/agentstack-auth-rbac/SKILL.md',
@@ -128,11 +132,14 @@ function scanAndFix() {
     if (j?.$schema) {
       fail(`local plugin.json still has $schema (${local})`);
       if (fix) stripSchemaWrite(local, SOT_PLUGIN_JSON);
-    } else if (j?.mcpServers) {
-      fail(`local plugin.json still has mcpServers (${local}) — upgrade to 0.4.16+`);
-      if (fix) stripSchemaWrite(local, SOT_PLUGIN_JSON);
-    } else if (j?.version) {
-      ok(`local plugin.json version=${j.version} (no $schema, no mcpServers)`);
+    } else {
+      const ptrErr = pluginMcpPointerError(j);
+      if (ptrErr) {
+        fail(`local plugin.json: ${ptrErr}`);
+        if (fix) stripSchemaWrite(local, SOT_PLUGIN_JSON);
+      } else if (j?.version) {
+        ok(`local plugin.json version=${j.version} mcpServers=${j.mcpServers}`);
+      }
     }
   } else {
     warn('local/agentstack not installed — run: node scripts/install-local.mjs');
@@ -170,11 +177,26 @@ function scanAndFix() {
           ok(`stripped $schema → ${file}`);
         }
       }
-    } else if (path.basename(file) === 'plugin.json' && j.mcpServers) {
-      fail(`${rel}: has mcpServers (forbidden 0.4.16+)`);
-      if (fix) stripSchemaWrite(file, SOT_PLUGIN_JSON);
     } else if (path.basename(file) === 'plugin.json') {
-      ok(`clean plugin.json version=${j.version || '?'} @ ${rel}`);
+      const ptrErr = pluginMcpPointerError(j);
+      if (ptrErr) {
+        fail(`${rel}: ${ptrErr}`);
+        if (fix) stripSchemaWrite(file, SOT_PLUGIN_JSON);
+      } else {
+        const sotVer = loadJson(SOT_PLUGIN_JSON)?.version;
+        if (
+          sotVer &&
+          j.version &&
+          j.version !== sotVer &&
+          !samePath(file, SOT_PLUGIN_JSON) &&
+          !samePath(file, local)
+        ) {
+          fail(`${rel}: version=${j.version} != SoT ${sotVer}`);
+          if (fix) stripSchemaWrite(file, SOT_PLUGIN_JSON);
+        } else {
+          ok(`clean plugin.json version=${j.version || '?'} mcpServers=${j.mcpServers} @ ${rel}`);
+        }
+      }
     }
   }
 
@@ -190,11 +212,20 @@ function scanAndFix() {
     const n = file.replace(/\\/g, '/').toLowerCase();
     if (path.basename(n) !== 'mcp.json') continue;
     if (!n.includes('agentstack')) continue;
-    fail(`${file}: plugin mcp.json (G-A162 auto-register trap)`);
-    if (fix) {
-      fs.unlinkSync(file);
-      fixed += 1;
-      ok(`deleted ${file}`);
+    if (samePath(file, SOT_MCP)) continue;
+    const cfg = loadJson(file);
+    const err = pluginMcpOAuthError(cfg);
+    if (err) {
+      fail(`${file}: ${err}`);
+      if (fix) stripSchemaWrite(file, SOT_MCP);
+    } else {
+      const sot = loadJson(SOT_MCP);
+      if (sot && JSON.stringify(cfg) !== JSON.stringify(sot)) {
+        fail(`${file}: plugin mcp.json drift vs SoT`);
+        if (fix) stripSchemaWrite(file, SOT_MCP);
+      } else {
+        ok(`oauth-safe plugin mcp.json @ ${file}`);
+      }
     }
   }
 }
@@ -244,8 +275,8 @@ if (fix || purge) {
   console.log(`
 Next:
   1. Cursor → Developer: Reload Window
-  2. Confirm plugin shows 0.4.16 without "$schema" error
-  3. /agentstack-diagnose
+  2. Confirm plugin shows 0.4.18 without "$schema" error; MCP appears in the plugin panel
+  3. Click Connect on plugin AgentStack MCP, or /agentstack-authorize
 `);
   process.exit(fails ? 1 : 0);
 }

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "agentstack": {
+      "type": "streamable-http",
+      "url": "https://agentstack.tech/mcp"
+    }
+  }
+}

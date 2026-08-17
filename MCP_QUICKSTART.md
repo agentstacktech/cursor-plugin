@@ -3,7 +3,7 @@
 **Endpoint:** `https://agentstack.tech/mcp`  
 **Tool:** `agentstack.execute` (Cursor may show `agentstack_execute`; underscore alias still works on `tools/call`)  
 **Live catalog:** `GET https://agentstack.tech/mcp/actions`  
-**Version:** 0.4.17+
+**Version:** 0.4.18+
 
 ## Install plugin (dev)
 
@@ -20,7 +20,7 @@ OAuth 2.1 Device Code via `/agentstack-authorize` (or `/agentstack-init`) → Be
 
 Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
 
-**Do not** ship `mcp.json` inside the plugin package (Cursor auto-registers it). One registration path: `~/.cursor/mcp.json`. The plugin panel will **not** show an MCP server — that is intentional (G-A162). After Device Code, Cursor lists **`user-agentstack`**. `/agentstack-authorize` is the auth control (no webview Connect button).
+Plugin **0.4.18** ships URL-only `plugins/agentstack/mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). After **Reload Window**, AgentStack MCP appears in the plugin panel — click **Connect** (G-A174). Do **not** put `${AGENTSTACK_ACCESS_TOKEN}` in that file (G-A162). Device Code (`/agentstack-authorize`) still writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks.
 
 ## Lean `~/.cursor/mcp.json` shape
 

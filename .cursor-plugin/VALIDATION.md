@@ -8,8 +8,8 @@ Layout: repo root `.cursor-plugin/marketplace.json` + package under `plugins/age
 
 - [x] `plugins/agentstack/.cursor-plugin/plugin.json` Cursor-schema-valid (**no** `$schema` — Cursor rejects external schema URLs)
 - [x] `name` kebab-case: `agentstack`
-- [x] **no** `mcpServers` in `plugin.json` (0.4.16+)
-- [x] **no** `mcp.json` in plugin package (0.4.17+ — Cursor auto-register trap)
+- [x] **`mcpServers`: `"./mcp.json"`** (string path, 0.4.18) — not an inline object
+- [x] **plugin `mcp.json` OAuth URL-only** (no Authorization placeholder — G-A162)
 - [x] Repo `.cursor-plugin/listing.json` AgentStack publisher SoT
 - [x] Repo `.cursor-plugin/marketplace.json` with `pluginRoot: plugins`, `source: agentstack`
 - [x] Package `skills/`, `rules/`, `commands/`, `agents/`, `hooks/`
