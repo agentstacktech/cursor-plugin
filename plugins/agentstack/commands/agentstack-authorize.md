@@ -22,7 +22,7 @@ node ./hooks/scripts/device-code.mjs --scope-preset=full
 4. The script prints `Open:` + `Code:`, opens `https://agentstack.tech/activate?user_code=…`, and polls until approved. New agent chats also auto-spawn this script via `sessionStart --from-hook` when MCP is unsigned / placeholder / `service_caps=null` (opt out: `AGENTSTACK_DISABLE_AUTO_LOGIN=1`).
 5. After success: tell the user **Developer: Reload Window**. Expect **plugin AgentStack MCP** (click Connect if needed) **and** `user-agentstack` from `~/.cursor/mcp.json`.
 6. If `projects.get_projects` returns more than one tenant workspace, persist the chosen id to `~/.cursor/agentstack-project` and keep `X-Project-ID` off ecosystem `1`.
-7. Smoke: `agentstack.execute` `{ "steps": [{ "id": "p", "action": "system.ping", "params": {} }] }`. `tools/list` alone is a false green.
+7. Smoke: `agentstack.execute` `{ "steps": [{ "id": "p", "action": "auth.get_profile", "params": {} }] }`. `tools/list` or `system.ping` alone is a false green.
 
 ## Recovery
 
@@ -35,6 +35,7 @@ node ./hooks/scripts/device-code.mjs --scope-preset=full
 
 ## Related
 
+- `/agentstack-status` — auth + profile + pin (everyday).
 - `/agentstack-login` — re-login, switch project, or a narrower `--scope-preset`.
 - `/agentstack-init` — first-time bootstrap (SDK scaffold + matrix) after auth.
-- `/agentstack-diagnose` — token + `system.ping` probe.
+- `/agentstack-diagnose` — deeper table (hooks, snapshot, surface).

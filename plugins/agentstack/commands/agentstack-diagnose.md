@@ -12,14 +12,14 @@ Run these in order and present results as a single Markdown table.
 1. **Health** — `GET https://agentstack.tech/api/health` (expected `200 {status:"ok"}`).
 2. **Discovery** — `GET /mcp/actions` (print live count per category; compare to docs/publication/PLATFORM_SCALE.md if needed).
 3. **Token** — decode the JWT in `~/.cursor/mcp.json` → `mcpServers.agentstack.headers.Authorization` (local only, no network); print `type`, `actor_kind`, `service_caps` (null vs list length), `exp`, and seconds to expiry. **`service_caps=null` on `agentstack.tech` fails every `tools/call`** even if `tools/list` is OK.
-4. **Whoami** — `GET /api/auth/whoami` with current Bearer.
+4. **Whoami** — `GET /api/auth/me` with current Bearer (not `/whoami`). Prefer `/agentstack-status` when the user only wants auth + profile.
 5. **Project** — `projects.get_stats` with `X-Project-ID` (not JWT `project_id=1`). If the header is `1`, pin a tenant workspace (e.g. 1444).
 6. **API keys** — `apikeys.list` (print label, prefix, scopes, ttl).
 7. **Recent errors** — last 20 lines from `~/.cursor/agentstack-telemetry.jsonl` where `success=false`; show `trace_id` + action.
 8. **Hooks** — verify `hooks/hooks.json` lists sessionStart, beforeShellExecution, beforeMCPExecution, postToolUse, postToolUseFailure, sessionEnd, afterFileEdit; scripts under `hooks/scripts/` resolve from plugin root (`~/.cursor/plugins/local/agentstack` or marketplace install).
 9. **Capability snapshot** — age of `~/.cursor/agentstack-capabilities.json` (mtime); if missing or >24h, refresh via session-start or `GET /mcp/actions`. Confirm `actions` is a **flat array** (not nested `domains`).
 10. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
-11. **MCP surface** — plugin 0.4.18 shows AgentStack MCP in the plugin panel (click **Connect** if needed). `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`) **and** `tools/call` `system.ping`. List-only green is a false OK. Cursor may show native `mcp_auth` — do **not** call it from the agent; user clicks Connect (G-A174). Device Code `user-agentstack` may coexist. Empty Bearer on `plugin-agentstack-*` is G-A162.
+11. **MCP surface** — plugin 0.4.18 shows AgentStack MCP in the plugin panel (click **Connect** if needed). `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`) **and** `tools/call` `auth.get_profile` or `projects.get_stats`. List-only or `system.ping` alone is a false OK. Cursor may show native `mcp_auth` — do **not** call it from the agent; user clicks Connect. Device Code `user-agentstack` may coexist. Empty Bearer on `plugin-agentstack-*` is still the placeholder trap.
 12. **Local layout (optional)** — from the publish checkout: `node scripts/diagnose-local.mjs` and `node scripts/audit-layers.mjs`.
 
 ## Output
@@ -37,7 +37,7 @@ Run these in order and present results as a single Markdown table.
 | Hooks          | OK     | lifecycle scripts present                |
 | Snapshot       | OK     | age=12m                                  |
 | MCP cache      | OK     | cleared                                  |
-| MCP surface    | OK     | tools/list=1; tools/call ping OK; one Cursor server |
+| MCP surface    | OK     | tools/list=1; tools/call auth.get_profile OK |
 ```
 
 ## When something is wrong

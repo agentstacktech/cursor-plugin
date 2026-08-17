@@ -320,3 +320,73 @@ export function shouldAutoDeviceLogin(kind, { fromHook = false, disable = false 
   if (disable || !fromHook) return false;
   return gateNeedsDeviceLogin(kind);
 }
+
+/**
+ * Compact status for sessionStart / diagnose (no secrets).
+ * @param {{
+ *   gateKind?: string,
+ *   additionalContext?: string|null,
+ *   auth?: object|null,
+ *   pin?: number|string|null,
+ *   profile?: { email?: string, displayName?: string, username?: string, role?: string, userId?: number|null }|null,
+ * }} [opts]
+ */
+export function formatAgentstackStatusCard({
+  gateKind,
+  additionalContext,
+  auth,
+  pin,
+  profile,
+} = {}) {
+  if (gateKind && gateKind !== 'ok') {
+    return additionalContext || `AgentStack: not signed in. Run ${AUTHORIZE_SLASH}.`;
+  }
+  const who =
+    (profile && (profile.displayName || profile.email || profile.username)) ||
+    (auth && auth.userId != null ? `user ${auth.userId}` : 'signed in');
+  const role = profile?.role ? ` · ${profile.role}` : '';
+  const pid = pin || auth?.projectHeader || 'unpinned';
+  const caps = auth?.serviceCaps || 'caps?';
+  let exp = 'exp unknown';
+  if (typeof auth?.expInSec === 'number') {
+    if (auth.expInSec < 0) exp = 'expired';
+    else if (auth.expInSec < 3600) exp = `expires ${Math.round(auth.expInSec / 60)}m`;
+    else exp = `expires ${Math.round(auth.expInSec / 3600)}h`;
+  }
+  return [
+    `AgentStack: ${who}${role}`,
+    `project ${pid} · ${caps} · ${exp}`,
+    'After Reload, click Connect on the plugin MCP. Device Code keeps hooks signed in.',
+  ].join('\n');
+}
+
+/**
+ * Best-effort GET /api/auth/me for the status card (never throws).
+ * @param {Record<string, string>|null} headers
+ * @param {{ baseUrl?: string, timeoutMs?: number }} [opts]
+ */
+export async function fetchAuthMeBrief(headers, { baseUrl = 'https://agentstack.tech', timeoutMs = 2500 } = {}) {
+  if (!headers) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${String(baseUrl).replace(/\/$/, '')}/api/auth/me`, {
+      headers,
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const d = body?.data && typeof body.data === 'object' ? body.data : body;
+    if (!d || typeof d !== 'object') return null;
+    return {
+      userId: d.user_id ?? null,
+      email: typeof d.email === 'string' ? d.email : '',
+      displayName: String(d.display_name || d.username || '').trim(),
+      role: typeof d.role === 'string' ? d.role : '',
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}

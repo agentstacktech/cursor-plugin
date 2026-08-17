@@ -24,7 +24,7 @@ For first-time / “just sign me in” use **`/agentstack-authorize`** instead (
    - Persist the picked project id to `~/.cursor/agentstack-project` (plain text, 0600).
    - Do not pin ecosystem `1` as a working workspace.
 4. Call `POST /mcp/cache/clear` to refresh discovery for the new scope set.
-5. Tell the user **Developer: Reload Window**. Smoke with `system.ping` (list-only is a false green).
+5. Tell the user **Developer: Reload Window**. Smoke with `auth.get_profile` (list-only or `system.ping` is a false green).
 
 ## Recovery
 
@@ -36,6 +36,7 @@ For first-time / “just sign me in” use **`/agentstack-authorize`** instead (
 
 ## Related
 
+- `/agentstack-status` — auth + profile + pin.
 - `/agentstack-authorize` — one-shot Device Code (no API key, default full scopes).
 - `/agentstack-init` — first-time install.
 - `/agentstack-diagnose` — inspect current token state.

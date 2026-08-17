@@ -208,7 +208,7 @@ async function main() {
     console.log(`  Trace:   ${traceId}`);
     console.log(`  Expires: in ${expiresIn}s (long-lived PAT; session-start refreshes only if a leftover refresh file exists)`);
     console.log(`  Config:  ${MCP_PATH}\n`);
-    console.log('  Next: Developer: Reload Window, then system.ping via user-agentstack.\n');
+    console.log('  Next: Developer: Reload Window, click Connect on plugin MCP, then /agentstack-status.\n');
   } finally {
     await endDeviceLoginLock(CURSOR_DIR);
   }

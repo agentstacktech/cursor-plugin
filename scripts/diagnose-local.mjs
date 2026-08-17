@@ -21,6 +21,9 @@ import {
   pluginMcpPointerError,
   AUTHORIZE_SLASH,
   isTenantProjectId,
+  formatAgentstackStatusCard,
+  fetchAuthMeBrief,
+  readPinnedTenantProjectId,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   evaluateSingleToolSurface,
@@ -236,6 +239,18 @@ if (!fs.existsSync(MCP)) {
           `project=${claims.projectHeader || 'unset'} exp_in=${claims.expInSec}s`,
       );
     }
+    const pin = await readPinnedTenantProjectId(path.dirname(MCP));
+    const profile =
+      auth && gate.kind === 'ok' ? await fetchAuthMeBrief(auth, { baseUrl: BASE_URL }) : null;
+    console.log(
+      formatAgentstackStatusCard({
+        gateKind: gate.kind,
+        additionalContext: gate.additionalContext,
+        auth: claims,
+        pin,
+        profile,
+      }),
+    );
     if (gate.kind === 'null_caps' && /agentstack\.tech/i.test(String(cur.url || ''))) {
       fail(
         'Bearer JWT has service_caps=null — prod MCP rejects unrestricted tenant keys ' +
@@ -262,7 +277,7 @@ if (!fs.existsSync(MCP)) {
       }
       try {
         await postToolsCallExecuteAlias(BASE_URL, auth);
-        ok('tools/call agentstack_execute (system.ping) succeeds');
+        ok('tools/call transport (system.ping) OK — not a catalog check');
       } catch (e) {
         fail(`tools/call execute failed: ${e.message}`);
       }
@@ -333,8 +348,8 @@ console.log(`\nsummary: failed=${fails}`);
 console.log(`
 Next (human):
   1. If $schema error: node scripts/refresh-cursor-runtime.mjs --fix && Reload Window
-  2. Reload Window — plugin MCP should appear; click Connect (G-A174) or /agentstack-authorize
+  2. Reload Window — plugin MCP should appear; click Connect or /agentstack-authorize
   3. Pin tenant X-Project-ID (not 1), then Reload Window
-  4. /agentstack-diagnose
+  4. /agentstack-status  (or /agentstack-diagnose)
 `);
 process.exit(fails ? 1 : 0);

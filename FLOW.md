@@ -71,7 +71,7 @@ node scripts/diagnose-local.mjs
 node scripts/diagnose-local.mjs --fix --seed-snapshot
 ```
 
-`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot using Bearer **or** `X-API-Key`, and emits JSON `additional_context` when unsigned / placeholder / `service_caps=null`. If the gate still needs login it spawns `device-code.mjs` once (lock file) so Activate opens without pasting a key. Tests must not pass `--from-hook`. Logs go to stderr so stdout stays valid JSON. Stale Cursor marketplace cache is synced with `scripts/refresh-cursor-runtime.mjs --fix`.
+`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot using Bearer **or** `X-API-Key`, and **always** emits a compact auth/profile status card (`GET /api/auth/me` when signed in). If the gate still needs login it spawns `device-code.mjs` once (lock file) so Activate opens without pasting a key. Tests must not pass `--from-hook`. Logs go to stderr so stdout stays valid JSON. Stale Cursor marketplace cache is synced with `scripts/refresh-cursor-runtime.mjs --fix`. Same card: `/agentstack-status`.
 
 ## MCP registration plane (0.4.18)
 
@@ -105,7 +105,7 @@ flowchart LR
 | Inline `mcpServers` object in plugin.json | Duplicate / broken registration | Path string `./mcp.json` only |
 | Stale marketplace cache | Old plugin without MCP or with placeholder | `refresh-cursor-runtime.mjs --fix` |
 | Backend lists 2 tools | Two `agentstack_execute` in tools panel | Deploy core 0.4.16 |
-| `projects.get_project` in chat | DNA `protected` / provider keys in the model transcript (G-A175) | Prefer `system.ping` / `projects.get_projects` until serialize strips secrets |
+| `projects.get_project` in chat | DNA `protected` / provider keys in the model transcript (G-A175) | Prefer `auth.get_profile` / `projects.get_stats`; list with `projects.get_projects` (`accessible_only` default, honor `limit`) |
 | Cursor `mcp_auth` from the agent | Wrong client / login loop | User clicks **Connect** on plugin MCP (G-A174). Agent does not call `mcp_auth`. |
 
 Plugin ships [`plugins/agentstack/mcp.json`](plugins/agentstack/mcp.json) (OAuth URL-only). User Device Code template: [`mcp.example.json`](mcp.example.json).

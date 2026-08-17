@@ -9,9 +9,9 @@ Run **in this order** — do not skip steps. Recover from errors in-place.
 
 ## 1. Check existing auth
 
-Read `~/.cursor/mcp.json`. If `mcpServers.agentstack.headers.Authorization` is present **and** `GET https://agentstack.tech/api/auth/whoami` returns 200 with that Bearer, skip to step 4.
+Read `~/.cursor/mcp.json`. If `mcpServers.agentstack.headers.Authorization` is present **and** `GET https://agentstack.tech/api/auth/me` returns 200 with that Bearer, skip to step 4. Everyday check: `/agentstack-status`.
 
-If instead `X-API-Key` is present, ask the user: "Upgrade to OAuth Device Code (recommended)? Y/N". If N — skip to step 4 with existing key. If Y — continue.
+If instead `X-API-Key` is present, keep it and skip to step 4 (upgrade later with `/agentstack-authorize` — do not ask).
 
 ## 2. Device Code login
 
@@ -93,8 +93,8 @@ export const as = createSDK({
 
 After auth is written, verify end-to-end:
 
-1. `GET https://agentstack.tech/api/auth/whoami` with the Bearer → expect 200.
-2. Prefer MCP: `agentstack.execute` with `{ "steps": [{ "action": "discovery.list", "params": {} }] }` (or live `GET /mcp/actions`).
+1. `GET https://agentstack.tech/api/auth/me` with the Bearer → expect 200 (or `/agentstack-status`).
+2. Prefer MCP: `agentstack.execute` with `{ "steps": [{ "action": "auth.get_profile", "params": {} }] }` (or live `GET /mcp/actions`). List-only or `system.ping` is a false green.
 3. If either fails → `/agentstack-diagnose`.
 
 ## 6. Print capability matrix summary
@@ -113,6 +113,7 @@ Print:
 
 ```
 Ready. Next commands:
+  /agentstack-status             — auth + profile + pin
   /agentstack-scaffold-auth      — generate login + register UI
   /agentstack-scaffold-backend   — full stack (roles + buffs + payments)
   /agentstack-sync-schema        — migrate existing Prisma/Drizzle → 8DNA

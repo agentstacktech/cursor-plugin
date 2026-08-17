@@ -64,6 +64,7 @@ Prefer JSON-RPC `tools/call` with batched steps:
 
 | Command | Purpose |
 |---------|---------|
+| `/agentstack-status` | Auth + profile + pin (everyday) |
 | `/agentstack-diagnose` | Token, discovery, MCP surface |
 | `node scripts/diagnose-local.mjs` | Offline + live `tools/list` probe |
 | `node scripts/verify-mcp-surface-e2e.mjs` | Single-tool + Postel alias contract |

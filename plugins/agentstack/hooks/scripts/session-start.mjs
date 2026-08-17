@@ -15,8 +15,11 @@ import {
   normalizeAgentstackMcpConfig,
   decodeJwtPayload,
   describeAgentstackAuthGate,
+  describeAgentstackMcpAuth,
   shouldAutoDeviceLogin,
   readPinnedTenantProjectId,
+  formatAgentstackStatusCard,
+  fetchAuthMeBrief,
   AUTHORIZE_SLASH,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
 import {
@@ -208,12 +211,12 @@ async function maybeAutoDeviceLogin(gateKind) {
 }
 
 async function main() {
+  const pin = await readPinnedTenantProjectId(CURSOR_DIR);
   let cfg = await readMcp();
   if (cfg) {
-    const pinned = await readPinnedTenantProjectId(CURSOR_DIR);
     const { cfg: normalized, changed } = normalizeAgentstackMcpConfig(cfg, {
       baseUrl: BASE_URL,
-      projectId: pinned,
+      projectId: pin,
     });
     cfg = normalized;
     if (changed) {
@@ -224,11 +227,23 @@ async function main() {
 
   const gate = describeAgentstackAuthGate(cfg);
   const extras = [];
-  if (gate.additionalContext) extras.push(gate.additionalContext);
+  const authHeaders = agentstackAuthHeaders(cfg);
+  let profile = null;
+  if (authHeaders && gate.kind === 'ok') {
+    profile = await fetchAuthMeBrief(authHeaders, { baseUrl: BASE_URL });
+  }
+  extras.push(
+    formatAgentstackStatusCard({
+      gateKind: gate.kind,
+      additionalContext: gate.additionalContext,
+      auth: describeAgentstackMcpAuth(cfg),
+      pin,
+      profile,
+    }),
+  );
   const autoMsg = await maybeAutoDeviceLogin(gate.kind);
   if (autoMsg) extras.push(autoMsg);
 
-  const authHeaders = agentstackAuthHeaders(cfg);
   if (authHeaders) {
     await maybeRefreshCapabilitySnapshot(authHeaders);
     const rotateMsg = await maybeRotateBearer(cfg);

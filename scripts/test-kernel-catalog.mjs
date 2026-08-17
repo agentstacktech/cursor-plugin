@@ -29,6 +29,7 @@ import {
   shouldAutoDeviceLogin,
   readPinnedTenantProjectId,
   PROJECT_PIN_FILENAME,
+  formatAgentstackStatusCard,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   evaluateSingleToolSurface,
@@ -184,6 +185,16 @@ assert.equal(
   }).kind,
   'ok',
 );
+assert.match(
+  formatAgentstackStatusCard({
+    gateKind: 'ok',
+    auth: { userId: 1, serviceCaps: 'list:17', expInSec: 7200, projectHeader: '1444' },
+    pin: 1444,
+    profile: { displayName: 'Lance', role: 'owner' },
+  }),
+  /Lance/,
+);
+assert.match(formatAgentstackStatusCard({ gateKind: 'unsigned' }), /agentstack-authorize/);
 
 assert.equal(pluginMcpPointerError({ mcpServers: './mcp.json' }), null);
 assert.match(pluginMcpPointerError({ mcpServers: { agentstack: {} } }), /string path/);

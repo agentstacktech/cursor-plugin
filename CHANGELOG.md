@@ -7,10 +7,12 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Added
 
 - **Plugin MCP in the panel:** `plugin.json` `mcpServers: "./mcp.json"` (Figma-style path string) plus URL-only `plugins/agentstack/mcp.json` (no `Authorization`). Click **Connect** — G-A174 login on prod. Device Code still writes `~/.cursor/mcp.json` for hooks.
+- **`/agentstack-status` + sessionStart card:** every chat shows who is signed in, pin, caps, JWT expiry (`GET /api/auth/me` for name/email; MCP `auth.get_profile` is user_id-only). No extra login questions.
 
 ### Fixed
 
 - MCP absent from the plugin package (0.4.17 over-corrected G-A162). Empty `${AGENTSTACK_ACCESS_TOKEN}` remains forbidden.
+- Init/diagnose used dead `/api/auth/whoami`. Everyday smoke is `auth.get_profile`, not `system.ping`.
 
 ### Changed
 
