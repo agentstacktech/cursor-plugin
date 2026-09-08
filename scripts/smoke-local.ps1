@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Pre-publish smoke test for the AgentStack Cursor plugin (v0.4.15 gen3).
+    Pre-publish smoke test for the AgentStack Cursor plugin (reads version from plugin.json).
 
 .DESCRIPTION
     Layer 0 (optional -Install): junction/symlink into ~/.cursor/plugins/local/agentstack
@@ -43,7 +43,9 @@ function Write-Skip($msg)   { Write-Host "  [skip] $msg" -ForegroundColor Yellow
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..') | Select-Object -ExpandProperty Path
 $pluginRoot = Join-Path $repoRoot 'plugins\agentstack'
-Write-Host "Cursor plugin smoke test v0.4.15" -ForegroundColor White
+$pluginMeta = Get-Content (Join-Path $pluginRoot '.cursor-plugin\plugin.json') -Raw | ConvertFrom-Json
+$platformVersion = $pluginMeta.version
+Write-Host "Cursor plugin smoke test v$platformVersion" -ForegroundColor White
 Write-Host "repo:   $repoRoot"
 Write-Host "plugin: $pluginRoot"
 
@@ -220,7 +222,7 @@ if (-not $BaseUrl) {
         }
         $batch = @{
             plugin  = 'cursor-plugin'
-            version = '0.4.15'
+            version = $platformVersion
             events  = @($event)
         } | ConvertTo-Json -Depth 5
         $resp = Invoke-RestMethod -Method Post `
