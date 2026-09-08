@@ -16,7 +16,7 @@ import {
   fetchMcpHealth,
   postToolsCallExecuteAlias,
   postToolsList,
-} from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
+} from '../../scripts/lib/mcpSurfaceProbe.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN_JSON = path.join(ROOT, 'plugins', 'agentstack', '.cursor-plugin', 'plugin.json');

@@ -34,6 +34,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Fixed
 
 - **Diagnose was green while execute was dead (G-A171):** `tools/list` is public-shaped; prod still rejects JWT `service_caps=null` on `tools/call`. Diagnose now peeks JWT caps (no secret), probes `system.ping`, and prints the MCP error text. Device Code no longer overwrites a tenant `X-Project-ID` with ecosystem `1`.
+- **MCP tool-call chip:** Cursor prefers marketplace **cache** over the git tree (`logo.svg` white / SVG gradients flatten empty). SoT `logo` is `assets/logo.png` (64×64). `--fix` syncs `plugin.json` + PNG. `user-agentstack` chips may still ignore SEP-973.
 - **Scope-map test** pointed at the pre-2.6 `hooks/scripts/device-code.mjs` path (file gone). Atlas gene `repo.plugins.oauth_device_code.gen1` now runs `test_device_code_scope_map.py`.
 - **`test-device-code.ps1`** used the same stale plugin-root `hooks/` path; Device Code e2e script now runs `plugins/agentstack/hooks/scripts/device-code.mjs`. Token grant is a long-lived PAT (no `refresh_token`) — FLOW.md matches.
 
@@ -66,7 +67,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Fixed
 
 - **Plugin load blocker:** remove `$schema` from `plugin.json`, `marketplace.json`, and `hooks.json`. Current Cursor builds whitelist only internal schema IDs; raw GitHub schema URLs cause hard load failures.
-- `agentstack-guidance` skill: inline frontmatter `description` (folded YAML broke validator word count); remove `docs/operations/` tenant-forbidden path; add live `GET /mcp/actions` catalog pointer.
+- `agentstack-guidance` skill: inline frontmatter `description` (folded YAML broke validator word count); remove monorepo-only ops runbook links from tenant-facing copy; add live `GET /mcp/actions` catalog pointer.
 - Backend router: add `agentstack-openapi` row.
 
 ### Added

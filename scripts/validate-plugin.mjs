@@ -84,6 +84,7 @@ const REQUIRED_PLUGIN_FILES = [
   'lib/plugin-kernel/deviceCodeClient.mjs',
   'assets/logo.svg',
   'assets/logo-dark.svg',
+  'assets/logo.png',
   'assets/brand-mark.svg',
 ];
 
@@ -286,7 +287,11 @@ if (fs.existsSync(pluginPath)) {
     if (!logoPath) fail('plugin.json: logo is required by current Cursor plugin docs');
     else if (!fs.existsSync(path.join(PLUGIN, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
     else ok(`plugin.json: logo path exists (${logoPath})`);
-    if (logoPath && !logoPath.endsWith('.svg')) warn('plugin.json: logo should be SVG for crisp retina');
+    if (logoPath && logoPath.endsWith('.png')) {
+      ok('plugin.json: logo is PNG (Cursor chip raster; SVG gradients often flatten to empty)');
+    } else if (logoPath && !logoPath.endsWith('.svg')) {
+      warn('plugin.json: logo should be PNG (chip) or SVG (marketplace)');
+    }
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');
     if (plugin.hooks && plugin.hooks !== 'hooks/hooks.json') warn(`plugin.json: hooks points to ${plugin.hooks}, expected hooks/hooks.json`);

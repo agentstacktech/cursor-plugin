@@ -27,15 +27,15 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 | "on payment success grant pro"             | `signal:payment_success` → `buffs.apply_persistent_effect`        |
 | "every hour recalc leaderboard"            | `scheduler:cron('0 * * * *')` → `commands.execute` recalc batch   |
 | "when order added send email"              | `data_event:project.data.orders.*.created` → `notifications.send` |
-| "when trial expired remove feature"        | `scheduler:daily` + `logic.check_expiry` → `buffs.revoke`         |
+| "when trial expired remove feature"        | `scheduler.create_task` + `logic.create` → `buffs.cancel_buff`         |
 
 ## MCP actions
 
 - `logic.create` — define rule (name, trigger, conditions, actions).
 - `logic.update`, `logic.delete`, `logic.list`.
 - `logic.dry_run` — seed-based deterministic replay. **Always call before enabling.**
-- `logic.list_versions`, `logic.revert` — time travel.
-- `logic.attach_template` — pick from `logic.templates_catalog`.
+- `logic.list_versions`, `logic.restore_version` — time travel.
+- `logic.attach_template` — install from the logic template catalog (`logic.attach_template` / `logic.install_blueprint`).
 - `logic.signals_catalog` — discover emitted signals.
 - `logic.mcp_actions_catalog` — list actions usable inside a rule's `do` block.
 

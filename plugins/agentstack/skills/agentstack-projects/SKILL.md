@@ -15,6 +15,7 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 
 | User says                                           | MCP action                                                         |
 |-----------------------------------------------------|--------------------------------------------------------------------|
+| "try without signup / no API key yet" (key-based clients) | `projects.create_project_anonymous` — top-level `user_api_key` or `session_token` + neutral `bootstrap` metadata; configure MCP client once (see `docs/plugins/CONTEXT_FOR_AI_MCP.md` § Anonymous bootstrap). **Cursor:** use `/agentstack-authorize` instead. |
 | "create a new workspace / tenant"                   | `projects.create`                                                  |
 | "migrate this anonymous project to my account"     | REST `POST /api/auth/convert-anonymous` (no MCP `attach_to_user` yet) |
 | "show usage / activity / stats"                    | `projects.get_stats`                                               |
@@ -96,7 +97,7 @@ The response contains `{ "api_key": "<JWT>", "key_id": "...", "actor_kind": "age
 
 - Live action catalog (filter `projects.*`, `apikeys.*`): `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
 - The current `service_caps` vocabulary is returned inside `required_cap` of each action in `GET /mcp/actions` — that is the authoritative list at any moment.
-- OAuth Device Code scopes (as issued by `/agentstack-init`): `mcp:execute projects:write 8dna:write logic:write rag:write buffs:read apikeys:write`.
+- OAuth Device Code scopes (as issued by `/agentstack-init`): `mcp:execute mcp:read projects:write projects:admin 8dna:write logic:write rag:write bots:admin buffs:read buffs:write apikeys:write`. A write-capable plugin token also expands `project_admin` / `mcp_read` at MCP L1 without re-auth after Core deploy.
 
 ## Triggers
 

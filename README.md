@@ -3,6 +3,8 @@
 > Turn every Cursor agent into an AgentStack-native engineer.  
 > **v0.4.18** (gen3) · Plugin MCP Connect + Device Code · one MCP tool
 
+**Maintainers:** do **not** bump `plugin.json` / `TARGET_VERSION` unless Lance explicitly orders a version bump (`повысь версию`). Features ship on the current string. Policy: `docs/plugins/PLUGIN_VERSION_POLICY.md` (monorepo; not shipped in marketplace bundle).
+
 ---
 
 ## 30-second install

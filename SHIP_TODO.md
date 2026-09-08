@@ -61,6 +61,8 @@
 
 ## C. Human e2e (this machine)
 
+**Automated verification (CI / local scripts):** [x] `verify-mcp-surface-e2e.mjs`, `audit-layers.mjs`, `validate-all-plugins.mjs`, `check_mcp_client_compat.py` — shared probe at `provided_plugins/scripts/lib/mcpSurfaceProbe.mjs`.
+
 ```bash
 cd provided_plugins/cursor-plugin
 node scripts/refresh-cursor-runtime.mjs --fix

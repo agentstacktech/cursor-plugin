@@ -34,7 +34,7 @@ Look for:
 | Pinecone / pgvector / Chroma  | `rag.collection_*` + `rag.document_*`                        |
 | Celery / BullMQ cron          | `scheduler.create_task`                                       |
 | Sendgrid / Postmark           | `notifications.send`                                         |
-| Stripe webhook endpoint       | `webhooks.register`                                           |
+| Stripe webhook endpoint       | `integrations.install_recipe`                                 |
 
 ## Workflow (8 steps)
 

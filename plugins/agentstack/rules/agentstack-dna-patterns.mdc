@@ -17,7 +17,7 @@ globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.sql", "**/dna/**"]
 - AgentStack stores project and user data in a **unified 8DNA JSON document** per scope.
   - Project scope: `project.data.*`, `project.protected.*`
   - User scope: `user.data.*`, `user.protected.*`
-- Access via `projects.update_project` / `projects.get_project` or `POST /api/dna/data` with dotted keys (`project.data.config.limits.api_calls.daily`).
+- Access via MCP `projects.patch_data` / `projects.get_data` (`write_mode` replace|merge|delete) or REST `PATCH /api/projects/{id}/data`. `projects.update_project` is name/settings only. `POST /api/dna/data` with dotted keys is the same leaf SET.
 
 ## Dot-notation keys (genetic-style)
 
@@ -30,4 +30,4 @@ globs: ["**/*.py", "**/*.ts", "**/*.tsx", "**/*.sql", "**/dna/**"]
 
 - **NEVER** store real secrets in `data.*` — they will be returned by read actions.
 - **NEVER** introduce a parallel Prisma/Drizzle schema for data that belongs in 8DNA.
-- **NEVER** bypass RBAC by writing directly to the storage layer — go through MCP actions or `/api/dna/data`.
+- **NEVER** bypass RBAC by writing directly to the storage layer — go through MCP `projects.patch_data` or `/api/projects/{id}/data`.

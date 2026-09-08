@@ -35,7 +35,7 @@ import {
   evaluateSingleToolSurface,
   MCP_EXECUTE_TOOL_CANONICAL,
   toolsCallErrorDetail,
-} from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
+} from '../../scripts/lib/mcpSurfaceProbe.mjs';
 import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
 import { loadConfidentialClient, beginDeviceLoginLock, endDeviceLoginLock, isDeviceLoginLockBusy } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 
@@ -75,6 +75,11 @@ assert.equal(tenantActionsFromCatalog(mixed)[0].action, 'auth.login');
 assert.equal(buildTenantCapabilitySnapshot(mixed, { now: 42 }).fetched_at, 42);
 assert.equal(buildTenantCapabilitySnapshot(mixed, { now: 42 }).total_actions, 1);
 assert.equal(buildTenantCapabilitySnapshot(mixed, { now: 42 }).audience, 'tenant');
+assert.equal(
+  buildTenantCapabilitySnapshot({ ...mixed, catalog_etag: 'abc123' }, { now: 42 }).catalog_etag,
+  'abc123',
+);
+assert.equal(buildTenantCapabilitySnapshot(mixed, { now: 42, catalogEtag: 'def456' }).catalog_etag, 'def456');
 
 const cfg = applyAgentstackMcpBearer(
   {

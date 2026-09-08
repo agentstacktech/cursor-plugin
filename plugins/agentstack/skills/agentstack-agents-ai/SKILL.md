@@ -23,6 +23,7 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 - Prefer preview actions before persistence: `agents.template_preview`, `ai_builder.compose.preview`.
 - For destructive lifecycle changes (`agents.delete`, `agents.kill`), ask for confirmation and surface the trace id.
 - Do not invent agent metrics or run status. Use `agents.metrics` and `agents.traces`.
+- `agents.run` with `wait=true` is a **heavy** MCP step (same 60s sync-batch rule as `bots.simulate`). Do not wait on several runs in one sync execute.
 
 ## Example
 
@@ -38,6 +39,12 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
   }
 }
 ```
+
+## MCP guidance
+
+- **Catalog:** `GET https://agentstack.tech/mcp/actions` — filter `agents.*`, `ai_builder.*`, `generation.*`.
+- **Heavy runs:** `agents.run` with `wait=true` counts as one heavy LLM step per sync execute (see `agentstack_execute_budget`).
+- **Prompts:** `agentstack_agents_fleet` via `GET /mcp/prompts/get`.
 
 ## References
 

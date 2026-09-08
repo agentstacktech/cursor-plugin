@@ -15,7 +15,7 @@ description: Use when the user wants to publish a static site, deploy HTML or ZI
 | "import folder to site" | `hosting.storage.import_folder` | Re-upload all files |
 | "project hosting status" / "host sell scale ladder" | `hosting.project.status` | Multiple REST calls |
 | "what's next after publish" | `hosting.project.status` → `next_actions[0]` | Guessing module URLs |
-| "upgrade hosting quota" | PTC `hosting.upgrade` · Compass `hosting-upgrade` | Delete files without wallet path |
+| "upgrade hosting quota" | PTC task hosting.upgrade · Compass `hosting-upgrade` | Delete files without wallet path |
 
 ## Guidance (headless)
 

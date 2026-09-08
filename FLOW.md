@@ -107,7 +107,7 @@ flowchart LR
 | Backend lists 2 tools | Two `agentstack_execute` in tools panel | Deploy core 0.4.16 |
 | `projects.get_project` in chat | DNA `protected` / provider keys in the model transcript (G-A175) | Prefer `auth.get_profile` / `projects.get_stats`; list with `projects.get_projects` (`accessible_only` default, honor `limit`) |
 | Cursor `mcp_auth` from the agent | Wrong client / login loop | User clicks **Connect** on plugin MCP (G-A174). Agent does not call `mcp_auth`. |
-| MCP tool-call chip has no logo | Cursor `fetch()` of `/favicon.png` has no CORS; 51 KiB PNG may be dropped | Core `mcp_brand_icons()`: **data URI 64×64 PNG** first, then `GET /mcp/icon.png` (CORS `*`). Deploy Core, then Reload Window. |
+| MCP tool-call chip has no logo | Cursor loads **marketplace cache** (not the git tree). Cache still had white `logo.svg`. SVG gradients often rasterize empty. `user-agentstack` chips ignore SEP-973. | SoT `logo` = `assets/logo.png`. `refresh-cursor-runtime.mjs --fix` copies PNG + plugin.json into `~/.cursor/plugins/cache`. Reload Window. Plugin **Connect**. |
 
 Plugin ships [`plugins/agentstack/mcp.json`](plugins/agentstack/mcp.json) (OAuth URL-only). User Device Code template: [`mcp.example.json`](mcp.example.json).
 

@@ -8,12 +8,53 @@ description: Use when the user manages project treasury, project wallet segments
 ## Rules
 
 - UI: `/dev/projects/{id}/wallet` or `/user/projects/{id}/wallet`
-- Distinct from personal wallet and AgentNet vault — project operational balances.
-- Use live catalog for wallet/payments actions; link commerce + AgentNet docs for settlement flows.
+- Distinct from personal wallet (`wallets.*`) and AgentNet vault (`agentnet.*`) — project operational balances.
+- Prefer **`finance.project.*`** MCP for treasury KPIs and funding; use `wallets.*` for per-wallet deposit/transfer on project rows.
+
+## Example — `finance.project.portfolio`
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "steps": [
+      {
+        "action": "finance.project.portfolio",
+        "params": { "project_id": "{{project_id}}" }
+      }
+    ]
+  }
+}
+```
+
+Returns operating + treasury + AGNT rail summary (FAP-masked for non-admins).
+
+## Example — `finance.project.fund`
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "steps": [
+      {
+        "action": "finance.project.fund",
+        "params": {
+          "project_id": "{{project_id}}",
+          "from_wallet_id": "{{ecosystem_usd_wallet_id}}",
+          "amount": 100.0,
+          "idempotency_key": "fund-{{project_id}}-{{timestamp}}"
+        }
+      }
+    ]
+  }
+}
+```
+
+Admin-only ecosystem USD transfer into project treasury. Member top-ups: `finance.project.contribute` (USD from personal ecosystem wallet on pid=1). History: `finance.project.contributions.list`.
 
 ## References
 
-- `project-wallet/README.md`
+- `project-wallet/README.md`, `docs/design/PROJECT_WALLET_SURFACE_CONTRACT.md`
 
 ## Live catalog
 

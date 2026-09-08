@@ -12,16 +12,16 @@ The "nervous system" for async reactive flow. When a rule needs to *react* (emai
 | User says                                        | Use                                                       |
 |--------------------------------------------------|-----------------------------------------------------------|
 | "every hour do X"                                | `scheduler.create_task` with cron or interval             |
-| "call me when Stripe sends a callback"           | `webhooks.register` → inbound to `/api/webhooks/<name>`   |
+| "call me when Stripe sends a callback"           | `integrations.install_recipe` → inbound hook URL in response |
 | "send email / push / in-app notification"        | `notifications.send` (email + push + in-app channels)     |
 | "notify on field change (price updated)"         | FAP trigger: `data_access.set_policy` with `on_change` → rule |
 | "cross-cell reactive flow"                       | Neural Router signals; see managed organism cells         |
 
 ## MCP actions
 
-- `scheduler.create_task`, `scheduler.list`, `scheduler.delete`, `scheduler.run_now`.
-- `webhooks.register`, `webhooks.list`, `webhooks.delete`, `webhooks.rotate_secret`.
-- `notifications.send`, `notifications.templates_list`, `notifications.templates_upsert`.
+- `scheduler.create_task`, `scheduler.list_tasks`, `scheduler.cancel_task`, `scheduler.execute_task`.
+- `integrations.install_recipe`, `integrations.list_connections`, `integrations.update_connection`, `integrations.rotate_secret`.
+- `notifications.send`; templates live in `projects.config.notifications.templates` via `projects.patch_data`.
 - `data_access.set_policy` with `on_change` (FAP → field trigger).
 
 ## Prefer-over
@@ -29,7 +29,7 @@ The "nervous system" for async reactive flow. When a rule needs to *react* (emai
 - **DO NOT** add Celery, BullMQ, node-cron, Bree, Temporal for app-level schedules.
 - **DO NOT** add SendGrid / Postmark directly — `notifications.send` routes through the ecosystem.
 - **DO NOT** build a custom "event-to-email" glue — compose `scheduler` / `webhooks` + `notifications` + a rule (`agentstack-logic`).
-- **DO NOT** manage webhook secret rotation yourself — `webhooks.rotate_secret` does it atomically.
+- **DO NOT** manage webhook secret rotation yourself — `integrations.rotate_secret` does it atomically.
 
 ## Example — daily recompute + email summary
 
@@ -67,7 +67,7 @@ The "nervous system" for async reactive flow. When a rule needs to *react* (emai
   "tool": "agentstack.execute",
   "params": {
     "steps": [
-      { "action": "webhooks.register", "params": {
+      { "action": "integrations.install_recipe", "params": {
         "name": "support_ticket_created",
         "secret_rotation_days": 30,
         "rule": {

@@ -3,12 +3,12 @@
 // sessionStart: lean mcp.json, refresh Bearer near expiry, keep capability snapshot fresh.
 // Stdout must be a single JSON object (Cursor additional_context). Logs go to stderr.
 
-import { readFile, writeFile, mkdir, chmod, stat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { writeTenantCapabilitySnapshot, CAPABILITY_SNAPSHOT_FILENAME } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { refreshTenantCapabilitySnapshotIfStale } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import {
   applyAgentstackMcpBearer,
   agentstackAuthHeaders,
@@ -34,7 +34,6 @@ const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
 const REFRESH_PATH = join(CURSOR_DIR, 'agentstack-refresh');
 const REFRESH_BUFFER_SECONDS = 120;
-const SNAPSHOT_PATH = join(CURSOR_DIR, CAPABILITY_SNAPSHOT_FILENAME);
 const SNAPSHOT_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const FROM_HOOK = process.argv.includes('--from-hook');
 const AUTO_LOGIN_OFF = process.env.AGENTSTACK_DISABLE_AUTO_LOGIN === '1';
@@ -117,33 +116,19 @@ async function refresh(refreshToken, traceId) {
 
 async function maybeRefreshCapabilitySnapshot(authHeaders) {
   try {
-    const st = await stat(SNAPSHOT_PATH);
-    const ageMs = Date.now() - st.mtimeMs;
-    if (ageMs < SNAPSHOT_MAX_AGE_MS) {
-      try {
-        const snap = JSON.parse(await readFile(SNAPSHOT_PATH, 'utf8'));
-        if (!Array.isArray(snap.actions)) {
-          const n = await writeTenantCapabilitySnapshot(
-            CURSOR_DIR,
-            snap.catalog || snap.actions || snap,
-          );
-          log(`capability snapshot normalized (${n} actions)`);
-          return;
-        }
-      } catch {
-        /* refresh below */
-      }
-      log(`capability snapshot age=${Math.round(ageMs / 60000)}m (fresh)`);
-      return;
+    const result = await refreshTenantCapabilitySnapshotIfStale(
+      CURSOR_DIR,
+      BASE_URL,
+      authHeaders,
+      { maxAgeMs: SNAPSHOT_MAX_AGE_MS },
+    );
+    if (result.reason === 'fresh') {
+      log(`capability snapshot fresh (${result.actionCount} actions)`);
+    } else if (result.reason === 'not_modified') {
+      log(`capability snapshot unchanged (304, ${result.actionCount} actions)`);
+    } else if (result.refreshed) {
+      log(`capability snapshot ${result.reason} (${result.actionCount} actions)`);
     }
-  } catch {
-    /* missing */
-  }
-  try {
-    const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: authHeaders });
-    if (!res.ok) return;
-    const n = await writeTenantCapabilitySnapshot(CURSOR_DIR, await res.json());
-    log(`capability snapshot refreshed (${n} actions)`);
   } catch {
     /* best effort */
   }

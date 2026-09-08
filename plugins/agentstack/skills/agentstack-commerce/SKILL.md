@@ -12,10 +12,41 @@ Four organs, one decision: which ledger do you need?
 | User says                                    | Use                       | Example MCP actions                                      |
 |----------------------------------------------|---------------------------|----------------------------------------------------------|
 | "accept credit card / checkout"              | `payments.*`              | `payments.create`, `payments.get`, `payments.refund`     |
-| "internal balance / game currency"           | `wallets.*`               | `wallets.get_balance`, `wallets.transfer`, `wallets.top_up` |
-| "inventory item / digital good / NFT"        | `assets.*`                | `assets.mint`, `assets.transfer`, `assets.list`          |
+| "internal balance / game currency"           | `wallets.*`               | `payments.get_balance`, `wallets.transfer`, `wallets.deposit` |
+| "inventory item / digital good / NFT"        | `assets.*`                | `assets.create`, `wallets.transfer`, `assets.list`          |
 | "trial / subscription / feature flag / tier" | `buffs.*`                 | `buffs.apply_temporary_effect`, `buffs.apply_persistent_effect`, `buffs.get_effective_limits` |
 | "upgrade to Pro"                             | payments + buffs (2 steps) | `payments.create` → on success `buffs.apply_persistent_effect` (rule via `agentstack-logic`) |
+| "activate selling" / "first sale" / seed shop | `commerce.sell.activate` | One-shot: earnings wallet, product seed, storefront index, optional hosted vitrine |
+
+## `commerce.sell.activate` — seller onboarding
+
+Orchestrates storefront seed, listing publish, optional hosted `/s/` vitrine, earnings wallet, and share-kit payload. Mirrors `POST /api/commerce/sell/activate`.
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "steps": [
+      {
+        "action": "commerce.sell.activate",
+        "params": {
+          "project_id": "{{project_id}}",
+          "user_id": "{{user_id}}",
+          "use_starter": true,
+          "publish_hosted": true,
+          "bucket_name": "my-shop",
+          "storefront_public": true,
+          "idempotency_key": "activate-{{project_id}}-v1"
+        }
+      }
+    ]
+  }
+}
+```
+
+Optional AI seed: set `use_ai: true` and `ai_prompt` instead of `products[]`. Re-activation is idempotent when `idempotency_key` matches.
+
+**Pitfalls:** requires project admin; `bucket_name` only applies on first hosted publish; use `agentstack-storefront-studio` for ongoing catalog edits, not repeated activate calls.
 
 ## Prefer-over
 
@@ -79,7 +110,7 @@ if (limits.rag.collections_max < 2) {
 ## References
 
 - Live action catalog (filter `payments.*`, `wallets.*`, `assets.*`, `buffs.*`): `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
-- Related skills: `./../agentstack-logic/SKILL.md` (rules that react to `signal:payment_*`), `./../agentstack-auth-rbac/SKILL.md` (gating features by buffs tier).
+- Related skills: `./../agentstack-logic/SKILL.md` (rules that react to `signal:payment_*`), `./../agentstack-auth-rbac/SKILL.md` (gating features by buffs tier), `./../agentstack-storefront-studio/SKILL.md` (post-activation catalog).
 
 ## Triggers
 

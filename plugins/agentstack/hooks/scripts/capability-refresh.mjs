@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { writeTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { refreshTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { agentstackAuthHeaders } from '../../lib/plugin-kernel/mcpConfig.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
@@ -32,11 +32,9 @@ async function main() {
   }
 
   try {
-    const res = await fetch(`${BASE_URL}/mcp/actions`, { headers: { ...auth } });
-    if (!res.ok) return;
-    await writeTenantCapabilitySnapshot(CURSOR_DIR, await res.json());
+    await refreshTenantCapabilitySnapshot(CURSOR_DIR, BASE_URL, auth);
   } catch {
-    /* next time */
+    /* next sessionStart */
   }
 }
 

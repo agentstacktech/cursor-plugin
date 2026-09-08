@@ -62,6 +62,8 @@ Prefer JSON-RPC `tools/call` with batched steps:
 
 Default batches stay **fail-closed** (`stopOnError: true`) — money and mutations. For a **read-only bootstrap** (profile, stats, limits, quota) use named recipe `mcp_read_bootstrap` / prompt `agentstack_read_bootstrap` with `"continueOnError": true`. **Do not** include `apikeys.list` unless the token has L1 `api_keys` / `apikeys.read`; that step is what aborted the Ф16 6-pack after buffs.
 
+**Heavy LLM:** at most one `bots.simulate` / `knowledge.playground` per **sync** execute (60s `mcp_batch` for the whole batch). Suites: one simulate per call, or `options.async=true` then `discovery.job_status`. Live: `GET /mcp/actions` → `execute_budget`.
+
 ## Diagnose
 
 | Command | Purpose |

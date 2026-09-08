@@ -29,7 +29,7 @@ import {
   evaluateSingleToolSurface,
   postToolsList,
   postToolsCallExecuteAlias,
-} from '../plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs';
+} from '../../scripts/lib/mcpSurfaceProbe.mjs';
 import {
   writeTenantCapabilitySnapshot,
   CAPABILITY_SNAPSHOT_FILENAME,

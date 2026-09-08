@@ -10,7 +10,7 @@
   "license": "MIT",
   "repository": "https://github.com/agentstacktech/cursor-plugin",
   "homepage": "https://agentstack.tech",
-  "logo": "assets/logo.svg",
+  "logo": "assets/logo.png",
   "keywords": [
     "backend",
     "mcp",

@@ -15,12 +15,13 @@ One authentication surface, one role model, one permission check — delivered v
 | "Cursor mcp_auth / Connect MCP"                        | User clicks Connect in the plugin panel. Do not call native `mcp_auth` from the agent. |
 | "let user sign in with email + password"               | `auth.login` (email, password) — returns token                     |
 | "register new user"                                    | `auth.register`                                                    |
+| "invite / set-password link for a created user"        | `auth.password_setup.mint` (one-time `/set-password?token=`)       |
 | "who is the current user"                              | `auth.get_profile`                                                 |
 | "update display name / avatar"                         | `auth.update_profile`                                              |
 | "make user admin of this project"                      | `projects.update_user_role` with `role=admin`                      |
 | "list admins / members"                                | `projects.get_users` (filter by `role`)                            |
 | "can user X do action Y in project Z"                  | `rbac.check_permission`                                            |
-| "assign a global role"                                 | `auth.assign_role`                                                 |
+| "assign a global role"                                 | `rbac.assign_role`                                                 |
 | "remove user from project"                             | `projects.remove_user`                                             |
 
 Field-level access (hide email, expose only to admins) → use `agentstack-data` skill (FAP `data_access.*`).
@@ -65,8 +66,8 @@ For React components, use `<RequireCapability permission="admin">` from `@agents
 ## Pitfalls
 
 - Token returned by `auth.login` is short-lived (~15 min); refresh via the SDK/session flow or re-login. `@agentstack/sdk` handles this when configured.
-- `rbac.check_permission` requires an existing `permission` name. Enumerate known permissions for your project via `rbac.list_permissions` (or the live action catalog).
-- Cross-project roles: `auth.assign_role` sets a **global** role; for project-scoped use `projects.update_user_role`.
+- `rbac.check_permission` requires an existing `permission` name. Enumerate known permissions via `rbac.get_roles` and the live action catalog (`GET /mcp/actions`).
+- Cross-project roles: `rbac.assign_role` sets a **global** role; for project-scoped use `projects.update_user_role`.
 
 ## References
 

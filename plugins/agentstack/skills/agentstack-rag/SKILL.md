@@ -30,6 +30,7 @@ enforces this by default.
 | "ground AI answers in our own project docs"           | `/agentstack-index-docs` then `rag.search(collection='my-project-docs')` |
 | "find similar tickets"                                | `rag.search` with filter by `metadata.type='ticket'`              |
 | "remove stale document"                               | `rag.document_delete` by id                                       |
+| "tenant synthesis / crisis overlay for another project" | `knowledge.policy_templates.list` then `knowledge.policy_templates.apply` (8DNA via existing prompt/config PATCH) |
 | "semantic search over my source code"                 | **Use Cursor's built-in code index** — do not upload source code to a hosted RAG. If you genuinely need it (unusual), build the collection manually, never via this plugin's commands. |
 
 ## Prefer-over

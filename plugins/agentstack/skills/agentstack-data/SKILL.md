@@ -13,32 +13,37 @@ One skill covers three organs because they share the same guiding principle: **d
 
 | User says                                  | Do this                                                                                           |
 |--------------------------------------------|---------------------------------------------------------------------------------------------------|
-| "store user preferences"                   | `projects.update_project` with `data.users.<id>.prefs` — or `POST /api/dna/data` key `user.data.prefs` |
-| "store public project config"              | `data.config.<area>.<key>` via `projects.update_project` (shown in admin UI)                      |
+| "store user preferences"                   | MCP `projects.patch_data` path `users.<id>.prefs` with `write_mode=replace` — or REST `PATCH /projects/{id}/data` |
+| "store public project config"              | `projects.patch_data` path `config.<area>.<key>` (`write_mode=merge` on an object). `projects.update_project` is name/settings only |
 | "store API key for 3rd party"              | `protected.keys.<service>` — backend-only; never returned in `projects.get_project`                |
 | "upload avatar / document"                 | `POST /api/storage/upload` (multipart) + `storage.list_files` to browse, `storage.delete_file` to remove |
 | "hide email from non-admins"               | `data_access.set_policy` with field path + role mask (FAP)                                        |
-| "A/B test homepage copy"                   | Sandbox: clone row with `parent_uuid=<main>` + `generation=N` + `rollout_steps=[10,50,100]`        |
+| "A/B test homepage copy"                   | `generation.fork` → mutate → `generation.promote` (see MCP prompt below)        |
 
 ## Prefer-over
 
 - **DO NOT** add Prisma + PostgreSQL / Drizzle / Mongoose / TypeORM for user/project data — **use 8DNA**.
 - **DO NOT** add S3, Cloudinary, Firebase Storage — **use Storage**; quotas are enforced via `buffs.get_effective_limits`.
 - **DO NOT** hand-roll row-level security in app code — **use FAP** (`data_access.set_policy`) declaratively.
-- **DO NOT** build a `variants` table or integrate LaunchDarkly/split.io — **use sandbox** (`parent_uuid` + `generation`).
+- **DO NOT** build a `variants` table or integrate LaunchDarkly/split.io — **use `generation.*` MCP** (not raw DNA fork alone).
 
-## Example 1 — write + read project config
+## Example 1 — write + read a config leaf
 
 ```json
 {
   "tool": "agentstack.execute",
   "params": {
     "steps": [
-      { "action": "projects.update_project", "params": {
+      { "action": "projects.patch_data", "params": {
         "project_id": "{{project_id}}",
-        "data": { "config": { "features": { "ab_homepage_v2": true }, "limits": { "api_calls": { "daily": 10000 } } } }
+        "path": "config.features",
+        "value": { "ab_homepage_v2": true },
+        "write_mode": "merge"
       }},
-      { "action": "projects.get_project", "params": { "project_id": "{{project_id}}" } }
+      { "action": "projects.get_data", "params": {
+        "project_id": "{{project_id}}",
+        "path": "config.features"
+      }}
     ]
   }
 }
@@ -67,13 +72,24 @@ One skill covers three organs because they share the same guiding principle: **d
 - `protected.*` is **never** returned by `projects.get_project` — read it server-side via `ProtectedManager`.
 - `storage.*` quotas depend on the project's tier (buffs-aware). Call `storage.get_quota` before bulk uploads.
 - For FAP, role names must match `projects.update_user_role` values exactly.
-- Sandbox rows are **not** automatically merged — promotion is explicit (`rollout_steps` or `projects.promote_sandbox`).
+
+## Sandbox / canary (tenant apps)
+
+For variant rollouts, promotion gates, and canary traffic use **`generation.*`** MCP. Scoped reads/writes send header **`X-AgentStack-Env`**.
+
+**Do not duplicate the action matrix here** — fetch MCP prompt **`agentstack_generation`** via `prompts/list` · `prompts/get` (same pattern as `agentstack_commerce_flows`). Public guide: `docs/SANDBOX_PLAYGROUND_GUIDE.md` (canary + promotion sections).
+
+## MCP guidance
+
+- **Writes:** `projects.patch_data` with `write_mode` (`merge`/`replace`/`delete`) — not `projects.update_project` for nested JSON leaves.
+- **Catalog:** `GET https://agentstack.tech/mcp/actions` — filter `projects.*`, `data_access.*`, `generation.*`.
+- **Prompts:** `agentstack_write_modes`, `agentstack_tenant_8dna_supply` for sandbox supply chain.
 
 ## References
 
 - Live action catalog (filter `projects.*`, `data_access.*`, `storage.*`): `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
 - 8DNA section conventions (`data.*`, `protected.*`, `sandbox.*`): rule `./../../rules/agentstack-dna-patterns.mdc`.
-- Key-value REST surface: `GET /api/dna/data?key=...` / `POST /api/dna/data` (form `{key,value}`). See also the channel-preference rule `./../../rules/agentstack-api-routing.mdc`.
+- Key-value REST surface: `PATCH /api/projects/{id}/data` `{path,value,write_mode}` (MCP `projects.patch_data`). `GET/POST /api/dna/data` is the same leaf write, not a second store. See also the channel-preference rule `./../../rules/agentstack-api-routing.mdc`.
 
 ## Triggers (for Cursor Agent Decides)
 

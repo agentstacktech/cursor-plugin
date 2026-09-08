@@ -34,6 +34,7 @@ const AUTH_SLICE = [
   'lib/plugin-kernel/deviceCodeClient.mjs',
   'mcp.json',
   '.cursor-plugin/plugin.json',
+  'assets/logo.png',
   'commands/agentstack-authorize.md',
   'rules/agentstack-prefer.mdc',
   'skills/agentstack-auth-rbac/SKILL.md',
