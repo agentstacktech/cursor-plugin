@@ -35,7 +35,7 @@ import {
   evaluateSingleToolSurface,
   MCP_EXECUTE_TOOL_CANONICAL,
   toolsCallErrorDetail,
-} from '../../scripts/lib/mcpSurfaceProbe.mjs';
+} from './lib/mcpSurfaceProbe.mjs';
 import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
 import { loadConfidentialClient, beginDeviceLoginLock, endDeviceLoginLock, isDeviceLoginLockBusy } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 

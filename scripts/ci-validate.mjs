@@ -4,10 +4,36 @@
  * Keeps workflow to one third-party action (checkout) to reduce download failures.
  */
 import { spawnSync } from 'node:child_process';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+const MONOREPO_IMPORT_RE = /\.\.\/\.\.\/scripts\/lib\//;
+
+function assertStandaloneImports() {
+  const targets = [
+    'scripts/test-kernel-catalog.mjs',
+    'scripts/diagnose-local.mjs',
+    'scripts/verify-mcp-surface-e2e.mjs',
+    'plugins/agentstack/lib/plugin-kernel/mcpSurfaceProbe.mjs',
+  ];
+  const bad = targets.filter((rel) => {
+    const full = path.join(ROOT, rel);
+    return fs.existsSync(full) && MONOREPO_IMPORT_RE.test(fs.readFileSync(full, 'utf8'));
+  });
+  if (bad.length) {
+    console.error('CI FAILED: monorepo-only import paths (use ./lib/ or vendored kernel):', bad.join(', '));
+    process.exit(1);
+  }
+  for (const rel of ['scripts/lib/mcpSurfaceProbe.mjs', 'scripts/lib/stale-actions.mjs']) {
+    if (!fs.existsSync(path.join(ROOT, rel))) {
+      console.error(`CI FAILED: missing vendored ${rel} — run sync-plugin-kernel.mjs`);
+      process.exit(1);
+    }
+  }
+}
 
 /** @type {[string, string[]][]} */
 const STEPS = [
@@ -29,6 +55,7 @@ function run(label, args) {
 }
 
 console.log(`CI validate — root: ${ROOT}`);
+assertStandaloneImports();
 for (const [label, args] of STEPS) {
   run(label, args);
 }

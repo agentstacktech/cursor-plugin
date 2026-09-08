@@ -636,10 +636,11 @@ if (hasErrors) {
   process.exit(1);
 }
 
-const proseGate = path.join(REPO_ROOT, 'scripts/audit-plugin-prose-leaks.mjs');
-if (fs.existsSync(proseGate)) {
+const proseGate = [path.join(ROOT, 'scripts/audit-plugin-prose-leaks.mjs'), path.join(REPO_ROOT, 'scripts/audit-plugin-prose-leaks.mjs')]
+  .find((p) => fs.existsSync(p));
+if (proseGate) {
   const r = spawnSync(process.execPath, [proseGate], {
-    cwd: REPO_ROOT,
+    cwd: ROOT,
     stdio: 'inherit',
   });
   if (r.status !== 0) {

@@ -1,6 +1,6 @@
 /**
- * MCP surface contract probes (0.4.16+).
- * SoT: provided_plugins/scripts/lib/mcpSurfaceProbe.mjs — keep in sync via sync-plugin-kernel.mjs.
+ * Shared MCP surface contract probes (0.4.16+).
+ * Canonical copy for cursor-plugin, vscode-plugin, and publication scripts.
  */
 
 export const MCP_EXECUTE_TOOL_CANONICAL = 'agentstack.execute';
