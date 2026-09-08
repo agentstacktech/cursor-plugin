@@ -116,6 +116,11 @@ async function refresh(refreshToken, traceId) {
 
 async function maybeRefreshCapabilitySnapshot(authHeaders) {
   try {
+    const summaryRes = await fetch(`${BASE_URL}/mcp/actions/summary`);
+    if (summaryRes.ok) {
+      const summary = await summaryRes.json().catch(() => ({}));
+      log(`catalog summary: ${summary.total_actions ?? '?'} actions`);
+    }
     const result = await refreshTenantCapabilitySnapshotIfStale(
       CURSOR_DIR,
       BASE_URL,

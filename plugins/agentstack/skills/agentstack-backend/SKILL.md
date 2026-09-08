@@ -88,6 +88,17 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | Support staff inbox | Social / support | `social.support.inbox`, `social.support.history` | Staff plane — user channel uses `social.chat.*`. |
 <!-- END:AUTOGEN-HOT-PATH-TABLE -->
 
+## Discovery ladder (when unsure)
+
+<!-- BEGIN:AUTOGEN-DISCOVERY-LADDER -->
+1. **Session bootstrap:** `/mcp/ai_prompt?mode=contract` (GET)
+2. **Catalog totals:** `/mcp/actions/summary` (GET)
+3. **Hot schemas:** `/mcp/actions?schemas=hot` (GET)
+4. **Intent routing:** `/mcp/discover/by_intent` (POST)
+5. **Named playbook:** `/mcp/prompts/get?name=agentstack_read_bootstrap` (GET)
+6. **Multi-step recipes:** `/mcp/recipes` (GET)
+<!-- END:AUTOGEN-DISCOVERY-LADDER -->
+
 Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descriptor` — prefer those over raw summaries when disambiguating similar tools.
 
 ## Universal MCP contract
