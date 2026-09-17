@@ -41,7 +41,7 @@ Most AI tools generate backend code. AgentStack teaches the agent to **route int
 | Persistent app data | Prisma/Drizzle + migrations | 8DNA `project.data.*` / `user.data.*` |
 | Payments / subscriptions | Stripe SDK from scratch | `payments.*` + `buffs.*` |
 | RAG / semantic search | pgvector + embedding pipeline | `rag.*` (TurboQuant, hybrid) |
-| Cron / webhooks / signals | New routes + queue glue | `scheduler.*`, `webhooks.*`, `logic.*` |
+| Cron / webhooks / signals | New routes + queue glue | `scheduler.*`, `integrations.*`, `logic.*` |
 
 ---
 
@@ -56,9 +56,9 @@ provided_plugins/cursor-plugin/
 ├── plugins/agentstack/      # ← the plugin package Cursor loads
 │   ├── .cursor-plugin/plugin.json
 │   ├── mcp.json             # URL-only plugin MCP (Connect); no Bearer placeholder
-│   ├── rules/               # 9 .mdc (1 alwaysApply: agentstack-prefer)
-│   ├── skills/              # 24 domains + optional solana
-│   ├── commands/            # 14 slash workflows
+│   ├── rules/               # 10 .mdc (1 alwaysApply: agentstack-prefer)
+│   ├── skills/              # 31 skills (29 mirrored + backend + solana)
+│   ├── commands/            # 16 slash workflows
 │   ├── agents/              # 3 marketplace agents (+2 maintainer overlay)
 │   ├── hooks/               # lifecycle + policy scripts
 │   ├── lib/plugin-kernel/   # vendored Device Code + MCP helpers

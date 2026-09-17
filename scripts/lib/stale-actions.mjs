@@ -12,6 +12,12 @@ export const STALE_ACTIONS = new Map([
   ['projects.create_api_key', 'apikeys.create'],
   ['projects.delete_api_key', 'apikeys.delete'],
   ['apikeys.revoke', 'apikeys.delete'],
+  ['notifications.send', 'notifications.send_push'],
+  ['notifications.send_notification', 'notifications.send_push'],
+  ['scheduler.schedule_task', 'scheduler.create_task'],
+  ['rules.create', 'logic.create'],
+  ['rules.list', 'logic.list'],
+  ['webhooks.create', 'integrations.install_recipe'],
 ]);
 
 /** True if `oldAction` appears as a whole MCP id (not `user.apikeys.revoke` vs `apikeys.revoke`). */
@@ -79,6 +85,13 @@ export const ROUTER_SKILLS_REQUIRED = new Set([
   'agentstack-storefront-studio',
   'agentstack-project-wallet',
   'agentstack-guidance',
+  'agentstack-business',
+  'agentstack-services',
+  'agentstack-openapi',
+  'agentstack-bots',
+  'agentstack-knowledge',
+  'agentstack-messaging',
+  'agentstack-hosted-vertical',
 ]);
 
 /** Optional grant / specialty skills (not required in router). */

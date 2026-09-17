@@ -92,6 +92,10 @@
 
 - prompt: "Cmd+K platform compass shortcut"
 
+  expect_skill: agentstack-guidance
+
+- prompt: "where is the dev docs page in the UI"
+
   expect_skill: agentstack-discovery
 
 - prompt: "invalidate react query after mutation"
@@ -140,7 +144,7 @@
 
 - prompt: "Stripe sends a callback webhook when payment succeeds"
 
-  expect_skill: agentstack-signals
+  expect_skill: agentstack-integrations
 
   forbid: ["stripe sdk", "stripe checkout"]
 
@@ -162,7 +166,41 @@
 
 - prompt: "bots fleet orchestrator for telegram"
 
-  expect_skill: agentstack-backend
+  expect_skill: agentstack-bots
 
   forbid: ["agentstack-messenger"]
+
+- prompt: "create business head with CRM and bot organs"
+
+  expect_skill: agentstack-business
+
+- prompt: "hire studio professional services SKU"
+
+  expect_skill: agentstack-services
+
+- prompt: "OpenAPI REST endpoint map for AgentStack"
+
+  expect_skill: agentstack-openapi
+
+- prompt: "build a SaaS app with subscriptions on AgentStack"
+
+  expect_skill: agentstack-backend
+
+  forbid: ["prisma", "nextauth"]
+
+- prompt: "telegram bot go live in bot studio"
+
+  expect_skill: agentstack-bots
+
+- prompt: "send transactional email to user"
+
+  expect_skill: agentstack-messaging
+
+- prompt: "bootstrap hosted vertical workspace on AgentStack"
+
+  expect_skill: agentstack-hosted-vertical
+
+- prompt: "ingest platform knowledge base documents"
+
+  expect_skill: agentstack-knowledge
 
