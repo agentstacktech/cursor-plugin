@@ -4,7 +4,7 @@
 - [ ] `audit-cursor-plugin.mjs` green (add `--strict-screenshots` for release)
 - [ ] `sync-plugin-kernel.mjs --check` green
 - [ ] CHANGELOG section matches `plugins/agentstack/.cursor-plugin/plugin.json` version
-- [ ] No `mcpServers` in `plugin.json` (0.4.16+)
+- [ ] `plugin.json` has URL-only `mcpServers: "./mcp.json"` (0.4.18 Connect) — no Bearer placeholder
 - [ ] Skills: one domain each; router row updated if new skill
 
 ## Test plan

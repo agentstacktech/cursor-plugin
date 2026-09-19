@@ -28,7 +28,7 @@ node ./hooks/scripts/device-code.mjs --scope-preset=full
 
 - **`authorization_pending`** — keep polling (not an error).
 - **`expired_token` / code expired** — re-run this command (do not invent a new OAuth client).
-- **Limit exceeded / `invalid_grant`** — Device Code rotates the plugin PAT after G-A166/167 deploy. On current prod a Profile user key still counts as Free `1/1`: revoke the extra key at https://agentstack.tech/me/keys, retry once, Reload. If it persists, `/agentstack-diagnose`.
+- **Limit exceeded / `invalid_grant`** — Device Code rotates the plugin PAT after G-A166/167 deploy. On current prod a Profile user key still counts as Free `1/1`: revoke the extra key at https://agentstack.tech/user/profile?tab=api, retry once, Reload. If it persists, `/agentstack-diagnose`.
 - **`service_caps_required_in_prod`** — old user PAT with `service_caps=null`. This command mints a Device Code token with explicit caps. Reload after it finishes.
 - **Browser did not open** — print the Activate URL + user code.
 - **MCP still missing in the plugin panel** — Reload Window. Plugin 0.4.18 ships URL-only `mcp.json`. Click **Connect**. If Connect fails, this command still writes `user-agentstack`.

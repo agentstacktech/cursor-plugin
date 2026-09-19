@@ -1,5 +1,7 @@
 # MCP Quick start — Cursor plugin
 
+> **Interactive setup (all clients):** [agentstack.tech/mcp-docs#clients?client=cursor](https://agentstack.tech/mcp-docs#clients?client=cursor)
+
 **Endpoint:** `https://agentstack.tech/mcp`  
 **Tool:** `agentstack.execute` (Cursor may show `agentstack_execute`; underscore alias still works on `tools/call`)  
 **Live catalog:** `GET https://agentstack.tech/mcp/actions`  
@@ -18,7 +20,7 @@ See [LOCAL_INSTALL.md](LOCAL_INSTALL.md).
 
 OAuth 2.1 Device Code via `/agentstack-authorize` (or `/agentstack-init`) → Bearer in `~/.cursor/mcp.json`.
 
-Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from https://agentstack.tech/me/keys.
+Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from [Profile → API keys](https://agentstack.tech/user/profile?tab=api).
 
 Plugin **0.4.18** ships URL-only `plugins/agentstack/mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). After **Reload Window**, AgentStack MCP appears in the plugin panel — click **Connect** (G-A174). Do **not** put `${AGENTSTACK_ACCESS_TOKEN}` in that file (G-A162). Device Code (`/agentstack-authorize`) still writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks.
 
@@ -63,6 +65,35 @@ Prefer JSON-RPC `tools/call` with batched steps:
 Default batches stay **fail-closed** (`stopOnError: true`) — money and mutations. For a **read-only bootstrap** (profile, stats, limits, quota) use named recipe `mcp_read_bootstrap` / prompt `agentstack_read_bootstrap` with `"continueOnError": true`. **Do not** include `apikeys.list` unless the token has L1 `api_keys` / `apikeys.read`; that step is what aborted the Ф16 6-pack after buffs.
 
 **Heavy LLM:** at most one `bots.simulate` / `knowledge.playground` per **sync** execute (60s `mcp_batch` for the whole batch). Suites: one simulate per call, or `options.async=true` then `discovery.job_status`. Live: `GET /mcp/actions` → `execute_budget`.
+
+## Safe project cycle (all tenant work)
+
+For **any** tenant config / data change — master playbook before mutations:
+
+| Step | Action |
+|------|--------|
+| Command | `/agentstack-safe-cycle` |
+| Playbook | `GET /mcp/prompts/get?name=agentstack_safe_project_cycle&project_id=<PID>` |
+| Recipe | `mcp_universal_safe_change` |
+| SoT | `docs/operations/ECOSYSTEM_SAFE_PROJECT_CYCLE.md` |
+
+Phases: session → preflight → domain mutate (leaf) → verify sandbox → diff → gates → promote.
+
+Setup hub: [agentstack.tech/mcp-docs#setup](https://agentstack.tech/mcp-docs#setup) · per client: `?client=chatgpt|cursor|claude|gemini`
+
+## Tenant ops (mentor heal → verify → promote)
+
+For mentor menu drift — specialized case of safe cycle:
+
+| Step | Action |
+|------|--------|
+| Playbook | `GET /mcp/prompts/get?name=agentstack_tenant_ops_mcp_first` |
+| Recipe | `mcp_tenant_bots_heal_verify` |
+| Heal | `bots.ensure_mentor_commands` |
+| Verify | `bots.simulate` / `knowledge.playground` (one per batch) |
+| Ship | `generation.diff_vs_prod` → `generation.promote` |
+
+Cursor command: `/agentstack-tenant-ops`. Monorepo SoT: `docs/operations/TENANT_OPS_MCP_FIRST_PLAYBOOK.md`.
 
 ## Diagnose
 

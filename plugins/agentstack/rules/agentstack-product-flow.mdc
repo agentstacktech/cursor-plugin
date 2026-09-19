@@ -1,0 +1,27 @@
+---
+description: Product archetype checklist for tenant apps — SDK-first, MCP backend, no custom DB stack
+globs: ["**/*.{ts,tsx,js,jsx,vue,svelte,html}"]
+---
+
+# AgentStack product flow (consumer apps)
+
+**Gene:** `repo.plugins.product_flow.gen1` · Narrative: `docs/plugins/PRODUCT_BUILD_FLOW.md`
+
+## Before writing backend code
+
+1. **Classify archetype** — `/agentstack-product-flow` or PRODUCT_BUILD_FLOW table (`static_site`, `saas`, `ecommerce`, `game`, `bot_channel`, …).
+2. **Bootstrap session** — auth → project → `context.project_id` (prompt `agentstack_session_setup`).
+3. **Pick channel** — MCP for ops; `@agentstack/sdk` in app code; never raw `fetch('/api/...')` when SDK exists.
+4. **Run default recipe** from archetype row (`mcp_hosting_quickstart`, `saas_trial_system`, …).
+
+## SDK-first (app code)
+
+- `sdk.platform.auth` — not NextAuth / Clerk
+- `sdk.platform.protocol` / `projects.patch_data` — not Prisma
+- `sdk.hosting.quickStart` — not Vercel API for MVP
+- `getCapabilityMatrix()` — before inventing action names
+
+## References
+
+- genetic-starter recipes `examples/agentstack/00–11`
+- Rule: `agentstack-sdk-first.mdc` (consumer overlay)

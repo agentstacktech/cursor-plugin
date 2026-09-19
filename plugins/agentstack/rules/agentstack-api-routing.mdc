@@ -12,6 +12,20 @@ When the agent needs to talk to AgentStack, pick the **highest-priority** channe
 3. **Universal command bus** — `POST /api/commands/execute` with the same `{action, params}` envelope. Equivalent to `commands.execute` MCP action; useful from server-to-server where MCP transport is not set up.
 4. **REST only as last resort** — if and only if no MCP action and no command exist, write a new server-side route yourself. Before doing so, **prefer requesting/adding an MCP action**: discoverable via `GET /mcp/actions`, automatically RBAC-checked, and usable by every AgentStack client.
 
+## Product build decision tree
+
+```
+User intent
+  → Pick archetype (PRODUCT_BUILD_FLOW / /agentstack-product-flow)
+  → MCP recipe or domain actions (GET /mcp/recipes)
+  → SDK facade (sdk.platform.* / sdk.protocol) in app code
+  → 8DNA leaf PATCH (projects.patch_data)
+  → Command bus (commands.execute)
+  → New REST (last resort — propose MCP action follow-up)
+```
+
+Discovery ladder when unsure: session_setup prompt → `ai_prompt?mode=contract` → `discover/by_intent` → `actions?schemas=hot` (autogen in `agentstack-backend/SKILL.md`).
+
 ## Why this order
 
 - MCP is discoverable (`GET /mcp/actions`) — one URL, all verbs, one auth header.

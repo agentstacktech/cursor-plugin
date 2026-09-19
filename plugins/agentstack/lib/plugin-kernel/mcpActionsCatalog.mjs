@@ -7,51 +7,20 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { filterTenantActions } from './docAudienceFilter.mjs';
+import {
+  flattenMcpActionsCatalog,
+  actionsFromSnapshot,
+} from './mcpCatalogFlatten.mjs';
+import {
+  catalogActionsUrl,
+  isCatalogDeltaPayload,
+  mergeCatalogDelta,
+} from './mcpCatalogDelta.mjs';
 
 export const CAPABILITY_SNAPSHOT_FILENAME = 'agentstack-capabilities.json';
+export { flattenMcpActionsCatalog, actionsFromSnapshot };
 
-/**
- * @param {unknown} payload
- * @returns {{ action: string, required_cap?: string, summary?: string, safe_action?: string }[]}
- */
-export function flattenMcpActionsCatalog(payload) {
-  if (!payload) return [];
-  if (Array.isArray(payload)) {
-    return payload.filter((row) => row && typeof row.action === 'string');
-  }
-  if (Array.isArray(payload.actions)) {
-    return payload.actions.filter((row) => row && typeof row.action === 'string');
-  }
-  const domains = payload.domains;
-  if (!domains || typeof domains !== 'object') return [];
-  const out = [];
-  for (const list of Object.values(domains)) {
-    if (!Array.isArray(list)) continue;
-    for (const row of list) {
-      if (row && typeof row.action === 'string') out.push(row);
-    }
-  }
-  return out;
-}
-
-/**
- * @param {unknown} snapshotFile — contents of ~/.cursor/agentstack-capabilities.json
- */
-export function actionsFromSnapshot(snapshotFile) {
-  if (!snapshotFile || typeof snapshotFile !== 'object') return [];
-  if (Array.isArray(snapshotFile.actions)) return snapshotFile.actions;
-  // Legacy: entire catalog object stored under `actions`
-  if (snapshotFile.actions && typeof snapshotFile.actions === 'object') {
-    return flattenMcpActionsCatalog(snapshotFile.actions);
-  }
-  if (snapshotFile.catalog) return flattenMcpActionsCatalog(snapshotFile.catalog);
-  return flattenMcpActionsCatalog(snapshotFile);
-}
-
-/**
- * Flatten live catalog and keep tenant-facing actions only (public docs parity).
- * @param {unknown} payload
- */
+/** Flatten live catalog and keep tenant-facing actions only (public docs parity). */
 export function tenantActionsFromCatalog(payload) {
   return filterTenantActions(flattenMcpActionsCatalog(payload));
 }
@@ -65,11 +34,6 @@ function catalogEtagFrom(payload, responseHeaders) {
   return raw.replace(/^"|"$/g, '');
 }
 
-/**
- * Disk shape for ~/.cursor/agentstack-capabilities.json (Device Code + sessionStart + diagnose).
- * @param {unknown} catalog
- * @param {{ now?: number, catalogEtag?: string|null }} [opts]
- */
 export function buildTenantCapabilitySnapshot(catalog, { now = Date.now(), catalogEtag = null } = {}) {
   const actions = tenantActionsFromCatalog(catalog);
   const snapshot = {
@@ -83,12 +47,6 @@ export function buildTenantCapabilitySnapshot(catalog, { now = Date.now(), catal
   return snapshot;
 }
 
-/**
- * @param {string} cursorDir — typically ~/.cursor
- * @param {unknown} catalog
- * @param {{ catalogEtag?: string|null }} [opts]
- * @returns {Promise<number>} tenant action count
- */
 export async function writeTenantCapabilitySnapshot(cursorDir, catalog, opts = {}) {
   const etag = opts.catalogEtag ?? catalogEtagFrom(catalog, null);
   const snapshot = buildTenantCapabilitySnapshot(catalog, { catalogEtag: etag });
@@ -101,13 +59,36 @@ export async function writeTenantCapabilitySnapshot(cursorDir, catalog, opts = {
   return snapshot.total_actions;
 }
 
-/**
- * Refresh local capability snapshot when stale. Uses If-None-Match when catalog_etag is known.
- * @param {string} cursorDir
- * @param {string} baseUrl
- * @param {Record<string, string>} authHeaders
- * @param {{ maxAgeMs?: number, now?: number }} [opts]
- */
+async function fetchCatalogWithDelta(baseUrl, authHeaders, sinceEtag, snapPath) {
+  const headers = { ...authHeaders };
+  if (sinceEtag) headers['If-None-Match'] = `"${sinceEtag}"`;
+
+  const url = catalogActionsUrl(baseUrl, { sinceEtag, delta: Boolean(sinceEtag), hot: true });
+  const res = await fetch(url, { headers });
+  if (res.status === 304) {
+    return { status: 304, res, body: null, etag: sinceEtag };
+  }
+  if (!res.ok) {
+    return { status: res.status, res, body: null, etag: sinceEtag };
+  }
+
+  const body = await res.json();
+  const etag = catalogEtagFrom(body, res.headers) ?? sinceEtag;
+  let catalog = body;
+  if (isCatalogDeltaPayload(body)) {
+    let priorActions = [];
+    try {
+      const existing = JSON.parse(await readFile(snapPath, 'utf8'));
+      priorActions = Array.isArray(existing?.actions) ? existing.actions : [];
+    } catch {
+      /* no prior snapshot */
+    }
+    const merged = mergeCatalogDelta(priorActions, body);
+    catalog = { domains: { _merged: merged }, catalog_etag: etag };
+  }
+  return { status: res.status, res, body: catalog, etag, delta: isCatalogDeltaPayload(body) };
+}
+
 export async function refreshTenantCapabilitySnapshotIfStale(
   cursorDir,
   baseUrl,
@@ -132,31 +113,27 @@ export async function refreshTenantCapabilitySnapshotIfStale(
     /* missing or unreadable — fetch below */
   }
 
-  const headers = { ...authHeaders };
-  if (existing?.catalog_etag) {
-    headers['If-None-Match'] = `"${existing.catalog_etag}"`;
-  }
-
-  const res = await fetch(`${baseUrl}/mcp/actions`, { headers });
-  if (res.status === 304 && existing) {
+  const sinceEtag = existing?.catalog_etag ?? null;
+  const fetched = await fetchCatalogWithDelta(baseUrl, authHeaders, sinceEtag, snapPath);
+  if (fetched.status === 304 && existing) {
     existing.fetched_at = now;
     await writeFile(snapPath, JSON.stringify(existing, null, 2), 'utf8');
     return { refreshed: false, reason: 'not_modified', actionCount: existing.actions?.length ?? 0 };
   }
-  if (!res.ok) {
-    return { refreshed: false, reason: 'http_error', status: res.status };
+  if (fetched.status !== 200 || !fetched.body) {
+    return { refreshed: false, reason: 'http_error', status: fetched.status };
   }
 
-  const catalog = await res.json();
-  const etag = catalogEtagFrom(catalog, res.headers);
-  const n = await writeTenantCapabilitySnapshot(cursorDir, catalog, { catalogEtag: etag });
-  return { refreshed: true, reason: 'fetched', actionCount: n };
+  const n = await writeTenantCapabilitySnapshot(cursorDir, fetched.body, {
+    catalogEtag: fetched.etag,
+  });
+  return {
+    refreshed: true,
+    reason: fetched.delta ? 'delta_merged' : 'fetched',
+    actionCount: n,
+  };
 }
 
-/**
- * Force-refresh snapshot (e.g. after mcp.json edit). Honors If-None-Match when etag known.
- * @returns {Promise<number>} tenant action count
- */
 export async function refreshTenantCapabilitySnapshot(cursorDir, baseUrl, authHeaders) {
   const snapPath = join(cursorDir, CAPABILITY_SNAPSHOT_FILENAME);
   let sinceEtag = null;
@@ -167,11 +144,8 @@ export async function refreshTenantCapabilitySnapshot(cursorDir, baseUrl, authHe
     /* missing */
   }
 
-  const headers = { ...authHeaders };
-  if (sinceEtag) headers['If-None-Match'] = `"${sinceEtag}"`;
-
-  const res = await fetch(`${baseUrl}/mcp/actions`, { headers });
-  if (res.status === 304) {
+  const fetched = await fetchCatalogWithDelta(baseUrl, authHeaders, sinceEtag, snapPath);
+  if (fetched.status === 304) {
     try {
       const existing = JSON.parse(await readFile(snapPath, 'utf8'));
       existing.fetched_at = Date.now();
@@ -181,10 +155,9 @@ export async function refreshTenantCapabilitySnapshot(cursorDir, baseUrl, authHe
       return 0;
     }
   }
-  if (!res.ok) return 0;
+  if (fetched.status !== 200 || !fetched.body) return 0;
 
-  const catalog = await res.json();
-  return writeTenantCapabilitySnapshot(cursorDir, catalog, {
-    catalogEtag: catalogEtagFrom(catalog, res.headers),
+  return writeTenantCapabilitySnapshot(cursorDir, fetched.body, {
+    catalogEtag: fetched.etag,
   });
 }

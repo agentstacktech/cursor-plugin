@@ -62,7 +62,8 @@ Run `node scripts/verify-mcp-surface-e2e.mjs` for automated API checks (tools/li
 
 - [ ] Ask Cursor "add user login with password" — it calls `auth.register` / `auth.login` instead of installing NextAuth.
 - [ ] Ask "store theme preference" — it writes `user.data.prefs.theme` via 8DNA, not Prisma.
-- [ ] Ask "email users every Friday" — it creates a `scheduler.create_task` + `notifications.send`, not a custom cron.
+- [ ] Ask "email users every Friday" — it creates a `scheduler.create_task` + `notifications.send_push`, not a custom cron.
+- [ ] `/agentstack-product-flow` classifies archetype and prints MCP recipe checklist (0.4.18+).
 
 ## 8. Diagnostics
 
@@ -85,8 +86,8 @@ Run `node scripts/verify-mcp-surface-e2e.mjs` for automated API checks (tools/li
 
 ## 12. Docs sync
 
-- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.16`.
-- [ ] `CHANGELOG.md` has a `[0.4.16]` entry.
+- [ ] `README.md`, `MCP_QUICKSTART.md`, and this checklist mention version `0.4.18`.
+- [ ] `CHANGELOG.md` has a `[0.4.18]` entry (ship features under current section without bump unless Lance orders release).
 - [ ] `lib/plugin-kernel/` is present (self-contained Device Code).
 
 ## 13. Design alignment

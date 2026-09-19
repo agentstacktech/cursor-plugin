@@ -1,6 +1,6 @@
 ---
 name: agentstack-data
-description: Use when the user wants to store, read, protect, upload, or A/B-test data — project/user data, config, file uploads, private fields, variant rollouts. Covers 8DNA (data/protected), Storage (files), Field Access Policy (FAP), sandbox environments.
+description: Use when the user wants to store, read, protect, or A/B-test data — project/user data, config, private fields, variant rollouts, generation sandbox. Covers 8DNA (data/protected), Field Access Policy (FAP). For file uploads use agentstack-storage.
 ---
 
 # AgentStack Data — 8DNA + Storage + FAP
@@ -13,12 +13,14 @@ One skill covers three organs because they share the same guiding principle: **d
 
 | User says                                  | Do this                                                                                           |
 |--------------------------------------------|---------------------------------------------------------------------------------------------------|
+| **tenant config / KB / fleet / menu DNA**  | **First:** `agentstack_safe_project_cycle` (master) · recipe `mcp_universal_safe_change` · `/agentstack-safe-cycle`. Detail: `agentstack_tenant_8dna_supply`. Never prod leaf writes without `generation_env_uuid`. |
+| **mentor bot heal / menu parity / verify** | **`agentstack_tenant_ops_mcp_first`** — `bots.ensure_mentor_commands` → `bots.simulate` / `knowledge.playground` → `generation.promote`. `/agentstack-tenant-ops`. Scripts = fallback. |
 | "store user preferences"                   | MCP `projects.patch_data` path `users.<id>.prefs` with `write_mode=replace` — or REST `PATCH /projects/{id}/data` |
 | "store public project config"              | `projects.patch_data` path `config.<area>.<key>` (`write_mode=merge` on an object). `projects.update_project` is name/settings only |
 | "store API key for 3rd party"              | `protected.keys.<service>` — backend-only; never returned in `projects.get_project`                |
 | "upload avatar / document"                 | `POST /api/storage/upload` (multipart) + `storage.list_files` to browse, `storage.delete_file` to remove |
 | "hide email from non-admins"               | `data_access.set_policy` with field path + role mask (FAP)                                        |
-| "A/B test homepage copy"                   | `generation.fork` → mutate → `generation.promote` (see MCP prompt below)        |
+| "A/B test homepage copy"                   | Full safe cycle: `generation.settings.patch` (mode on) → mutation auto-fork → `generation.diff_vs_prod` → `generation.gates` → `generation.promote` — see `agentstack_tenant_8dna_supply` prompt |
 
 ## Prefer-over
 
@@ -83,7 +85,7 @@ For variant rollouts, promotion gates, and canary traffic use **`generation.*`**
 
 - **Writes:** `projects.patch_data` with `write_mode` (`merge`/`replace`/`delete`) — not `projects.update_project` for nested JSON leaves.
 - **Catalog:** `GET https://agentstack.tech/mcp/actions` — filter `projects.*`, `data_access.*`, `generation.*`.
-- **Prompts:** `agentstack_write_modes`, `agentstack_tenant_8dna_supply` for sandbox supply chain.
+- **Prompts:** `agentstack_safe_project_cycle`, `agentstack_write_modes`, `agentstack_tenant_8dna_supply` for sandbox supply chain.
 
 ## References
 

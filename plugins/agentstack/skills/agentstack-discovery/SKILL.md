@@ -1,6 +1,6 @@
 ---
 name: agentstack-discovery
-description: Use when the user asks where a feature lives in the UI, how to navigate AgentStack, Compass playbooks, Discover hub, or dev docs recipes. Prefer discovery manifest and UI registry over inventing routes.
+description: Use when the user asks where a feature lives in the UI, Discover hub routes, PAGES_MAP, or dev docs cookbook leaves. Prefer discovery manifest and UI registry — not Compass playbooks (see agentstack-guidance).
 ---
 
 # AgentStack Discovery & Compass

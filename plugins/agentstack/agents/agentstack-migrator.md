@@ -25,7 +25,7 @@ Look for:
 | Legacy                        | AgentStack replacement                                       |
 |-------------------------------|--------------------------------------------------------------|
 | Supabase Auth / NextAuth / Auth0 | `auth.login`, `auth.register`, `auth.get_profile`          |
-| Supabase Tables / Prisma      | 8DNA `data.*` + `projects.update_project` / `POST /api/dna/data` |
+| Supabase Tables / Prisma      | 8DNA leaf paths via `projects.patch_data` / `POST /api/dna/data` (not full-blob writes) |
 | Supabase Row Level Security   | FAP `data_access.set_policy`                                 |
 | Supabase Edge Functions       | Logic Engine V2 rules (triggered via `signal` / `webhook`)   |
 | Firebase Realtime DB          | 8DNA + `data_event` triggers                                 |
@@ -33,7 +33,7 @@ Look for:
 | Stripe Subscriptions          | `buffs.apply_persistent_effect`                              |
 | Pinecone / pgvector / Chroma  | `rag.collection_*` + `rag.document_*`                        |
 | Celery / BullMQ cron          | `scheduler.create_task`                                       |
-| Sendgrid / Postmark           | `notifications.send`                                         |
+| Sendgrid / Postmark           | `NotificationsService.send_notification(channels=["email"])` or `messaging.*` MCP |
 | Stripe webhook endpoint       | `integrations.install_recipe`                                 |
 
 ## Workflow (8 steps)
@@ -54,6 +54,8 @@ Look for:
    - Disable legacy writes.
    - Remove legacy dependencies.
 8. Run `/agentstack-diagnose` + `projects.get_stats`; verify parity (usage counts, key counts) before removing legacy.
+
+**Target archetype after cutover:** `saas` (auth + buffs + dashboard) or `ecommerce` (AgentPay + storefront) — run `/agentstack-product-flow` to confirm.
 
 ## Guardrails
 

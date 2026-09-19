@@ -16,15 +16,21 @@ One authentication surface, one role model, one permission check — delivered v
 | "let user sign in with email + password"               | `auth.login` (email, password) — returns token                     |
 | "register new user"                                    | `auth.register`                                                    |
 | "invite / set-password link for a created user"        | `auth.password_setup.mint` (one-time `/set-password?token=`)       |
-| "who is the current user"                              | `auth.get_profile`                                                 |
+| "who is the current user" / `auth.me` / `/api/auth/me` | `auth.get_profile` (aliases: `auth.me`, `auth.status`, `auth.whoami`) |
 | "update display name / avatar"                         | `auth.update_profile`                                              |
 | "make user admin of this project"                      | `projects.update_user_role` with `role=admin`                      |
 | "list admins / members"                                | `projects.get_users` (filter by `role`)                            |
 | "can user X do action Y in project Z"                  | `rbac.check_permission`                                            |
 | "assign a global role"                                 | `rbac.assign_role`                                                 |
 | "remove user from project"                             | `projects.remove_user`                                             |
+| "confirm email / activation link / email_unconfirmed"    | Mail Hub templates `email_confirmation` + `messaging.get_auth_email_readiness` |
+| "password reset email / forgot password"               | Template `password_reset` via `shared.auth.transactional_email` (auto on `auth` flows) |
+| "send email as platform admin (Resend/SMTP)"           | `messaging.send_email` or `messaging.send_test_email` (ecosystem owner MCP) |
+| "sign-in code / email OTP / bot link code"             | `auth.email_otp.send` + `auth.email_otp.login` (web/MCP) · Mail Hub template `email_otp` · MFA + bot `/login` email mode |
 
 Field-level access (hide email, expose only to admins) → use `agentstack-data` skill (FAP `data_access.*`).
+
+**Transactional email (tenant users):** registration confirm and password reset use ecosystem Mail Hub templates — not `notifications.send_push`. Ops: `messaging.ensure_auth_templates` → `messaging.put_config` (provider + secrets) → `messaging.get_auth_email_readiness`.
 
 ## Prefer-over
 

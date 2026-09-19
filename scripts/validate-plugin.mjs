@@ -58,6 +58,9 @@ const CAPABILITY_MATRIX_CANDIDATES = [
   path.join(REPO_ROOT, 'docs/MCP_CAPABILITY_MATRIX.md'),
 ];
 
+/** Live capability matrix lists deprecated MCP ids by design — skip stale-action drift scan. */
+const STALE_ACTION_SCAN_SKIP = new Set(['docs/CAPABILITY_MATRIX.md']);
+
 const REQUIRED_REPO_FILES = [
   '.cursor-plugin/marketplace.json',
   '.cursor-plugin/listing.json',
@@ -216,6 +219,7 @@ function checkTextSecurityAndDrift(liveActions) {
     if (relative.startsWith('hooks/fixtures/') || relative.includes('/hooks/fixtures/')) continue;
     // Drift map SoT — contains legacy action names by design
     if (relative === 'scripts/lib/stale-actions.mjs' || relative.endsWith('/scripts/lib/stale-actions.mjs')) continue;
+    if (STALE_ACTION_SCAN_SKIP.has(relative)) continue;
     const content = fs.readFileSync(filePath, 'utf8');
     for (const [oldAction, newAction] of STALE_ACTIONS) {
       if (textHasStaleAction(content, oldAction)) {
@@ -455,6 +459,21 @@ if (fs.existsSync(backendSkillPath)) {
 }
 if (fs.existsSync(path.join(PLUGIN, 'skills/agentstack-support-storage'))) {
   fail('skills/agentstack-support-storage/: removed in gen3 — use hosting, support, storage');
+}
+if (fs.existsSync(backendSkillPath)) {
+  const backendBody2 = fs.readFileSync(backendSkillPath, 'utf8');
+  if (!backendBody2.includes('<!-- BEGIN:AUTOGEN-PRODUCT-ARCHETYPES -->')) {
+    fail('skills/agentstack-backend/SKILL.md: missing AUTOGEN-PRODUCT-ARCHETYPES marker');
+  }
+}
+const agentsDir = path.join(PLUGIN, 'agents');
+if (fs.existsSync(agentsDir)) {
+  for (const f of fs.readdirSync(agentsDir).filter((x) => x.endsWith('.md'))) {
+    const body = fs.readFileSync(path.join(agentsDir, f), 'utf8');
+    if (body.includes('agentstack-support-storage')) {
+      fail(`agents/${f}: removed skill agentstack-support-storage`);
+    }
+  }
 }
 
 // 6c. alwaysApply rule budget (T0)

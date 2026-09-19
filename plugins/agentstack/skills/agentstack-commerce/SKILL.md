@@ -1,6 +1,6 @@
 ---
 name: agentstack-commerce
-description: Use when the user wants payments, subscriptions, wallets, internal currency, inventory / digital items, trials, tier gates, entitlements, feature flags. Covers payments + wallets + assets + buffs as one unified commerce surface.
+description: Use when the user wants payments, subscriptions, wallets, internal currency, trials, tier gates, entitlements, feature flags, AgentPay checkout. Covers payments + wallets + buffs. For digital goods wizard use agentstack-commerce-assets.
 ---
 
 # AgentStack Commerce — payments + wallets + assets + buffs

@@ -18,12 +18,15 @@ You are an architect specialized in the AgentStack ecosystem. You receive a prod
 6. **Payment flow** — `payments.create` + `<AgentPay>` widget + rule `grant_X_on_payment_success`.
 7. **RAG plan** — collections + ingestion strategy (if a knowledge base is needed).
 8. **Frontend skeleton** — using `@agentstack/sdk` + `@agentstack/react` (`useSDKQuery`, `RequireCapability`, `<AgentPay>`).
+9. **Hosting / publish plan** — if archetype is `static_site` or `ecommerce`: `hosting.*` ladder, `/s/` URL, optional Storefront Studio (`hosting_deploy_publish`, `host_then_sell`).
+10. **Generation supply** — if tenant 8DNA config changes: `generation.fork` → `generation.diff_vs_prod` → `generation.gates` → `generation.promote` (prompt `agentstack_tenant_8dna_supply`); never full-blob `data=` writes.
 
-## Workflow (7 steps)
+## Workflow (8 steps)
 
+0. **Classify product archetype** — run `/agentstack-product-flow` or pick from `docs/plugins/PRODUCT_BUILD_FLOW.md` (game, saas, ecommerce, static_site, bot_channel, …). Choose default MCP `recipe_id` from the archetype row before domain work.
 1. Read the user spec; ask for missing answers only if they unblock the design (max 5 questions).
 2. Run `/agentstack-capability-matrix` to refresh the live action list.
-3. Draft `docs/AGENTSTACK_DESIGN.md` with all 8 sections above. Include Mermaid diagrams for the domain map and payment flow.
+3. Draft `docs/AGENTSTACK_DESIGN.md` with all sections below. Include Mermaid diagrams for the domain map and payment flow.
 4. Present the draft to the user; apply feedback.
 5. Execute the plan:
    - **Always** call `logic.dry_run` before `logic.create`.
@@ -50,4 +53,5 @@ You are an architect specialized in the AgentStack ecosystem. You receive a prod
 ## Related
 
 - `agents/agentstack-migrator.md` — if the user has an existing Supabase/Firebase/Stripe stack, start there.
-- Skills: `agentstack-backend`, `agentstack-data`, `agentstack-auth-rbac`, `agentstack-logic`, `agentstack-commerce`, `agentstack-rag`, `agentstack-signals`, `agentstack-agents-ai`, `agentstack-support-storage`.
+- Live demos: public `/showcase` gallery — archetype references in `docs/PRODUCT_BUILD_FLOW.pointer.md` (do not run platform showcase bootstrap from tenant plugin).
+- Skills: `agentstack-backend`, `agentstack-data`, `agentstack-auth-rbac`, `agentstack-logic`, `agentstack-commerce`, `agentstack-rag`, `agentstack-signals`, `agentstack-agents-ai`, `agentstack-hosting`, `agentstack-support`, `agentstack-storage`, `agentstack-crm`, `agentstack-business`, `agentstack-guidance`, `agentstack-bots`, `agentstack-knowledge`.

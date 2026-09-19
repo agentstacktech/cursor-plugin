@@ -1,4 +1,4 @@
-# Testing & Capabilities — AgentStack Cursor Plugin v0.4.16 (gen3)
+# Testing & Capabilities — AgentStack Cursor Plugin v0.4.18 (gen3)
 
 Live catalogue: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 
@@ -16,9 +16,9 @@ node scripts/verify-mcp-surface-e2e.mjs
 | Manifest | `.cursor-plugin/plugin.json` | Cursor-schema-valid gen3 manifest (no `$schema`) |
 | Listing (repo) | `../../.cursor-plugin/listing.json` | Publisher copy + screenshots |
 | Marketplace (repo) | `../../.cursor-plugin/marketplace.json` | GitHub / Add marketplace index |
-| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs + T3 monorepo (**9**) |
-| Skills | `skills/<domain>/SKILL.md` | **24** domains + optional `solana` |
-| Commands | `commands/*.md` | **13** slash workflows |
+| Rules | `rules/*.mdc` | T0 alwaysApply + T1 globs + T3 monorepo (**10**) |
+| Skills | `skills/<domain>/SKILL.md` | **31** skills (30 `agentstack-*` + optional `solana`) |
+| Commands | `commands/*.md` | **19** slash workflows |
 | Agents | `agents/*.md` | **3** marketplace presets (see matrix) |
 | Hooks | `hooks/hooks.json` + `hooks/scripts/` | Lifecycle + policy + contract fixtures |
 | Kernel | `lib/plugin-kernel/` | Vendored Device Code + MCP config/probes |
@@ -38,7 +38,9 @@ node scripts/verify-mcp-surface-e2e.mjs
 | agentstack-commerce | payments, wallets, buffs |
 | agentstack-commerce-assets | assets.* |
 | agentstack-rag | rag.* |
-| agentstack-signals | scheduler, webhooks |
+| agentstack-signals | scheduler, integrations, notifications |
+| agentstack-messaging | messaging.* (Mail Hub) |
+| agentstack-hosted-vertical | vertical_workspace.*, checklist.*, hosted SaaS |
 | agentstack-projects | projects, apikeys |
 | agentstack-agents-ai | agents, ai_builder |
 | agentstack-messenger | social chat / ordering |

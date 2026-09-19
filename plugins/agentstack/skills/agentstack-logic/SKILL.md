@@ -26,7 +26,7 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 | "when user signs up give 7-day trial"      | `signal:user_created` → `buffs.apply_temporary_effect`            |
 | "on payment success grant pro"             | `signal:payment_success` → `buffs.apply_persistent_effect`        |
 | "every hour recalc leaderboard"            | `scheduler:cron('0 * * * *')` → `commands.execute` recalc batch   |
-| "when order added send email"              | `data_event:project.data.orders.*.created` → `notifications.send` |
+| "when order added send email"              | `data_event:project.data.orders.*.created` → `notifications.send_push` |
 | "when trial expired remove feature"        | `scheduler.create_task` + `logic.create` → `buffs.cancel_buff`         |
 
 ## MCP actions

@@ -208,9 +208,12 @@ async function main() {
     console.log(`\n  AgentStack MCP connected.`);
     console.log(`  Scope:   ${scope}`);
     console.log(`  Trace:   ${traceId}`);
-    console.log(`  Expires: in ${expiresIn}s (long-lived PAT; session-start refreshes only if a leftover refresh file exists)`);
+    console.log(`  Expires: PAT (user_api_key) — long-lived; no OAuth refresh pair (G-A166 rotates prior plugin PAT).`);
     console.log(`  Config:  ${MCP_PATH}\n`);
-    console.log('  Next: Developer: Reload Window, click Connect on plugin MCP, then /agentstack-status.\n');
+    console.log(
+      '  Next: Developer: Reload Window (required — old PAT is revoked). ' +
+        'Plugin MCP: click Connect (G-A174) or keep user-agentstack from this file. /agentstack-status\n',
+    );
   } finally {
     await endDeviceLoginLock(CURSOR_DIR);
   }

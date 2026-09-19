@@ -9,10 +9,10 @@
 
 | Layer | Count | Gate | Status |
 |-------|------:|------|--------|
-| Skills | 25 | 24 domains + optional `solana`; frontmatter + live catalog | [x] `audit-layers.mjs` |
-| Rules | 9 | exactly 1 `alwaysApply` (prefer) | [x] |
-| Commands | 15 | name/description + init/login/authorize/status/diagnose | [x] |
-| Agents | 3 | name/description; no oncall/fleet-operator | [x] |
+| Skills | 29 | 28 `agentstack-*` + optional `solana`; frontmatter + live catalog | [x] `audit-layers.mjs` |
+| Rules | 10 | exactly 1 `alwaysApply` (prefer) | [x] |
+| Commands | 16 | incl. `/agentstack-product-flow` | [x] |
+| Agents | 3 | tenant bundle: architect, migrator, tenant-builder | [x] |
 | Maintainer overlay | 2 agents | `cursor-plugin-maintainer/` — LOCAL_INSTALL only | [x] |
 | Hooks | 7 events | scripts resolve under package | [x] |
 | Device Code | 1 script | not a hook event; install path | [x] |

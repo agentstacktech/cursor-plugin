@@ -46,10 +46,18 @@ async function main() {
   } catch {
     /* no settings */
   }
+  const traceId =
+    event.traceId ||
+    event.trace_id ||
+    event.headers?.['x-trace-id'] ||
+    event.headers?.['X-Trace-Id'] ||
+    null;
+  const traceHint = traceId ? ` X-Trace-Id: ${traceId}.` : '';
+
   const optIn = !!(settings.agentstack?.sendTelemetry || settings['agentstack.sendTelemetry']);
   if (!optIn) {
     // Still print a short stderr hint for the agent/user
-    console.error('[agentstack] tool failure — run /agentstack-diagnose');
+    console.error(`[agentstack] tool failure — run /agentstack-diagnose.${traceHint}`);
     process.exit(0);
   }
 
@@ -61,6 +69,7 @@ async function main() {
     action: event.params?.steps?.[0]?.action || event.action || null,
     success: false,
     error: errText.replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]'),
+    trace_id: traceId,
     hint: 'Run /agentstack-diagnose',
   };
 
@@ -79,7 +88,7 @@ async function main() {
   } catch {
     /* Windows */
   }
-  console.error('[agentstack] tool failure recorded — run /agentstack-diagnose');
+  console.error(`[agentstack] tool failure recorded — run /agentstack-diagnose.${traceHint}`);
   process.exit(0);
 }
 

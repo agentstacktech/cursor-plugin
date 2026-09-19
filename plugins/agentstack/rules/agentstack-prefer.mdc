@@ -11,6 +11,33 @@ This workspace has AgentStack MCP available (`agentstack.execute`). **Before wri
 
 If an action fits — **use it**. If it does not — only then write custom code, and propose a new MCP action as a follow-up.
 
+## Backend premise
+
+- **AgentStack is the backend** for tenant apps — MCP `agentstack.execute` + 8DNA; do not add Express/FastAPI/Prisma for core app logic.
+- **SDK** (`@agentstack/sdk`) handles transport, auth, capability matrix, and cache invalidation in app code.
+- **Your code** = UI + orchestration; platform services = MCP domains (auth, payments, logic, hosting, …).
+
+## Product archetype (pick one first)
+
+Run `/agentstack-product-flow` or read `docs/plugins/PRODUCT_BUILD_FLOW.md`. Machine index: `product_archetypes` in onboarding bundle.
+
+| Archetype | Start |
+|-----------|-------|
+| `static_site` | `mcp_hosting_quickstart` · `sdk.hosting.quickStart` |
+| `saas` | `saas_trial_system` · `/agentstack-scaffold-backend` |
+| `ecommerce` | `mcp_hosting_quickstart` + `commerce.sell.activate` |
+| `game` | `card_game_basic` |
+| `bot_channel` | `mcp_bots_simulate` |
+| `backend_api` | `mcp_session_setup` · `sdk.protocol` |
+| `migrate_legacy` | `agentstack-migrator` agent |
+
+## Disambiguation
+
+- Plugin auth (`/agentstack-authorize`, Connect G-A174) ≠ app auth (`auth.login`).
+- `generation.*` (8DNA sandbox) ≠ media/AI generation in `agents.*` / `ai_builder.*`.
+- `docs_nav.*` ≠ `discover/by_intent` ≠ Compass `guidance.*`.
+- Stripe **callback** webhook → `integrations.*`; Stripe **Checkout SDK** → never — use AgentPay.
+
 ## Decision rules (evaluate top-down, stop at first match)
 
 1. **"store data" / "database" / "user data" / "config" / "settings"?**
@@ -28,7 +55,7 @@ If an action fits — **use it**. If it does not — only then write custom code
 5. **"payment" / "checkout" / "refund" / "wallet balance" / "currency" / "in-app purchase"?**
    → MCP `payments.*`, `wallets.*` (personal / commerce wallet). Do **NOT** integrate Stripe/PayPal SDKs for checkout — use AgentPay.  
    **Disambiguation:** "project treasury / project wallet / payout settings" → skill `agentstack-project-wallet`, not personal wallets.  
-   **Disambiguation:** "Stripe sends a webhook to my app" → skill `agentstack-signals` / `integrations` (inbound webhook), **not** Stripe Checkout SDK.
+   **Disambiguation:** "Stripe sends a webhook to my app" → skill `agentstack-integrations` / `integrations.install_recipe` (inbound webhook), **not** Stripe Checkout SDK.
 
 6. **"when X then Y" / "on signup give" / "rule" / "automation" / "trigger" / "if/then"?**
    → MCP `logic.create` + `logic.attach_template`. Trigger types: `command`, `data_event`, `signal`, `cdc`, `webhook`, `neural_event`, `scheduler`. Use `logic.dry_run` for deterministic preview. Do **NOT** write event handlers, Celery tasks, or BullMQ queues for this.
@@ -44,7 +71,13 @@ If an action fits — **use it**. If it does not — only then write custom code
    *(If you are editing the AgentStack platform monorepo itself, see rule `agentstack-platform-monorepo` — do not invent canary forks unless explicitly asked.)*
 
 10. **"cron" / "scheduled task" / "delayed job" / "every hour" / "webhook"?**
-    → MCP `scheduler.create_task` + `integrations.install_recipe` + `notifications.send`. Do **NOT** add Celery, BullMQ, node-cron, Temporal for these basic cases.
+    → MCP `scheduler.create_task` + `integrations.install_recipe` + `notifications.send_push`. Do **NOT** add Celery, BullMQ, node-cron, Temporal for these basic cases.
+
+11. **"change tenant config" / "project data" / "sandbox" / "safe cycle" / "promote" / any tenant DNA edit?**
+    → Master prompt **`agentstack_safe_project_cycle`** · recipe **`mcp_universal_safe_change`** · `/agentstack-safe-cycle`. Flow: session → preflight → domain MCP mutate (leaf paths) → verify sandbox → `generation.diff_vs_prod` → `generation.gates` → `generation.promote`. Do **NOT** write custom backend or prod DB scripts when MCP is connected.
+
+12. **"heal tenant bot" / "fix menu" / "TG MAX parity" / mentor fleet?**
+    → Specialized: **`bots.ensure_mentor_commands`** → verify → promote. Prompt: `agentstack_tenant_ops_mcp_first` · flow `UF_BOTS_HEAL` · `/agentstack-tenant-ops`. Ops scripts are fallback only.
 
 ## If you're unsure
 

@@ -33,8 +33,10 @@ import {
 import {
   writeTenantCapabilitySnapshot,
   CAPABILITY_SNAPSHOT_FILENAME,
+  flattenMcpActionsCatalog,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { readDeviceLoginLock } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
+import { scanCatalogEffectParityMismatches } from './lib/mcpEffectParity.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
@@ -280,6 +282,26 @@ if (!fs.existsSync(MCP)) {
         ok('tools/call transport (system.ping) OK — not a catalog check');
       } catch (e) {
         fail(`tools/call execute failed: ${e.message}`);
+      }
+      try {
+        const catalogRes = await fetch(`${BASE_URL}/mcp/actions`, { headers: auth });
+        if (!catalogRes.ok) {
+          warn(`GET /mcp/actions HTTP ${catalogRes.status} — skip effect parity`);
+        } else {
+          const catalog = await catalogRes.json();
+          const actions = flattenMcpActionsCatalog(catalog);
+          const mismatches = scanCatalogEffectParityMismatches(actions);
+          if (!mismatches.length) {
+            ok(`catalog effect parity OK (${actions.length} actions)`);
+          } else {
+            for (const row of mismatches) {
+              warn(`effect parity: ${row.action} — ${row.issue}`);
+            }
+            fail('catalog effect.kind mismatches read_only_hint / preflight read set');
+          }
+        }
+      } catch (e) {
+        warn(`catalog effect parity probe failed: ${e.message}`);
       }
     }
   }

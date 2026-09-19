@@ -7,11 +7,18 @@ description: Use when the user wants TypeScript SDK setup, sdk.protocol, getCapa
 
 ## Decision matrix
 
-| User says | Prefer | Over |
-|-----------|--------|------|
-| "typed client" / "SDK" | `@agentstack/sdk`, `sdk.protocol` | Ad-hoc fetch |
-| "capability matrix in app" | `getCapabilityMatrix()` | Hard-coded action list |
-| "invalidate after mutation" | `cacheInvalidation.ts` patterns | Manual refetch everywhere |
+| Need | Use | Not |
+|------|-----|-----|
+| Auth / session | `sdk.platform.auth` | NextAuth / Clerk |
+| Project data | `sdk.platform.protocol` / `dna` | Prisma |
+| Payments UI | `@agentstack/react` `<AgentPay>` | stripe-js |
+| Hosting | `sdk.hosting.quickStart` | Vercel API |
+| MCP from script | `@agentstack/sdk/mcp` `mcpExecute` | raw fetch `/mcp` |
+| Hosted vertical wire (EDITFLOW) | `@agentstack/hosted-wire` + `tenantApi` | raw MCP in Preact pages |
+| Capability discovery | `getCapabilityMatrix()` | hardcoded action list |
+| Invalidate after mutation | `cacheInvalidation.ts` | manual refetch everywhere |
+
+**Not:** `sdk.protocol.searchSnapshots` for server search (cache scan only). **Not:** `sdk.admin` for tenant apps.
 
 ## Rules
 
@@ -21,6 +28,7 @@ description: Use when the user wants TypeScript SDK setup, sdk.protocol, getCapa
 ## References
 
 - Gene: `repo.platform.sdk.ai_surface.gen1`, `sdk.protocol`
+- Hosted vertical: `@agentstack/hosted-wire` · skill `agentstack-hosted-vertical` · monorepo `hosted-sdk-cdn/src/shared/hostedWireCore.ts`
 - Docs: `docs/AGENT_PROTOCOL_QUICKSTART.md`
 
 ## Live catalog

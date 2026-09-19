@@ -7,6 +7,10 @@ description: Bootstrap AgentStack in this project — OAuth Device Code login, c
 
 Run **in this order** — do not skip steps. Recover from errors in-place.
 
+## 0. Product archetype (what are you building?)
+
+Run `/agentstack-product-flow` or pick from `docs/plugins/PRODUCT_BUILD_FLOW.md` (`static_site`, `saas`, `ecommerce`, `game`, `bot_channel`, `migrate_legacy`). Store the choice for scaffold steps below.
+
 ## 1. Check existing auth
 
 Read `~/.cursor/mcp.json`. If `mcpServers.agentstack.headers.Authorization` is present **and** `GET https://agentstack.tech/api/auth/me` returns 200 with that Bearer, skip to step 4. Everyday check: `/agentstack-status`.

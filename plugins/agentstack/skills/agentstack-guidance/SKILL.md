@@ -1,6 +1,6 @@
 ---
 name: agentstack-guidance
-description: Use when the user mentions Platform Compass, guided paths, playbooks, start_path, complete_step, path_status, verify kinds, or funnel stats. Routes to guidance.* MCP actions via live GET /mcp/actions catalog.
+description: Use when the user mentions Platform Compass playbooks, guided paths, start_path, complete_step, path_status, verify kinds, or what to do next. Routes to guidance.* MCP — not static UI route maps (see agentstack-discovery).
 ---
 
 # AgentStack Guidance (Compass paths)

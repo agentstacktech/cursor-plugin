@@ -145,10 +145,24 @@ async function maybeRotateBearer(cfg) {
 
   const token = bearer.slice('Bearer '.length).trim();
   const payload = decodeJwtPayload(token);
-  if (!payload || typeof payload.exp !== 'number') return null;
+  if (!payload) return null;
+
+  const jwtType = payload.type || null;
+  // Device Code PAT (user_api_key): long-lived integration key — no OAuth refresh pair.
+  if (jwtType === 'user_api_key') return null;
+
+  if (typeof payload.exp !== 'number') return null;
 
   const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
   if (secondsLeft > REFRESH_BUFFER_SECONDS) return null;
+
+  // Plugin Connect (oauth_access_token): Cursor refreshes via /mcp/.well-known/oauth-token.
+  if (jwtType === 'oauth_access_token') {
+    return (
+      'AgentStack plugin MCP Bearer is near expiry. Click Connect on the plugin AgentStack MCP ' +
+      '(G-A174) or Reload Window — Device Code refresh file does not apply to Connect tokens.'
+    );
+  }
 
   let refreshToken = null;
   try {
@@ -196,7 +210,7 @@ async function maybeAutoDeviceLogin(gateKind) {
     'Opened AgentStack Activate in the browser (auto Device Code). Approve it, then ' +
     'Developer: Reload Window. Plugin MCP should appear — click Connect (G-A174), or use user-agentstack from ~/.cursor/mcp.json. ' +
     `If no tab opened, run ${AUTHORIZE_SLASH}. Free 1/1 keys: revoke an extra PAT at ` +
-    'https://agentstack.tech/me/keys first. Set AGENTSTACK_DISABLE_AUTO_LOGIN=1 to skip auto-login.'
+    'https://agentstack.tech/user/profile?tab=api first. Set AGENTSTACK_DISABLE_AUTO_LOGIN=1 to skip auto-login.'
   );
 }
 
@@ -233,6 +247,20 @@ async function main() {
   );
   const autoMsg = await maybeAutoDeviceLogin(gate.kind);
   if (autoMsg) extras.push(autoMsg);
+  else if (gate.kind === 'unsigned' && FROM_HOOK) {
+    extras.push(
+      'AgentStack hooks: no Bearer in ~/.cursor/mcp.json. If plugin MCP Connect is signed in, ' +
+      'that is normal — use agentstack.execute on the plugin server. For hooks/catalog snapshot ' +
+      `via user-agentstack, run ${AUTHORIZE_SLASH} once.`,
+    );
+  }
+
+  if (!pin) {
+    extras.push(
+      'AgentStack tenant scope unset: set context.project_id (MCP batch options) after projects.get_projects. ' +
+        'Prompt: GET /mcp/prompts/get?name=agentstack_session_setup · Command: /agentstack-product-flow',
+    );
+  }
 
   if (authHeaders) {
     await maybeRefreshCapabilitySnapshot(authHeaders);

@@ -300,10 +300,16 @@ try {
   if (prevSecret !== undefined) process.env.AGENTSTACK_OAUTH_CLIENT_SECRET = prevSecret;
 }
 
-assert.equal(gateNeedsDeviceLogin('unsigned'), true);
+assert.equal(gateNeedsDeviceLogin('unsigned'), false);
+assert.equal(gateNeedsDeviceLogin('unsigned', { includeUnsigned: true }), true);
 assert.equal(gateNeedsDeviceLogin('placeholder'), true);
 assert.equal(gateNeedsDeviceLogin('null_caps'), true);
 assert.equal(gateNeedsDeviceLogin('ok'), false);
+assert.equal(shouldAutoDeviceLogin('unsigned', { fromHook: true }), false);
+assert.equal(
+  shouldAutoDeviceLogin('unsigned', { fromHook: true, includeUnsigned: true }),
+  true,
+);
 assert.equal(shouldAutoDeviceLogin('null_caps', { fromHook: false }), false);
 assert.equal(shouldAutoDeviceLogin('null_caps', { fromHook: true, disable: true }), false);
 assert.equal(shouldAutoDeviceLogin('null_caps', { fromHook: true }), true);
