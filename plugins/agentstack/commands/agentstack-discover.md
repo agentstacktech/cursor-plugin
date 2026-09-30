@@ -12,13 +12,9 @@ Mirror of `onboarding.discovery_ladder` in `mcp_agent_instruction_index.json` (s
 <!-- BEGIN:AUTOGEN-DISCOVERY-LADDER-COMMAND -->
 0. `/mcp/prompts/get?name=agentstack_session_setup`
 1. `discovery.status`
-2. `/mcp/ai_prompt?mode=contract`
-3. `/mcp/actions/summary`
-4. `discovery.search / discovery.describe`
-5. `/mcp/discover/by_intent`
-6. `/mcp/actions?schemas=hot`
-7. `/mcp/prompts/get?name=agentstack_read_bootstrap`
-8. `/mcp/recipes`
+2. `discovery.search`
+3. `discovery.describe`
+4. `preflight.check`
 <!-- END:AUTOGEN-DISCOVERY-LADDER-COMMAND -->
 
 ## Intent routing

@@ -26,7 +26,11 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 
 ## Working project under OAuth
 
-Cursor `/agentstack-authorize` issues a **user-scoped** Bearer (ecosystem `project_id=1`). For any session-scoped work on a tenant project, pass **`context.project_id`** on `agentstack.execute`:
+Cursor `/agentstack-authorize` and ChatGPT MCP Connect issue a **user-scoped** Bearer (often ecosystem `project_id=1`). **SPA password login** uses the same model (`bearer_token`). Set **`context.project_id`** (or per-step **`params.project_id`**) to the workspace you are mutating — **membership RBAC** authorizes writes without OAuth reconnect when you are owner/admin/member on that project. Confirm **`auth.get_profile`** → **`mutation_allowed`** before tenant writes; **`auth.switch_project` + apply_bearer** only when **`required_client_action`** is **`apply_bearer`** (project-pinned API key). Check **`auth_surface.session_ready`**, **`project_access_granted`**, and **`preflight.check` → `can_execute_mutation`** before writes.
+
+List workspaces with membership: **`projects.get_projects`** params **`include_membership: true`**, optional **`group_by_access_tier: true`** — fields **`caller_role`**, **`access_tier`**, **`groups_by_access_tier`**. Pick **owner/admin** projects for admin mutations.
+
+For read-only routing you may pass **`context.project_id`** on `agentstack.execute`:
 
 ```json
 {

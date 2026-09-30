@@ -18,11 +18,13 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | activate selling / first sale / seller onboarding | `agentstack-commerce` | `commerce.sell.activate` |
 | project wallet / treasury | `agentstack-project-wallet` | `finance.project.*` + project wallet REST |
 | professional services / hire studio /services | `agentstack-services` | REST `/api/public/services/*` (no MCP) |
+| /showcase gallery card / featured demo / catalog drift | `agentstack-showcase` | `showcase.catalog.*` on **pid=1** only — tenant DNA → safe cycle |
 | Compass playbook / what next / start_path | `agentstack-guidance` | `guidance.*` — never static route guessing |
 | where in UI / PAGES_MAP / Discover hub | `agentstack-discovery` | UI manifest — never `guidance.start_path` |
 | store, data, config, 8DNA leaves | `agentstack-data` | `projects.patch_data`, `data_access.*` |
 | sandbox / canary / generation fork / X-AgentStack-Env | `agentstack-data` | `generation.*` |
 | publish site, /s/ URL, ZIP deploy | `agentstack-hosting` | `hosting.*` |
+| edit one file on live /s/ site (CSS/HTML/JS) | `agentstack-hosting` | `hosting.bucket.file.patch` (`search_replace`) — **not** `storage.upload` or `projects.patch_data` |
 | EDITFLOW / hosted vertical / workspace SaaS / `/s/*/editflow/` | `agentstack-hosted-vertical` | `@agentstack/hosted-wire` + `tenantApi` — not custom backend |
 | support ticket, staff inbox, psup | `agentstack-support` | `social.support.*` |
 | upload, quota, attachment, media | `agentstack-storage` | `storage.*`, REST upload |
@@ -48,7 +50,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 
 Pick the **primary** bucket first; consult others by reference for multi-step flows.
 
-**Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-integrations` (never `@stripe/stripe-js` for AgentStack checkout); **SMTP/Resend email** → `agentstack-messaging` (`messaging.*`); in-app/Web Push → `agentstack-signals` (`notifications.send_push`). Cursor plugin sign-in → `/agentstack-authorize`, not `auth.login`. Product archetype first → `/agentstack-product-flow` or `docs/plugins/PRODUCT_BUILD_FLOW.md`.
+**Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-integrations` (never `@stripe/stripe-js` for AgentStack checkout); **SMTP/Resend email** → `agentstack-messaging` (`messaging.*`); in-app/Web Push → `agentstack-signals` (`notifications.send_push`). Cursor plugin sign-in → `/agentstack-authorize`, not `auth.login`. **Claude asks for scoped API key first** → stop — use MCP Connect (web) or Device Code `--scope-preset=full` per `auth.get_profile.auth_surface.client_auth_ladder`; scoped keys are for CI/automation (`apikeys.create` preset `agent_runner`) only. Product archetype first → `/agentstack-product-flow` or `docs/plugins/PRODUCT_BUILD_FLOW.md`.
 
 ## User request → action (hot paths)
 
@@ -67,7 +69,9 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | Create payment / check status / refund | Payments | `payments.create`, `payments.get`, `payments.refund` | AgentPay — **not** Stripe SDK. Balance: `payments.get_balance`. |
 | Wallets (personal / commerce) | Wallets | `wallets.list`, `wallets.deposit`, `wallets.transfer` | User/commerce balances — not project treasury (`finance.project.*`). |
 | Project wallet / treasury | Finance | `finance.project.portfolio`, `finance.project.fund`, `finance.project.contribute` | Project-scoped treasury segments; pair with `commerce.sell.activate` payouts. |
-| Publish site / get /s/ URL | Hosting | `hosting.site.quick_start`, `hosting.deploy_files`, `hosting.release.promote` | Buckets + releases on one `project_id` — not Vercel/Netlify. |
+| Publish site / get /s/ URL | Hosting | `hosting.site.quick_start`, `hosting.deploy_files`, `hosting.release.promote` | Buckets + releases on one `project_id` — not Vercel/Netlify. **Greenfield** → recipe `mcp_hosting_quickstart`. |
+| Edit existing /s/ site (rollback path) | Hosting | `hosting.release.snapshot`, `hosting.deploy_files`, `hosting.release.promote` | Recipe **`mcp_hosting_edit_site_safe`** · prompt `agentstack_hosting_edit_site` — **not** quickstart. **One CSS/HTML line** → recipe `mcp_hosting_edit_text_file_v1` (`hosting.bucket.file.patch` `search_replace` only — **no** prior `file.get`; server refreshes `.gz` + `cache_bust`). |
+| TypeScript / SDK / OpenAPI | SDK + MCP | `GET /mcp/actions`, `sdk.protocol`, `getCapabilityMatrix()` | Operator scripts: `@agentstack/sdk`. Hosted page: import map `/sdk/v…` + cookie `/s/{pid}/mcp`. Contract: `/openapi-mcp.json` + `/openapi.json` — not raw fetch sprawl. |
 | CRM contact / deal pipeline | CRM | `crm.upsert_contact`, `crm.list_contacts`, `crm.create_deal`, `crm.move_deal_stage` | Contact 360: `crm.get_contact_360`; CSV: `crm.import_contacts`. |
 | Run project agent / fleet | Agents | `agents.list`, `agents.run`, `agents.create_from_template` | One heavy `agents.run` (`wait=true`) per sync `agentstack.execute` batch. |
 | Project AI orchestrator (copilot / support / bot brain) | Agents / Projects | `agents.orchestrate`, `projects.orchestrator.get`, `projects.orchestrator.patch` | **Single SoT:** DNA leaf config.project_orchestrator.agent_uuid. Workspace → channel=workspace; messenger support → channel=messenger + conversation_id=psup_p{pid}_u{uid}; bot → channel=bot + bot_uuid. Memory thread via `rag.memory_*` on memory_session_id from run input. Recipes: `mcp_project_operator_session`, `mcp_orchestrator_memory_bootstrap`, `mcp_project_faq_bootstrap`. |
@@ -89,7 +93,7 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | Assets / inventory | Assets | `assets.create`, `assets.list` | project_id in params. |
 | Analytics / usage / metrics | Analytics | `analytics.get_usage`, `analytics.get_metrics` | set_budget is not in the catalog. |
 | API keys (project) | API Keys | `apikeys.list`, `apikeys.create`, `apikeys.delete` | Always set `service_caps` on keys for AI agents. Legacy projects API-key aliases are not in catalog. |
-| Webhooks / integration recipes | Integrations / notifications | `integrations.list_recipes`, `integrations.install_recipe`, `notifications.send_push` | Inbound Stripe/callback → Integration Hub — not Checkout SDK. Legacy send alias deprecated — use send_push. |
+| Webhooks / integration recipes | Integrations / notifications | `integrations.list_recipes`, `integrations.connector_schema`, `integrations.install_recipe`, `integrations.test_hook` | Recipe `mcp_integrations_universal_connect_v1`. Missing connection → **`connection_not_found`**; missing scenario → **`scenario_not_found`** (`list_scenarios`). Legacy `webhooks.*` MCP removed. |
 | RBAC / permissions | RBAC | `rbac.check_permission`, `rbac.assign_role`, `rbac.get_roles` | Prefer FAP `data_access.set_policy` for field-level gates. |
 | In-app messenger | Social | `social.chat.post`, `social.chat.history` | Project-scoped chat — not a second WebSocket stack. |
 | Support staff inbox | Social / support | `social.support.inbox`, `social.support.history` | Staff plane — user channel uses `social.chat.*`. |
@@ -101,15 +105,11 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 ## Discovery ladder (when unsure)
 
 <!-- BEGIN:AUTOGEN-DISCOVERY-LADDER -->
-0. **Session setup (auth → project → context):** `/mcp/prompts/get?name=agentstack_session_setup` (GET)
+0. **Session probe:** `/mcp/prompts/get?name=agentstack_session_setup` (GET)
 1. **Registry status:** `discovery.status` (MCP)
-2. **Session bootstrap:** `/mcp/ai_prompt?mode=contract` (GET)
-3. **Catalog totals:** `/mcp/actions/summary` (GET)
-4. **Catalog search / describe:** `discovery.search / discovery.describe` (MCP)
-5. **Intent routing (NL):** `/mcp/discover/by_intent` (POST)
-6. **Hot schemas:** `/mcp/actions?schemas=hot` (GET)
-7. **Named playbook:** `/mcp/prompts/get?name=agentstack_read_bootstrap` (GET)
-8. **Multi-step recipes:** `/mcp/recipes` (GET)
+2. **Intent search:** `discovery.search` (MCP)
+3. **Describe chosen action:** `discovery.describe` (MCP)
+4. **Preflight then execute:** `preflight.check` (MCP)
 <!-- END:AUTOGEN-DISCOVERY-LADDER -->
 
 Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descriptor` — prefer those over raw summaries when disambiguating similar tools.
@@ -126,10 +126,22 @@ Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descripto
 | backend_api | mcp_session_setup | agentstack_use_case_backend_api | sdk.protocol | connect_api_key_60s |
 | project_setup | mcp_read_bootstrap | agentstack_use_case_project_setup | getCapabilityMatrix | — |
 | static_site | mcp_hosting_quickstart | agentstack_hosting_storefront | sdk.hosting.quickStart | hosting_deploy_publish |
+| hosted_site_edit | mcp_hosting_edit_site_safe | agentstack_hosting_edit_site | sdk.hosting.quickStart | hosting_edit_site_safe |
 | bot_channel | mcp_bots_simulate | agentstack_bots_studio | — | bot_go_live |
+| showcase_portfolio_storefront | mcp_showcase_catalog_safe | agentstack_showcase_ops | sdk.hosting.quickStart | UF_SHOWCASE_CATALOG |
 | migrate_legacy | mcp_session_setup | — | sdk.protocol | — |
 | hosted_vertical_saas | mcp_hosted_vertical_bootstrap | agentstack_hosted_vertical | @agentstack/hosted-wire | — |
 | key2unity_auth_portal | mcp_key2unity_auth_portal | agentstack_key2unity_site | @agentstack/hosted-wire/activateSession | — |
+| service_business | mcp_crm_contact_deal | agentstack_business_flows | — | — |
+| marketplace | mcp_commerce_orient | agentstack_commerce_flows | — | — |
+| community | mcp_bots_simulate | agentstack_social_messenger | — | — |
+| ai_product | mcp_knowledge_ingest | agentstack_knowledge_mentor | — | — |
+| support_bot | mcp_bots_simulate | agentstack_bots_studio | — | — |
+| knowledge_assistant | mcp_knowledge_ingest | agentstack_knowledge_mentor | — | — |
+| internal_tool | mcp_session_setup | agentstack_session_setup | — | — |
+| agency | mcp_crm_contact_deal | agentstack_crm_workspace | — | — |
+| freelancer | mcp_hosted_vertical_bootstrap | agentstack_hosted_vertical | — | — |
+| content_site | mcp_hosting_quickstart | agentstack_hosting_static_landing | — | — |
 <!-- END:AUTOGEN-PRODUCT-ARCHETYPES -->
 
 ## Universal MCP contract

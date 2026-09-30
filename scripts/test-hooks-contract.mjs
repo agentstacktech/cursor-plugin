@@ -36,6 +36,7 @@ function assertExists(rel) {
 // Cwd contract: hooks resolve when cwd = plugin package root
 assertExists('hooks/scripts/pre-shell-scan.mjs');
 assertExists('hooks/scripts/pre-mcp-cap-check.mjs');
+assertExists('hooks/scripts/pre-mcp-session-handoff.mjs');
 assertExists('hooks/scripts/session-end.mjs');
 assertExists('hooks/scripts/post-tool-failure.mjs');
 assertExists('hooks/scripts/pre-nav-index-edit.mjs');
@@ -45,6 +46,7 @@ runHook('pre-shell-scan.mjs', 'pre-shell-block.json', 2);
 runHook('pre-shell-scan.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-mcp-agentstack-execute.json', 0);
+runHook('pre-mcp-session-handoff.mjs', 'pre-mcp-agentstack-execute.json', 0);
 
 const help = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
   cwd: PLUGIN,

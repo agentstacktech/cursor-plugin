@@ -2,6 +2,12 @@
 /**
  * Wave 5 automated probes — MCP dedupe 0.4.16 (VERIFICATION_CHECKLIST §3 API slice).
  *
+ * Auth planes (v16 MCP-OAUTH-004):
+ * - **Connect (G-A174):** plugin mcp.json URL-only → user clicks Connect → /mcp/.well-known/oauth-*
+ * - **Device Code:** /agentstack-authorize → POST /api/oauth2/device/authorize → /activate
+ * This script probes anonymous MCP surface (tools/list, health) — not full OAuth round-trip.
+ * Full Connect CI: `npm run audit:mcp-oauth-connect` + pytest oauth_connect_ci.
+ *
  * Usage:
  *   node scripts/verify-mcp-surface-e2e.mjs
  *   AGENTSTACK_BASE_URL=https://agentstack.tech node scripts/verify-mcp-surface-e2e.mjs

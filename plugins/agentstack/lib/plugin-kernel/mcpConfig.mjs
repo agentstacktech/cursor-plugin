@@ -306,9 +306,13 @@ export function describeAgentstackAuthGate(cfg) {
   return { kind: 'ok', additionalContext: null };
 }
 
-/** sessionStart auto Device Code: unsigned, placeholder token, or prod-dead null caps. */
-export function gateNeedsDeviceLogin(kind) {
-  return kind === 'unsigned' || kind === 'placeholder' || kind === 'null_caps';
+/**
+ * sessionStart auto Device Code: placeholder token or prod-dead null caps.
+ * Unsigned is OAuth Connect-first unless `includeUnsigned` (legacy auto Device Code).
+ */
+export function gateNeedsDeviceLogin(kind, { includeUnsigned = false } = {}) {
+  if (kind === 'unsigned') return includeUnsigned;
+  return kind === 'placeholder' || kind === 'null_caps';
 }
 
 /**
@@ -316,9 +320,12 @@ export function gateNeedsDeviceLogin(kind) {
  * @param {string} kind
  * @param {{ fromHook?: boolean, disable?: boolean }} [opts]
  */
-export function shouldAutoDeviceLogin(kind, { fromHook = false, disable = false } = {}) {
+export function shouldAutoDeviceLogin(
+  kind,
+  { fromHook = false, disable = false, includeUnsigned = false } = {},
+) {
   if (disable || !fromHook) return false;
-  return gateNeedsDeviceLogin(kind);
+  return gateNeedsDeviceLogin(kind, { includeUnsigned });
 }
 
 /**
@@ -365,6 +372,45 @@ export function formatAgentstackStatusCard({
  * @param {Record<string, string>|null} headers
  * @param {{ baseUrl?: string, timeoutMs?: number }} [opts]
  */
+/**
+ * REST remint for workspace switch (hooks + Device Code automation).
+ * @param {Record<string, string>|null} authHeaders
+ * @param {number|string} targetProjectId
+ * @param {{ baseUrl?: string, timeoutMs?: number }} [opts]
+ * @returns {Promise<string|null>} new access_token
+ */
+export async function switchProjectViaRest(
+  authHeaders,
+  targetProjectId,
+  { baseUrl = 'https://agentstack.tech', timeoutMs = 8000 } = {},
+) {
+  if (!authHeaders?.Authorization?.startsWith('Bearer ')) return null;
+  const pid = Number(targetProjectId);
+  if (!Number.isFinite(pid) || pid < 1) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${String(baseUrl).replace(/\/$/, '')}/api/auth/switch-project`, {
+      method: 'POST',
+      headers: {
+        ...authHeaders,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ target_project_id: pid }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const data = body?.data && typeof body.data === 'object' ? body.data : body;
+    const token = data?.access_token || data?.accessToken;
+    return typeof token === 'string' && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchAuthMeBrief(headers, { baseUrl = 'https://agentstack.tech', timeoutMs = 2500 } = {}) {
   if (!headers) return null;
   const ctrl = new AbortController();

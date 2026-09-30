@@ -24,6 +24,8 @@ Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from
 
 Plugin **0.4.18** ships URL-only `plugins/agentstack/mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). After **Reload Window**, AgentStack MCP appears in the plugin panel — click **Connect** (G-A174). Do **not** put `${AGENTSTACK_ACCESS_TOKEN}` in that file (G-A162). Device Code (`/agentstack-authorize`) still writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks.
 
+**Tenant workspace (OAuth / password):** Connect or Device Code mints a **user-scoped** Bearer (JWT may show ecosystem `project_id=1`). Before tenant **mutations**, run recipe `mcp_session_setup` → set **`context.project_id`** → confirm **`auth.get_profile`** → **`mutation_allowed`** or **`session_ready`**. Call **`auth.switch_project`** only when **`required_client_action`** is **`apply_bearer`** (typical: project-pinned API key). Cursor hook **`pre-mcp-session-handoff.mjs`** runs REST switch only when a batch includes **`auth.switch_project`**. **ChatGPT-only OAuth:** if switch tokens are redacted, Disconnect → Connect after picking workspace, or Device Code.
+
 ## Lean `~/.cursor/mcp.json` shape
 
 ```json

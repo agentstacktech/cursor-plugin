@@ -35,7 +35,9 @@ Support threads use messenger delta plane with `psup_*` channel ids on project 8
 | messenger | `social.chat.read_get` | Get last-read state for a channel for the current user. |
 | messenger | `social.chat.read_set` | Update last-read pointer (read receipt) for a channel. |
 | messenger | `social.chat.unpin` | Unpin a message in a channel. |
+| user | `social.support.ai_binding_health` | After social.support.config.patch, confirm the bound agent and mode. |
 | staff | `social.support.assign` | Staff: assign ticket to staff user id or unassign (null). |
+| user | `social.support.config.patch` | Bind one project agent as support AI. Do not also set chat triggers on that agent. |
 | user | `social.support.eligibility` | Batch: which home projects expose support lounge vs private psup. |
 | user | `social.support.history` | Read caller's psup thread (user plane) — pair with social.support.send. |
 | staff | `social.support.inbox` | Staff desk: list open support tickets for a project. |

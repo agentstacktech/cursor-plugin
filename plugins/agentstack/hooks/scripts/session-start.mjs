@@ -20,6 +20,7 @@ import {
   readPinnedTenantProjectId,
   formatAgentstackStatusCard,
   fetchAuthMeBrief,
+  switchProjectViaRest,
   AUTHORIZE_SLASH,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
 import {
@@ -266,6 +267,28 @@ async function main() {
     await maybeRefreshCapabilitySnapshot(authHeaders);
     const rotateMsg = await maybeRotateBearer(cfg);
     if (rotateMsg) extras.push(rotateMsg);
+    if (pin && cfg) {
+      const bearer = authHeaders.Authorization?.startsWith('Bearer ')
+        ? authHeaders.Authorization.slice('Bearer '.length).trim()
+        : '';
+      const payload = bearer ? decodeJwtPayload(bearer) : null;
+      const jwtPid =
+        payload?.project_id != null ? Number(payload.project_id) : null;
+      if (jwtPid != null && Number(pin) !== jwtPid) {
+        const accessToken = await switchProjectViaRest(authHeaders, pin, {
+          baseUrl: BASE_URL,
+        });
+        if (accessToken) {
+          applyAgentstackMcpBearer(cfg, {
+            accessToken,
+            baseUrl: BASE_URL,
+            projectId: pin,
+          });
+          await writeMcpFile(cfg);
+          log(`session-start auto switch-project ${jwtPid} -> ${pin}`);
+        }
+      }
+    }
   }
 
   emitSessionStart(extras);

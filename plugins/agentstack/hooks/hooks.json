@@ -14,6 +14,7 @@
       }
     ],
     "beforeMCPExecution": [
+      { "command": "node ./hooks/scripts/pre-mcp-session-handoff.mjs" },
       { "command": "node ./hooks/scripts/pre-mcp-cap-check.mjs" }
     ],
     "postToolUse": [

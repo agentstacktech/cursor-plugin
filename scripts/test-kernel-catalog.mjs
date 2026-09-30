@@ -36,7 +36,10 @@ import {
   MCP_EXECUTE_TOOL_CANONICAL,
   toolsCallErrorDetail,
 } from './lib/mcpSurfaceProbe.mjs';
-import { extractMcpAction } from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
+import {
+  extractMcpAction,
+  extractMcpExecuteSteps,
+} from '../plugins/agentstack/lib/plugin-kernel/extractMcpAction.mjs';
 import { loadConfidentialClient, beginDeviceLoginLock, endDeviceLoginLock, isDeviceLoginLockBusy } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 
 const catalog = {
@@ -281,6 +284,17 @@ assert.equal(
 assert.equal(
   extractMcpAction({ params: { steps: [{ action: 'auth.login' }] } }),
   'auth.login',
+);
+
+assert.deepEqual(
+  extractMcpExecuteSteps({
+    arguments: {
+      params: {
+        steps: [{ action: 'auth.switch_project' }, { action: 'projects.get_stats' }],
+      },
+    },
+  }),
+  ['auth.switch_project', 'projects.get_stats'],
 );
 
 const prevDcr = process.env.AGENTSTACK_OAUTH_USE_DCR;

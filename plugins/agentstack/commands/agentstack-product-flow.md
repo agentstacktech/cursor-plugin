@@ -19,10 +19,22 @@ Interactive checklist: **what are you building?** → archetype → recipe → s
 - rest_crud / webhooks / automation / background_jobs → `backend_api`
 - project_bootstrap / economy_setup / buff_templates_library / logic_rules_battery → `project_setup`
 - landing / portfolio / html / zip → `static_site`
+- edit site / change site / existing site / rollback → `hosted_site_edit`
 - telegram / whatsapp / bot studio / inbound message → `bot_channel`
+- yacht / brokerage / lash / mebel → `showcase_portfolio_storefront`
 - supabase / firebase / auth0 / stripe migration → `migrate_legacy`
 - editflow / hosted workspace / vertical tenant / /s/ → `hosted_vertical_saas`
 - key2unity / ключ к единству / auth portal / shell_mode auth_portal → `key2unity_auth_portal`
+- cleaning / clinic / salon / услуг → `service_business`
+- marketplace / bazaar / маркетплейс / mercado → `marketplace`
+- community / forum / сообщество / comunidade → `community`
+- ai product / ии продукт / produto de ia → `ai_product`
+- support bot / helpdesk / бот поддержки / bot de suporte → `support_bot`
+- knowledge assistant / база знаний / assistente de conhecimento → `knowledge_assistant`
+- internal tool / внутренняя / ferramenta interna → `internal_tool`
+- agency / агентство / agência → `agency`
+- freelancer / фриланс / autônomo / autonomo → `freelancer`
+- blog / content site / блог / conteúdo → `content_site`
 <!-- END:AUTOGEN-ARCHETYPE-INFER-MAP -->
 
    - else → show full list from `product_archetypes` in index JSON or backend SKILL autogen table
@@ -43,6 +55,7 @@ Interactive checklist: **what are you building?** → archetype → recipe → s
 - `backend_api` → recipe `mcp_session_setup` · `sdk.protocol`
 - `project_setup` → `/agentstack-capability-matrix` · recipe `mcp_read_bootstrap`
 - `static_site` → `/agentstack-host-site`
+- `hosted_site_edit` → prompt `agentstack_hosting_edit_site` · recipe `mcp_hosting_edit_site_safe`
 - `bot_channel` → recipe `mcp_bots_simulate` · Bot Studio
 - `migrate_legacy` → `agentstack-migrator` agent
 - `hosted_vertical_saas` → `agentstack-hosted-vertical` skill · `hosted-vertical/AGENTS.md` · `vertical_workspace.bootstrap` · `publish_editflow_hosted.py`
