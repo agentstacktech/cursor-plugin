@@ -105,7 +105,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.18';
+const TARGET_VERSION = '0.4.21';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 

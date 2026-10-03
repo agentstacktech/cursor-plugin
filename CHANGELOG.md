@@ -2,6 +2,20 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.21] - 2026-10-03
+
+### Added
+
+- **Inverse orchestration SKILL example:** bounded MCP steps with stable `workflow_run_id` in `agentstack-agents-ai`.
+
+### Changed
+
+- **Plan graph routing:** MCP prompt `agentstack_plan_graph` + `UF_PLAN_GRAPH_ROUTINE` — no internal `docs/operations/` prose in publish bundle.
+
+### Fixed
+
+- **Prose leak gate:** removed forbidden ops doc path from SKILL (audit-plugin-prose-leaks).
+
 ## [0.4.18] - 2026-08-17
 
 ### Added

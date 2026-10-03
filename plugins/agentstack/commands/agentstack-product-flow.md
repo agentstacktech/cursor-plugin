@@ -24,14 +24,14 @@ Interactive checklist: **what are you building?** → archetype → recipe → s
 - yacht / brokerage / lash / mebel → `showcase_portfolio_storefront`
 - supabase / firebase / auth0 / stripe migration → `migrate_legacy`
 - editflow / hosted workspace / vertical tenant / /s/ → `hosted_vertical_saas`
-- key2unity / ключ к единству / auth portal / shell_mode auth_portal → `key2unity_auth_portal`
-- cleaning / clinic / salon / услуг → `service_business`
-- marketplace / bazaar / маркетплейс / mercado → `marketplace`
+- cleaning business / booking / клининг / cleaning → `service_business`
+- ai app / knowledge base product / ai product / ии продукт → `ai_product`
+- marketplace / listings / bazaar / маркетплейс → `marketplace`
+- internal tool / back office / внутренняя / ferramenta interna → `internal_tool`
 - community / forum / сообщество / comunidade → `community`
-- ai product / ии продукт / produto de ia → `ai_product`
+- key2unity / ключ к единству / auth portal / shell_mode auth_portal → `key2unity_auth_portal`
 - support bot / helpdesk / бот поддержки / bot de suporte → `support_bot`
 - knowledge assistant / база знаний / assistente de conhecimento → `knowledge_assistant`
-- internal tool / внутренняя / ferramenta interna → `internal_tool`
 - agency / агентство / agência → `agency`
 - freelancer / фриланс / autônomo / autonomo → `freelancer`
 - blog / content site / блог / conteúdo → `content_site`

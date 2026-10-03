@@ -77,7 +77,7 @@ For **any** tenant config / data change — master playbook before mutations:
 | Command | `/agentstack-safe-cycle` |
 | Playbook | `GET /mcp/prompts/get?name=agentstack_safe_project_cycle&project_id=<PID>` |
 | Recipe | `mcp_universal_safe_change` |
-| SoT | `docs/operations/ECOSYSTEM_SAFE_PROJECT_CYCLE.md` |
+| Contract | Prompt `agentstack_safe_project_cycle` and recipe `mcp_universal_safe_change` |
 
 Phases: session → preflight → domain mutate (leaf) → verify sandbox → diff → gates → promote.
 
@@ -95,7 +95,7 @@ For mentor menu drift — specialized case of safe cycle:
 | Verify | `bots.simulate` / `knowledge.playground` (one per batch) |
 | Ship | `generation.diff_vs_prod` → `generation.promote` |
 
-Cursor command: `/agentstack-tenant-ops`. Monorepo SoT: `docs/operations/TENANT_OPS_MCP_FIRST_PLAYBOOK.md`.
+Cursor command: `/agentstack-tenant-ops`. Prompt: `agentstack_tenant_ops_mcp_first`.
 
 ## Diagnose
 

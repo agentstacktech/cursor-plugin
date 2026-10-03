@@ -13,6 +13,14 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 |-----------|-------------------|
 | "create an agent" / "agent template" | `agents.templates_list`, `agents.template_preview`, `agents.create_from_template`, `agents.create` |
 | "run this agent" / "stop it" | `agents.run`, `agents.stop`, `agents.traces` |
+| "project plan" / "goals tree" / "task list" | `agents.plan_get`, `agents.plan_patch`, `agents.plan_refresh_affinities`, `agents.plan_claim`, `agents.orchestrate` — MCP prompt `agentstack_plan_graph`; flow `UF_PLAN_GRAPH_ROUTINE` |
+
+### Plan graph quick rules
+
+- Merge by stable node `id`; use `if_match_revision` on conflict.
+- `skill_ids` / `meta.gene_tags` = pinned; `meta.suggested_*` = hints (refresh without LLM).
+- Runtime skills still come from playbook + `resolve_run_skills` — suggestions are not exclusive.
+- Tenant prod: `UF_PLAN_GRAPH_ROUTINE` (sandbox → diff `ecosystem.orchestrator.task_list` → promote).
 | "promote / gates / rollout" | `agents.gates`, `agents.promote`, `agents.rollout_advance` |
 | "compose an app" / "validate UAM" | `ai_builder.manifest.get`, `ai_builder.manifest.validate`, `ai_builder.compose.preview` |
 | "generate image/media/content" | `generation.*` or `media.*` from the live capability catalog |
@@ -35,6 +43,32 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
       { "action": "agents.templates_list", "params": {} },
       { "action": "agents.create_from_template", "params": { "template_id": "support_triage", "project_id": 1025 } },
       { "action": "agents.run", "params": { "agent_uuid": "{{agent_uuid}}", "input": { "ticket_id": "T-123" } } }
+    ]
+  }
+}
+```
+
+### Inverse orchestration (bounded MCP steps)
+
+Reuse the same `workflow_run_id` for every step in one session. Honor `allowed_actions` from the instruction packet; on violation read `orchestration_step_violation` and resume — do not mint a new run id per retry.
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "context": { "project_id": 1025 },
+    "steps": [
+      {
+        "action": "guidance.start_path",
+        "params": { "playbook_id": "inverse_ops_v1", "workflow_run_id": "wr-abc-001" }
+      },
+      {
+        "action": "agents.run",
+        "params": {
+          "agent_uuid": "{{agent_uuid}}",
+          "input": { "inverse": { "workflow_run_id": "wr-abc-001", "step_index": 0 } }
+        }
+      }
     ]
   }
 }

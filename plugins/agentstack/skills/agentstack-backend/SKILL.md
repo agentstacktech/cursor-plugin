@@ -74,11 +74,12 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | TypeScript / SDK / OpenAPI | SDK + MCP | `GET /mcp/actions`, `sdk.protocol`, `getCapabilityMatrix()` | Operator scripts: `@agentstack/sdk`. Hosted page: import map `/sdk/v…` + cookie `/s/{pid}/mcp`. Contract: `/openapi-mcp.json` + `/openapi.json` — not raw fetch sprawl. |
 | CRM contact / deal pipeline | CRM | `crm.upsert_contact`, `crm.list_contacts`, `crm.create_deal`, `crm.move_deal_stage` | Contact 360: `crm.get_contact_360`; CSV: `crm.import_contacts`. |
 | Run project agent / fleet | Agents | `agents.list`, `agents.run`, `agents.create_from_template` | One heavy `agents.run` (`wait=true`) per sync `agentstack.execute` batch. |
-| Project AI orchestrator (copilot / support / bot brain) | Agents / Projects | `agents.orchestrate`, `projects.orchestrator.get`, `projects.orchestrator.patch` | **Single SoT:** DNA leaf config.project_orchestrator.agent_uuid. Workspace → channel=workspace; messenger support → channel=messenger + conversation_id=psup_p{pid}_u{uid}; bot → channel=bot + bot_uuid. Memory thread via `rag.memory_*` on memory_session_id from run input. Recipes: `mcp_project_operator_session`, `mcp_orchestrator_memory_bootstrap`, `mcp_project_faq_bootstrap`. |
+| Closed-loop autonomy (plan + verify + teams) | Agents / Discovery / Projects | `discovery.search`, `agents.plan_get`, `agents.plan_patch`, `agents.orchestrate`, `agents.team.create` | Prompt **`agentstack_closed_loop_autonomy`** · ladder `closed_loop_ladder`. Plan patch requires `if_match_revision`. Team goals: templates + parallel plan — prefer routed `agents.team.create` over bare `integrations.*` discovery rank. |
+| Project AI orchestrator (copilot / support / bot brain) | Agents / Projects | `agents.orchestrate`, `projects.orchestrator.get`, `projects.orchestrator.patch` | **Single SoT:** DNA leaf config.project_orchestrator.agent_uuid. Workspace → channel=workspace; messenger support → channel=messenger + conversation_id=psup_p{pid}_u{uid}; bot → channel=bot + bot_uuid. Memory thread via `rag.memory_*` on memory_session_id from run input. Recipes: `mcp_project_operator_session`, `mcp_orchestrator_memory_bootstrap`, `mcp_project_faq_bootstrap`. Link: **closed loop** prompt above for multi-step copilot goals. |
 | Import orchestrator marketplace pack | Projects / Assets | `projects.orchestrator.import_from_asset`, preset `project_orchestrator_pack_v2` | Post-deal fulfillment or `orchestrator.importPack` post-create action — not manual DNA blob replace. |
 | Bot channel / simulate | Bots | `bots.create`, `bots.set_brain`, `bots.simulate`, `bots.go_live` | `bots.simulate` is heavy LLM — one per batch; channels via `bots.attach_channel`. Lifecycle: `bots.get` returns `lifecycle` (`draft` \| `active` \| `paused` \| `archived`) and `cleanup_action` (`bots.archive` when retiring). **Canonical retire:** `bots.archive` — not ad-hoc deletes. |
 | Activate seller / storefront | Commerce | `commerce.sell.activate`, `commerce.storefront.seed_plan`, `commerce.storefront.hosted_publish` | Seller onboarding + hosted vitrine — distinct from marketplace REST (`commerce_rest`). |
-| Business head / organ projects | Business | `business.create_composite`, `business.command_snapshot`, `business.list_children` | Multi-project organism — distinct from `generation.*` 8DNA sandbox lineage. |
+| Business head / organ projects | Business | `business.create_composite`, `business.command_snapshot`, `business.list_children` | Multi-project organism — distinct from `generation.*` 8DNA sandbox lineage. **Self-service:** each organ project runs the same closed loop (route/plan/execute/verify) with `context.project_id` = child id. Prompt: `agentstack_business_organism` + `agentstack_closed_loop_autonomy`. |
 | Mentor / knowledge KB | Knowledge | `knowledge.kb.ingest`, `knowledge.playground`, `knowledge.config.patch` | Tenant KB + mentor simulate; `knowledge.playground` heavy — one per batch. **Index heal:** `knowledge.kb.heal_index` — not deprecated alias `knowledge.reindex`. Runbook: MCP prompts `agentstack_knowledge_*` + `/agentstack-safe-cycle`. |
 | AgentNet proofs / economy | AgentNet | `agentnet.bnb.proof_bundle_for_run`, `agentnet.genome.verify` | AGNT / agUSD rails — never legacy AGC ticker in new integrations. |
 | Compass / guided path | Guidance | `guidance.start_path`, `guidance.complete_step`, `guidance.match_playbook` | Platform Compass playbooks — not docs-nav `docs_nav.*`. |
@@ -131,18 +132,35 @@ Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descripto
 | showcase_portfolio_storefront | mcp_showcase_catalog_safe | agentstack_showcase_ops | sdk.hosting.quickStart | UF_SHOWCASE_CATALOG |
 | migrate_legacy | mcp_session_setup | — | sdk.protocol | — |
 | hosted_vertical_saas | mcp_hosted_vertical_bootstrap | agentstack_hosted_vertical | @agentstack/hosted-wire | — |
+| service_business | mcp_read_bootstrap | agentstack_crm_workspace | — | crm |
+| ai_product | mcp_knowledge_ingest | agentstack_knowledge_mentor | — | knowledge |
+| marketplace | mcp_session_setup | agentstack_commerce_flows | — | payments |
+| internal_tool | mcp_session_setup | agentstack_session_setup | — | session |
+| community | mcp_session_setup | agentstack_social_messenger | — | — |
 | key2unity_auth_portal | mcp_key2unity_auth_portal | agentstack_key2unity_site | @agentstack/hosted-wire/activateSession | — |
-| service_business | mcp_crm_contact_deal | agentstack_business_flows | — | — |
-| marketplace | mcp_commerce_orient | agentstack_commerce_flows | — | — |
-| community | mcp_bots_simulate | agentstack_social_messenger | — | — |
-| ai_product | mcp_knowledge_ingest | agentstack_knowledge_mentor | — | — |
 | support_bot | mcp_bots_simulate | agentstack_bots_studio | — | — |
 | knowledge_assistant | mcp_knowledge_ingest | agentstack_knowledge_mentor | — | — |
-| internal_tool | mcp_session_setup | agentstack_session_setup | — | — |
 | agency | mcp_crm_contact_deal | agentstack_crm_workspace | — | — |
 | freelancer | mcp_hosted_vertical_bootstrap | agentstack_hosted_vertical | — | — |
 | content_site | mcp_hosting_quickstart | agentstack_hosting_static_landing | — | — |
 <!-- END:AUTOGEN-PRODUCT-ARCHETYPES -->
+
+## Closed-loop autonomy (projects + business)
+
+<!-- BEGIN:AUTOGEN-CLOSED-LOOP -->
+After `context.project_id` is set, multi-step project or business goals use the **closed loop** (not keyword-only tool grep):
+
+Prompt: `GET /mcp/prompts/get?name=agentstack_closed_loop_autonomy` · business organs: `agentstack_business_organism`.
+
+- **Session + project:** /mcp/prompts/get?name=agentstack_session_setup — bind context.project_id
+- **Route goal:** discovery.search / discover/by_intent — use routed_goal and selected_workflow
+- **Plan graph:** agents.plan_get · agents.plan_patch (if_match_revision) · focus_node_id
+- **Skills + packet:** instruction_packet from routed step; hydrate skills on orchestrate path
+- **Execute + verify:** agents.run / orchestrate; completion not_evaluable is not success; diagnostics reconcile
+- **Business / team (optional):** /mcp/prompts/get?name=agentstack_business_organism for head+organs; agents.team.create + templates for specialist fleet
+
+Platform gate: `npm run audit:closed-loop-harness` · gene `repo.ops.closed_loop.harness.gen1`.
+<!-- END:AUTOGEN-CLOSED-LOOP -->
 
 ## Universal MCP contract
 
