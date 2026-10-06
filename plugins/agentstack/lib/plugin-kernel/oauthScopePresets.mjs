@@ -18,6 +18,7 @@ export const DEFAULT_SCOPES = [
   'storage:read',
   'storage:write',
   'agents:run',
+  'agents:admin',
   'bots:run',
   'bots:admin',
   'support:read',
