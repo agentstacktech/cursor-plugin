@@ -24,7 +24,7 @@ User intent
   → New REST (last resort — propose MCP action follow-up)
 ```
 
-Discovery ladder when unsure: session_setup prompt → `ai_prompt?mode=contract` → `discover/by_intent` → `actions?schemas=hot` (autogen in `agentstack-backend/SKILL.md`).
+Discovery ladder when unsure: `agents.work_next` first (bound project), then `discovery.search` only if no `packet.next_action` (autogen in `agentstack-backend/SKILL.md`).
 
 ## Why this order
 

@@ -23,6 +23,7 @@ The "nervous system" for async reactive flow. When a rule needs to *react* (emai
 - `scheduler.create_task`, `scheduler.list_tasks`, `scheduler.cancel_task`, `scheduler.execute_task`.
 - `integrations.install_recipe`, `integrations.list_connections`, `integrations.update_connection`, `integrations.rotate_secret`.
 - `notifications.send_push` (Web Push / in-app); email via `messaging.send_email`, `messaging.send_test_email`, `messaging.get_config`, `messaging.test_connection`, `messaging.get_auth_email_readiness`, `messaging.ensure_auth_templates`, or `NotificationsService.send_notification(channels=["email"])`.
+- **Unified Channel Plane:** `notifications.deliver`, `notifications.list_prefs`, `channels.enroll_source`, `notifications.delivery_status` — bot/email/in-app with fallback for security/auth/billing. Cross-link **`channels.*`** (`channels.deliver`, `channels.delivery_status`) for the same plane with project policy hooks. MCP prompt: `agentstack_channel_setup` · recipe `mcp_notify_channels_v1`. UI: Profile → Notifications (`/user/profile?tab=notifications`).
 - Templates live in `projects.config.notifications.templates` via `projects.patch_data`; provider secrets in Mail Hub (`protected.keys.notifications.*`).
 - `data_access.set_policy` with `on_change` (FAP → field trigger).
 
@@ -95,7 +96,7 @@ The "nervous system" for async reactive flow. When a rule needs to *react* (emai
 ## References
 
 - Live action catalog (filter `scheduler.*`, `integrations.*`, `notifications.*`, `data_access.*`): `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
-- Related skills: `./../agentstack-logic/SKILL.md` (rules that consume signals), `./../agentstack-data/SKILL.md` (FAP field triggers).
+- Related skills: `./../agentstack-logic/SKILL.md` (rules that consume signals), `./../agentstack-data/SKILL.md` (FAP field triggers), `./../agentstack-auth-rbac/SKILL.md` (MFA OTP delivery via linked bot channels).
 
 ## Triggers
 

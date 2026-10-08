@@ -11,11 +11,11 @@
 ### Recommended — paste this (live-catalog, no stale action counts)
 
 ```
-AgentStack gives your Cursor agent a full backend and on-platform hosting through one MCP tool (agentstack.execute).
+AgentStack's control plane is the Work Graph. After the project is bound, call agents.work_next (recipe mcp_work_loop_v1) before catalog search. If next_action is set, call it.
 
-Publish HTML or ZIP to a live /s/ URL, store project files, and run the live action catalog (discover anytime via GET /mcp/actions) for data (8DNA), auth/RBAC, logic rules, buffs, payments, agents fleet, RAG, messenger, CRM, integrations, and more.
+The same agentstack.execute tool also publishes HTML or ZIP to a live /s/ URL, stores project files, and runs the live catalog (GET /mcp/actions) for 8DNA, auth, logic, payments, RAG, and CRM.
 
-Install with OAuth Device Code in about 30 seconds (/agentstack-init). Rules, skills, commands, hooks, and agents teach the model to prefer AgentStack MCP over writing custom backend glue.
+Install with OAuth Device Code in about 30 seconds (/agentstack-init).
 
 Homepage: https://agentstack.tech · Privacy: https://agentstack.tech/privacy · Terms: https://agentstack.tech/terms · Support: support@agentstack.tech
 ```
@@ -25,15 +25,15 @@ Homepage: https://agentstack.tech · Privacy: https://agentstack.tech/privacy ·
 ### If the form has a **short** description (~200 chars)
 
 ```
-Host sites from HTML/ZIP, store project files, and run the live AgentStack MCP catalog through one tool (agentstack.execute). OAuth Device Code install in ~30s.
+Work Graph control plane: agents.work_next via one MCP tool (agentstack.execute). Also host sites and store files. OAuth install in ~30s.
 ```
 
 ### If the form asks for a **tagline** / subtitle (≤80 chars)
 
 ```
-Backend + static hosting for AI — one MCP, live action catalog
+Work Graph control plane: agents.work_next, one MCP
 ```
-*(70 characters — same as `listing.json` tagline)*
+*(52 characters — same as `listing.json` tagline)*
 
 ### Optional marketing shorthand (only if the form insists on a number)
 
@@ -47,11 +47,11 @@ the live-catalog description above for the official listing text.
 
 | Field | Paste |
 |-------|--------|
-| **Plugin name / display name** | `AgentStack — Backend, Hosting & AI MCP` |
+| **Plugin name / display name** | `AgentStack — Work Graph MCP` |
 | **Repository URL** | `https://github.com/agentstacktech/cursor-plugin` |
 | **Description** | Use **Recommended** block above |
 | **Category** | `Productivity` (or `AI` / `Backend` if offered) |
-| **Keywords** | `mcp, backend, hosting, static-site, 8dna, rag, payments, storage, publish, agentstack` |
+| **Keywords** | `work-graph, mcp, agents, hosting, backend, static-site, 8dna, rag, payments, storage, publish, agentstack` |
 | **Homepage** | `https://agentstack.tech` |
 | **Docs** | `https://github.com/agentstacktech/cursor-plugin#readme` |
 | **Privacy** | `https://agentstack.tech/privacy` |

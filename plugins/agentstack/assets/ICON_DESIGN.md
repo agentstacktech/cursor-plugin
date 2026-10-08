@@ -2,7 +2,9 @@
 
 Enforced by `scripts/validate-plugin.mjs` section 11.
 
-**Chip / marketplace `logo` (plugin.json):** `assets/logo.png` — 64×64 raster (same bytes as Core `GET /mcp/icon`). Cursor’s SVG→PNG preview drops strokes and often flattens `linearGradient` to an empty chip. PNG skips that pipeline.
+**MCP catalog / `GET /mcp/icon` SoT:** `shared/seo/assets/mcp_icon.png` — **400×400** transparent PNG (official registry, ChatGPT connector, `initialize` icons).
+
+**Chip / marketplace `logo` (plugin.json):** `assets/logo.png` — **64×64** derivative (`python scripts/sync_mcp_brand_icon.py` from SoT). Cursor’s SVG→PNG preview drops strokes and often flattens `linearGradient` to an empty chip. PNG skips that pipeline.
 
 SVG still shipped (validator + brand SoT):
 

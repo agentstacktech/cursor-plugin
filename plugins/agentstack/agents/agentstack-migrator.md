@@ -30,7 +30,7 @@ Look for:
 | Supabase Edge Functions       | Logic Engine V2 rules (triggered via `signal` / `webhook`)   |
 | Firebase Realtime DB          | 8DNA + `data_event` triggers                                 |
 | Stripe Checkout               | `<AgentPay>` + `payments.create` (ecosystem gateway)         |
-| Stripe Subscriptions          | `buffs.apply_persistent_effect`                              |
+| Stripe Subscriptions          | Three-rail grants (`agentstack-commerce`): paid checkout → `commerce.sell.activate` + `payments.create` → webhook/C24; manual → `buffs.grant_tenant_subscription`; platform → `buffs.grant_subscription` (PID=1). Not `apply_persistent_effect`. |
 | Pinecone / pgvector / Chroma  | `rag.collection_*` + `rag.document_*`                        |
 | Celery / BullMQ cron          | `scheduler.create_task`                                       |
 | Sendgrid / Postmark           | `NotificationsService.send_notification(channels=["email"])` or `messaging.*` MCP |

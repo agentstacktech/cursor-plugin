@@ -50,7 +50,7 @@ For read-only routing you may pass **`context.project_id`** on `agentstack.execu
 
 - Use **`context.project_id`** so logic/list/write tools see the correct session project.
 - Still pass **`params.project_id`** when the action schema requires it (resource target).
-- Do **not** expect a project-bound API key to switch tenants via `context` unless it has `cross_project`.
+- The working project for a user PAT is `resource_scope` plus `X-Project-ID` / `context.project_id`.
 
 ## Scoped API keys — the canonical pattern for AI agents
 
@@ -64,17 +64,8 @@ The agent must never be given a wide "master" key. Instead, `apikeys.create` emi
       { "action": "apikeys.create", "params": {
         "project_id": "{{project_id}}",
         "label": "cursor-agent-dev",
-        "service_caps": [
-          "projects.read",
-          "projects.write",
-          "8dna.read",
-          "8dna.write",
-          "logic.dry_run",
-          "logic.write",
-          "rag.read",
-          "rag.write",
-          "buffs.read"
-        ],
+        "preset": "agent_runner",
+        "service_caps": ["agents_run", "logic_write"],
         "ttl_days": 30
       }}
     ]
@@ -97,7 +88,7 @@ The response contains `{ "api_key": "<JWT>", "key_id": "...", "actor_kind": "age
 ## Pitfalls
 
 - Under OAuth, forgetting `context.project_id` leaves the session on ecosystem project `1` — many tools then look like they “do nothing” or hit the wrong DNA slice.
-- `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand. `apikeys.list` needs `api_keys` / `apikeys.read` — skip it on diagnose/bootstrap if the cap is absent.
+- `service_caps` are additive; a missing cap causes `service_cap_denied`. Start narrow, widen on demand. `apikeys.list` needs `api_keys` / `apikeys.read` — skip it on diagnose/bootstrap if the cap is absent. Preset `user_full` tracks the live catalog. `agent_runner` cannot `agents.ensure_agent` with `create=true` (`agents_admin`). `specialization_mismatch` is fleet eligibility — next step is `agents.work_next` with `handoff=true`.
 - `apikeys.create` requires the current session to already have the apikeys write capability — the OAuth Device Code flow grants this as part of approved scopes.
 - Anonymous project attach uses REST convert-anonymous (no MCP attach_to_user yet).
 

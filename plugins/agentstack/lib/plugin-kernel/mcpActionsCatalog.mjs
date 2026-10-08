@@ -63,7 +63,7 @@ async function fetchCatalogWithDelta(baseUrl, authHeaders, sinceEtag, snapPath) 
   const headers = { ...authHeaders };
   if (sinceEtag) headers['If-None-Match'] = `"${sinceEtag}"`;
 
-  const url = catalogActionsUrl(baseUrl, { sinceEtag, delta: Boolean(sinceEtag), hot: true });
+  const url = catalogActionsUrl(baseUrl, { sinceEtag, delta: Boolean(sinceEtag), hot: false });
   const res = await fetch(url, { headers });
   if (res.status === 304) {
     return { status: 304, res, body: null, etag: sinceEtag };

@@ -5,16 +5,16 @@
     "email": "support@agentstack.tech"
   },
   "metadata": {
-    "description": "AgentStack Cursor plugins — backend, hosting, and AI MCP via one tool (agentstack.execute).",
-    "version": "0.4.21",
+    "description": "AgentStack Work Graph control plane — agents.work_next via one tool (agentstack.execute).",
+    "version": "0.4.22",
     "pluginRoot": "plugins"
   },
   "plugins": [
     {
       "name": "agentstack",
       "source": "agentstack",
-      "description": "One MCP tool (agentstack.execute) for the live AgentStack catalog — hosting (/s/), storage, 8DNA, auth, logic, payments, agents, RAG, messenger, integrations. OAuth Device Code install.",
-      "version": "0.4.21",
+      "description": "Work Graph control plane: agents.work_next (mcp_work_loop_v1) via agentstack.execute. Catalog search is fallback. Also hosting (/s/), storage, 8DNA, logic, payments, RAG.",
+      "version": "0.4.22",
       "author": {
         "name": "AgentStack",
         "email": "support@agentstack.tech"
@@ -23,9 +23,11 @@
       "repository": "https://github.com/agentstacktech/cursor-plugin",
       "license": "MIT",
       "keywords": [
+        "work-graph",
         "mcp",
-        "backend",
+        "agents",
         "hosting",
+        "backend",
         "8dna",
         "rag",
         "payments",

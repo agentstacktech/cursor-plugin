@@ -7,7 +7,7 @@
  * @param {string} baseUrl
  * @param {{ sinceEtag?: string|null, delta?: boolean, hot?: boolean }} [opts]
  */
-export function catalogActionsUrl(baseUrl, { sinceEtag = null, delta = false, hot = true } = {}) {
+export function catalogActionsUrl(baseUrl, { sinceEtag = null, delta = false, hot = false } = {}) {
   const url = new URL('/mcp/actions', baseUrl);
   if (hot) url.searchParams.set('schemas', 'hot');
   if (sinceEtag) url.searchParams.set('since_etag', sinceEtag);

@@ -24,7 +24,7 @@ Builds on top of `/agentstack-scaffold-auth`. Assumes auth is already scaffolded
 
 - `src/components/AgentPay.tsx` — wraps `<AgentPay>` from `@agentstack/react`.
 - `src/app/billing/page.tsx` — pricing table, calls `payments.create` on purchase.
-- Rule suggestion (not auto-created): `grant_pro_on_payment_success` — see `/agentstack-scaffold-backend` output, user runs `logic.create` manually after review.
+- Monetization setup (not auto-created): paid checkout rail — `buffs.create_buff` → `commerce.sell.activate` → `payments.create` → webhook/C24 auto-grant (prompt `agentstack_tenant_subscription_monetization`). Support/comp: `buffs.grant_tenant_subscription` (prompt `agentstack_tenant_buff_grant`). Do not suggest `grant_*_on_payment_success` rules calling `apply_buff` / `apply_persistent_effect`.
 
 ### Admin panel
 

@@ -5,7 +5,7 @@ export const LIVE_CATALOG_PHRASE =
 /** Claude Code plugin manifest copy (SoT — validate-plugin checks plugin.json parity). */
 export const PLUGIN_MANIFEST_CLAUDE = {
   description:
-    'One MCP tool (agentstack.execute) for the full AgentStack catalog — hosting (/s/), storage, 8DNA, logic, buffs, payments, Agents Fleet, RAG, messenger, integrations. Live capabilities from GET /mcp/actions. OAuth Device Code via scripts/device-login.mjs; skills, commands, and agents route Claude to the platform instead of custom backend glue.',
+    'Work Graph control plane: bound project starts at agents.work_next (recipe mcp_work_loop_v1) via one MCP tool (agentstack.execute). Catalog search is fallback. Also hosting (/s/), storage, 8DNA, logic, payments, RAG. Live capabilities from GET /mcp/actions. OAuth Device Code via scripts/device-login.mjs.',
   keywords: [
     '8dna',
     'rules-engine',
@@ -26,7 +26,7 @@ export const PLUGIN_MANIFEST_CLAUDE = {
 /** Claude marketplace entry blurb (no version — plugin.json is semver SoT). */
 export const MARKETPLACE_ENTRY_CLAUDE = {
   description:
-    'AgentStack backend for Claude Code — publish sites (/s/), 8DNA, Logic Engine, payments, Agents Fleet, RAG. One MCP tool (agentstack.execute). Live catalog GET /mcp/actions.',
+    'Work Graph control plane for Claude Code: agents.work_next (mcp_work_loop_v1) via agentstack.execute. Catalog search is fallback. Also publish sites (/s/), 8DNA, payments, RAG.',
   keywords: ['mcp', '8dna', 'backend', 'hosting', 'agentstack', 'rag', 'payments'],
 };
 

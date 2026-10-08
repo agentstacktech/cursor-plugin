@@ -1,6 +1,6 @@
 ---
 name: agentstack-backend
-description: Entry point for AgentStack backend ecosystem. Use WHENEVER the user mentions backend, API, server, database, auth, storage, hosting, publish site, static site, ZIP deploy, RBAC, payments, rules, webhooks, scheduler, RAG, subscriptions, messenger, integrations, or feature flags. Routes to domain-specific skills.
+description: "One-shot domain router after agents.work_next names a domain action (auth, storage, payments, rules, RAG, hosting). Ongoing work, plans, and the agent loop use agentstack-work-graph first."
 ---
 
 # AgentStack Backend — Master Router
@@ -11,6 +11,7 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 
 | User intent signals | Sub-skill | Primary MCP |
 |---------------------|-----------|-------------|
+| ongoing work / next step / plan / claim / agent loop | `agentstack-work-graph` | `agents.work_next` |
 | CRM / pipeline / contact | `agentstack-crm` | `crm.*` |
 | business head / organ / command center | `agentstack-business` | `business.*` |
 | AGNT / agUSD / AgentNet | `agentstack-agentnet` | `agentnet.*` |
@@ -66,6 +67,10 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | Tenant sandbox / promote | Generation | **Prompt:** `agentstack_tenant_8dna_supply` · `generation.fork`, `generation.diff_vs_prod`, `generation.gates`, `generation.promote`, `generation.realign_to_prod` | Safe cycle default for paid tenants; strategy from `auto_promote_strategy`; not deploy scripts. |
 | Give user a 7-day trial | Buffs | `buffs.apply_temporary_effect` | Params: project_id, user_id, effect id/code, duration. |
 | List active subscriptions / buffs | Buffs | `buffs.list_active_buffs`, `buffs.get_effective_limits` | project_id, optional user_id. |
+| Grant platform tier (ecosystem op) | Buffs | `buffs.grant_subscription` | Prompt `agentstack_platform_subscription_grant` · PID=1 · personal premium/vip or project launch/business/scale. |
+| Grant tenant subscription (support/comp) | Buffs | `buffs.grant_tenant_subscription` | Prompt `agentstack_tenant_buff_grant` · recipe `mcp_tenant_manual_entitlement_grant` · tenant PID>1, project write. |
+| Grant tenant inventory (digital goods) | Commerce | `commerce.participant.grant_holding` | Pair with subscription grant when SKU is inventory-backed. |
+| Sell tenant subscription (paid checkout) | Commerce + Buffs | `buffs.create_buff` → `commerce.sell.activate` → `payments.create` | Auto-grant via webhook (`recipient_project_id`) or C24 — not manual `apply_buff`. Prompt `agentstack_tenant_subscription_monetization`. |
 | Create payment / check status / refund | Payments | `payments.create`, `payments.get`, `payments.refund` | AgentPay — **not** Stripe SDK. Balance: `payments.get_balance`. |
 | Wallets (personal / commerce) | Wallets | `wallets.list`, `wallets.deposit`, `wallets.transfer` | User/commerce balances — not project treasury (`finance.project.*`). |
 | Project wallet / treasury | Finance | `finance.project.portfolio`, `finance.project.fund`, `finance.project.contribute` | Project-scoped treasury segments; pair with `commerce.sell.activate` payouts. |
@@ -74,7 +79,7 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | TypeScript / SDK / OpenAPI | SDK + MCP | `GET /mcp/actions`, `sdk.protocol`, `getCapabilityMatrix()` | Operator scripts: `@agentstack/sdk`. Hosted page: import map `/sdk/v…` + cookie `/s/{pid}/mcp`. Contract: `/openapi-mcp.json` + `/openapi.json` — not raw fetch sprawl. |
 | CRM contact / deal pipeline | CRM | `crm.upsert_contact`, `crm.list_contacts`, `crm.create_deal`, `crm.move_deal_stage` | Contact 360: `crm.get_contact_360`; CSV: `crm.import_contacts`. |
 | Run project agent / fleet | Agents | `agents.list`, `agents.run`, `agents.create_from_template` | One heavy `agents.run` (`wait=true`) per sync `agentstack.execute` batch. |
-| Closed-loop autonomy (plan + verify + teams) | Agents / Discovery / Projects | `discovery.search`, `agents.plan_get`, `agents.plan_patch`, `agents.orchestrate`, `agents.team.create` | Prompt **`agentstack_closed_loop_autonomy`** · ladder `closed_loop_ladder`. Plan patch requires `if_match_revision`. Team goals: templates + parallel plan — prefer routed `agents.team.create` over bare `integrations.*` discovery rank. |
+| Closed-loop autonomy (plan + verify + teams) | Agents / Discovery / Projects | `discovery.search`, `agents.plan_get`, `agents.work_next`, `agents.ensure_agent`, `agents.plan_claim`, `agents.plan_execute`, `agents.plan_propose`, `agents.plan_apply_proposal`, `agents.plan_recovery_scan`, `agents.orchestrate`, `agents.team.create` | Prompt **`agentstack_closed_loop_autonomy`** · ladder `closed_loop_ladder`. Spine: **`work_next` → `ensure_agent` (provision) → `plan_claim` → `plan_execute`**. Thread same **`env_uuid`** on sandbox forks. Blocked: `diagnostics.harness_state` + `recovery.next_actions` (not `missing_roles`). Plan patch requires `if_match_revision`. Team goals: prefer routed `agents.team.create` over `integrations.*`. |
 | Project AI orchestrator (copilot / support / bot brain) | Agents / Projects | `agents.orchestrate`, `projects.orchestrator.get`, `projects.orchestrator.patch` | **Single SoT:** DNA leaf config.project_orchestrator.agent_uuid. Workspace → channel=workspace; messenger support → channel=messenger + conversation_id=psup_p{pid}_u{uid}; bot → channel=bot + bot_uuid. Memory thread via `rag.memory_*` on memory_session_id from run input. Recipes: `mcp_project_operator_session`, `mcp_orchestrator_memory_bootstrap`, `mcp_project_faq_bootstrap`. Link: **closed loop** prompt above for multi-step copilot goals. |
 | Import orchestrator marketplace pack | Projects / Assets | `projects.orchestrator.import_from_asset`, preset `project_orchestrator_pack_v2` | Post-deal fulfillment or `orchestrator.importPack` post-create action — not manual DNA blob replace. |
 | Bot channel / simulate | Bots | `bots.create`, `bots.set_brain`, `bots.simulate`, `bots.go_live` | `bots.simulate` is heavy LLM — one per batch; channels via `bots.attach_channel`. Lifecycle: `bots.get` returns `lifecycle` (`draft` \| `active` \| `paused` \| `archived`) and `cleanup_action` (`bots.archive` when retiring). **Canonical retire:** `bots.archive` — not ad-hoc deletes. |
@@ -92,13 +97,13 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 | Marketplace / auction / exchange | REST (same Core) | `GET /mcp/actions` domain **`commerce_rest`** (path hints only) | Not valid `step.action` — use HTTP `/api/marketplace/*`, `/api/exchange/*`. See [MCP_AND_ECOSYSTEM.md](../MCP_AND_ECOSYSTEM.md). |
 | Login / register / get profile | Auth | `auth.login`, `auth.register`, `auth.get_profile`, `auth.update_profile` | Session probe: `auth.get_profile` accepts aliases **`auth.me`**, **`auth.profile`**, `auth.status`, `auth.whoami` (same as REST `GET /api/auth/me`). Health: `discovery.health` → `system.ping`. Catalog: `discovery.list_actions` → `discovery.list`. Device Code via plugin OAuth — not a separate MCP action. |
 | Assets / inventory | Assets | `assets.create`, `assets.list` | project_id in params. |
-| Analytics / usage / metrics | Analytics | `analytics.get_usage`, `analytics.get_metrics` | set_budget is not in the catalog. |
+| Analytics / dashboard KPIs | Analytics | `analytics.project_snapshot` | Unified snapshot (activity, finance, CRM, product events). Use `include=` for optional slices. Legacy: `analytics.get_usage` (activity slice only), `analytics.get_metrics` (custom DNA counters `data.metrics[]` — not performance KPIs). set_budget is not in the catalog. |
 | API keys (project) | API Keys | `apikeys.list`, `apikeys.create`, `apikeys.delete` | Always set `service_caps` on keys for AI agents. Legacy projects API-key aliases are not in catalog. |
 | Webhooks / integration recipes | Integrations / notifications | `integrations.list_recipes`, `integrations.connector_schema`, `integrations.install_recipe`, `integrations.test_hook` | Recipe `mcp_integrations_universal_connect_v1`. Missing connection → **`connection_not_found`**; missing scenario → **`scenario_not_found`** (`list_scenarios`). Legacy `webhooks.*` MCP removed. |
 | RBAC / permissions | RBAC | `rbac.check_permission`, `rbac.assign_role`, `rbac.get_roles` | Prefer FAP `data_access.set_policy` for field-level gates. |
 | In-app messenger | Social | `social.chat.post`, `social.chat.history` | Project-scoped chat — not a second WebSocket stack. |
 | Support staff inbox | Social / support | `social.support.inbox`, `social.support.history` | Staff plane — user channel uses `social.chat.*`. |
-| Transactional email (Mail Hub) | Messaging | `messaging.send`, `messaging.get_config` | Ecosystem email templates — skill `agentstack-messaging`. Admin ops (`messaging.send_test_email`, etc.) are operator-only. |
+| Transactional email (Mail Hub) | Messaging | `messaging.send_email`, `messaging.get_config` | Ecosystem email templates — skill `agentstack-messaging`. Admin ops (`messaging.send_test_email`, etc.) are operator-only. |
 | Hosted vertical workspace | Vertical workspace | `vertical_workspace.bootstrap`, `checklist.get` | EDITFLOW / Key2Unity — skill `agentstack-hosted-vertical`; `POST /mcp` + flagship `X-Project-ID`. |
 | Tenant safe cycle | Generation | `generation.diff_vs_prod`, `generation.gates`, `generation.promote` | Command `/agentstack-safe-cycle` · prompt `agentstack_safe_project_cycle` — sandbox before prod DNA. |
 <!-- END:AUTOGEN-HOT-PATH-TABLE -->
@@ -107,10 +112,11 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 
 <!-- BEGIN:AUTOGEN-DISCOVERY-LADDER -->
 0. **Session probe:** `/mcp/prompts/get?name=agentstack_session_setup` (GET)
-1. **Registry status:** `discovery.status` (MCP)
-2. **Intent search:** `discovery.search` (MCP)
-3. **Describe chosen action:** `discovery.describe` (MCP)
-4. **Preflight then execute:** `preflight.check` (MCP)
+1. **Work Graph default (bound project):** `agents.work_next` (MCP)
+2. **Registry status:** `discovery.status` (MCP)
+3. **Schema lookup only — prefer packet.next_action:** `discovery.search` (MCP)
+4. **Describe chosen action:** `discovery.describe` (MCP)
+5. **Preflight then execute:** `preflight.check` (MCP)
 <!-- END:AUTOGEN-DISCOVERY-LADDER -->
 
 Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descriptor` — prefer those over raw summaries when disambiguating similar tools.
@@ -148,19 +154,46 @@ Catalog rows expose `when_to_use`, `instruction_hint`, and `capability_descripto
 ## Closed-loop autonomy (projects + business)
 
 <!-- BEGIN:AUTOGEN-CLOSED-LOOP -->
-After `context.project_id` is set, multi-step project or business goals use the **closed loop** (not keyword-only tool grep):
+After `context.project_id` is set, multi-step goals use **harness v2 closed loop** — prompt `agentstack_closed_loop_autonomy` · genes `core.agents.work_graph.gen1` · `core.mcp.instruction_plane.gen1` · `repo.ops.closed_loop.harness.gen1`.
 
-Prompt: `GET /mcp/prompts/get?name=agentstack_closed_loop_autonomy` · business organs: `agentstack_business_organism`.
+**Durable work:** Durable work (more than one read) enters the Work Graph: agents.plan_propose (create_plan or decompose_node), agents.plan_apply_proposal when validation.safe_to_auto_apply, then agents.work_next following next_action until state=idle, blocked, or recoverable. A single domain call (one CRM write, one file upload, discovery.search, auth.get_profile) stays a direct MCP action. Do not mark a node complete from prose — attach meta.verify_after_write_action evidence. Idle with an empty graph is valid.
+
+**Spine:** `agents.work_next` → `agents.ensure_agent` (when provision_required) → `agents.plan_claim` → `agents.plan_execute`.
+
+- **blocked_reason:** blocked_work[].blocked_reason is canonical (block_reason.REASON_PRIORITY); use recovery.next_actions — not validation.missing_roles.
+- **H5 parity:** agents.ensure_agent preview template_id must match agents.work_next top compatible_templates[0] for the same node (harness H5 / resolver_parity_v1).
+
+**Harness invariants (H6–H10):**
+- **H6** required_capabilities are mandatory — capability_mismatch blocks claim; route agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan; not handoff (capability_hard_gate_v1).
+- **H7** Commit-last provision: work_next blocked → ensure_agent create=false (H5 template_id) → create=true provisions with bind_node=False → eligibility gate → rollback on created_agent_not_eligible → next_action agents.plan_claim (bind+lease, if_match_revision); idempotent_replay when bound eligible agent exists.
+- **H8** Backlog scan uses planner eligibility (decomposition_status=needed) — not execution_ready; validation_ok reflects plan_valid (structural+semantic), not fleet gaps.
+- **H9** plan_propose runs ensure_proposal_facet_coverage (facet_repair, max 2 passes) after enrich for create_plan and decompose_node (including from_draft_tree meta under create_plan) — do not hand-patch semantic facet children; for facet gaps after other modes use mode=repair_plan.
+- **H10** meta.planning_artifact nodes are evidence-only (resolution=non_executable_artifact) — attach evidence on parent; plan_process_backlog and claim skip them for execution.
+- **H11** node.agent_id binding ≠ active claim lease — already_claimed requires status=in_progress with non-expired lease meta; bound agent on ready/pending is not already_claimed; retry ensure_agent idempotent_replay or plan_claim with if_match_revision.
 
 - **Session + project:** /mcp/prompts/get?name=agentstack_session_setup — bind context.project_id
-- **Route goal:** discovery.search / discover/by_intent — use routed_goal and selected_workflow
-- **Plan graph:** agents.plan_get · agents.plan_patch (if_match_revision) · focus_node_id
-- **Skills + packet:** instruction_packet from routed step; hydrate skills on orchestrate path
-- **Execute + verify:** agents.run / orchestrate; completion not_evaluable is not success; diagnostics reconcile
+- **Route goal:** Cold start: no project_id → agentstack_session_setup only. Do not discovery.search until context.project_id is set. Bound project: agents.work_next first; discovery.search only when packet.next_action is absent. Status-only poll → agents.work_status (no claim params).
+- **Plan read + sandbox:** agents.plan_get — include_execution_eligibility=true; optional env_uuid for sandbox slice
+- **Pick next work:** agents.work_next — read dependency_ready (structural) vs execution_ready (fleet) separately; blocked_work.execution_summary + instruction_packet.execution_summary; dependency_ready=false → wait deps; execution_ready=false with deps ok → provision before claim
+- **Draft / decompose (optional):** agents.plan_propose → validation.plan_valid + execution.execution_summary → agents.plan_apply_proposal (same env_uuid and validation_mode); persist_unexecutable for intake-only (H8); plan_process_backlog auto_apply=off; facet_repair bounded max 2 (H9); planning_artifact evidence-only (H10)
+- **Claim + execute:** agents.plan_claim — CAS revision; role_mismatch → handoff not retry loop → agents.plan_execute — only after claim; attach evidence for completion_predicates; ensure_agent create=false then create=true when provision_required (H5/H7)
+- **Verify + recover:** completion not_evaluable ≠ passed; verification_failed → agents.plan_recovery_scan — verification_failed candidates + stale claims; optional env_uuid; agents.plan_propose mode=repair_plan — target node_id; allow_generic_acceptance repair-only; agents.plan_apply_proposal — same env_uuid as propose on sandbox forks; agents.work_next handoff=true node_id=… — re-resolve after repair or provision; diagnostics reconcile
 - **Business / team (optional):** /mcp/prompts/get?name=agentstack_business_organism for head+organs; agents.team.create + templates for specialist fleet
 
-Platform gate: `npm run audit:closed-loop-harness` · gene `repo.ops.closed_loop.harness.gen1`.
+Dev gate: doctor --full (repo.ops.closed_loop.harness.gen1); key suites: ensure_agent_provision_e2e_v2, ensure_agent_idempotent_retry_v1, bind_vs_claim_semantics_v1, persist_unexecutable_v1, mcp_structured_domain_error_v1, resolver_parity_v1, instruction_plane_dry_v2, planner_runtime_parity_v3. · `npm run audit:closed-loop-harness`.
 <!-- END:AUTOGEN-CLOSED-LOOP -->
+
+## Operator admin BFF (ecosystem diagnostics)
+
+When triaging platform health or admin hub latency, prefer REST BFF patterns — not full composes on every tab load:
+
+- **DIAG_HUB_ETAG:** `GET /api/admin/hub-snapshot` — weak ETag + `If-None-Match` for 304; `source=shell` counts-only vs `source=full` legacy DNA totals.
+- **DIAG_CAPABILITIES_SPLIT:** lightweight `GET /api/diagnostics/capabilities/flags` vs heatmap `/capabilities/observability?since=` — avoid monolithic GET `/capabilities` on hub tabs.
+- **DIAG_PROBLEMS_CACHE:** prefer hub `problems_summary` (30s TTL aligned with hub); full `GET /api/diagnostics/problems` only on expand.
+- **DIAG_HUB_PHASES:** shellBeacons `admin_hub_phase_start` / `admin_hub_phase_done` with `duration_ms` for phased fetch triage.
+- **DIAG_SHOWCASE_WARM:** showcase-excl count projector warms at startup (300s TTL); commerce T0 KPI warm pairs with hub cold path.
+
+Genetic tags: `shared.diagnostics.unified.gen1` · `repo.platform.perf.batch.gen1`.
 
 ## Universal MCP contract
 

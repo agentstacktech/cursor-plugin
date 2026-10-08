@@ -79,13 +79,28 @@ export async function postToolsCallExecuteAlias(baseUrl, authHeaders) {
  * @returns {string}
  */
 export function toolsCallErrorDetail(body) {
+  const structured = body?.result?.structuredContent;
+  if (structured && typeof structured === 'object') {
+    const scErr = structured.error;
+    if (scErr && typeof scErr === 'object') {
+      const code = scErr.code || structured.error_code;
+      const msg = scErr.message || structured.message;
+      if (msg) {
+        return [code, msg].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
+      }
+    }
+    if (structured.ok === false && typeof structured.message === 'string') {
+      const code = structured.error?.code || structured.error_code;
+      return [code, structured.message].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
+    }
+  }
   const text = body?.result?.content?.[0]?.text;
   if (typeof text === 'string' && text.trim()) {
     const raw = text.trim();
     try {
       const parsed = JSON.parse(raw);
-      const code = parsed.error_code || parsed.code;
-      const err = parsed.error || parsed.message;
+      const code = parsed.error_code || parsed.code || parsed.error?.code;
+      const err = parsed.error?.message || parsed.error || parsed.message;
       if (err) {
         return [code, err].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
       }

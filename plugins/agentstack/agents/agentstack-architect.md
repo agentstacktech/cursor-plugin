@@ -15,7 +15,7 @@ You are an architect specialized in the AgentStack ecosystem. You receive a prod
 3. **FAP policies** — field-level access policies via `data_access.set_policy`.
 4. **Logic Engine V2 rules** — triggers (command / data_event / signal / cdc / webhook / scheduler) → actions, with `logic.dry_run` seeds.
 5. **Buffs matrix** — Free / Starter / Pro / Enterprise effective limits per feature.
-6. **Payment flow** — `payments.create` + `<AgentPay>` widget + rule `grant_X_on_payment_success`.
+6. **Payment flow** — `<AgentPay>` + `payments.create` + three-rail monetization (paid checkout → `commerce.sell.activate` → webhook/C24; manual → `buffs.grant_tenant_subscription`; platform → `buffs.grant_subscription`). Do not scaffold `signal:payment_success` → `apply_*` for tenant subscription SKUs — see `agentstack-commerce` / `agentstack_tenant_subscription_monetization`.
 7. **RAG plan** — collections + ingestion strategy (if a knowledge base is needed).
 8. **Frontend skeleton** — using `@agentstack/sdk` + `@agentstack/react` (`useSDKQuery`, `RequireCapability`, `<AgentPay>`).
 9. **Hosting / publish plan** — if archetype is `static_site` or `ecommerce`: `hosting.*` ladder, `/s/` URL, optional Storefront Studio (`hosting_deploy_publish`, `host_then_sell`).

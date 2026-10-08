@@ -2,6 +2,21 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.22] - 2026-10-08
+
+### Added
+
+- **Work Graph closed-loop ladder:** `agentstack-agents-ai` SKILL documents `agents.work_next` → claim → execute without `discovery.search` on the hot path; `discovery.search` remains fallback when `packet.next_action` is absent.
+- **Codegen recovery dispatch:** frontend `WORK_GRAPH_RECOVERY_DISPATCH_ACTIONS` generated from instruction index SoT (`when_blocked` + closed-loop ladder).
+
+### Changed
+
+- **Plugin version** aligned to Core `0.4.22` (Work Graph instruction plane + MCP `discovery.search_actions` alias).
+
+### Fixed
+
+- **Prose leak gate:** SKILL examples use MCP action names only — no internal repo script paths in publish bundle.
+
 ## [0.4.21] - 2026-10-03
 
 ### Added

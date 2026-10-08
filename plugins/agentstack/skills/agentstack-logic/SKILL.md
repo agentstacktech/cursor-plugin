@@ -13,7 +13,7 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 |-----------------|--------------------------------------------------------|--------------------------------------------------|
 | `command`       | MCP / REST call of `commands.execute`                  | "on signup..." when the signup action is called  |
 | `data_event`    | Write to 8DNA (create / update / delete)               | "when `project.data.orders.*` is added..."       |
-| `signal`        | Neural Router signals (user_joined, payment_success..) | "on `payment_success` → grant pro buff"          |
+| `signal`        | Neural Router signals (user_joined, payment_success..) | "on `payment_success` → see grant rails (commerce skill)" |
 | `cdc`           | Change-Data-Capture from DB                             | Rare, for legacy mirroring                       |
 | `webhook`       | Incoming webhook at `/api/webhooks/<name>`              | Stripe-like inbound callbacks                    |
 | `neural_event`  | Managed organism events                                 | Cross-cell reactions                             |
@@ -24,7 +24,7 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 | User says                                  | Trigger + action                                                  |
 |--------------------------------------------|-------------------------------------------------------------------|
 | "when user signs up give 7-day trial"      | `signal:user_created` → `buffs.apply_temporary_effect`            |
-| "on payment success grant pro"             | `signal:payment_success` → `buffs.apply_persistent_effect`        |
+| "on payment success grant pro/subscription" | **Paid tenant checkout:** webhook/C24 auto-grant — do **not** rule → `apply_*`. **Manual:** `buffs.grant_tenant_subscription` in rule `do`. **Platform:** `buffs.grant_subscription` (PID=1). **IAP boost only:** `buffs.apply_persistent_effect` |
 | "every hour recalc leaderboard"            | `scheduler:cron('0 * * * *')` → `commands.execute` recalc batch   |
 | "when order added send email"              | `data_event:project.data.orders.*.created` → `notifications.send_push` |
 | "when trial expired remove feature"        | `scheduler.create_task` + `logic.create` → `buffs.cancel_buff`         |
@@ -75,6 +75,7 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 
 ## Pitfalls
 
+- **Subscription side-effects:** do not chain `signal:payment_success` → `buffs.apply_buff` / `apply_persistent_effect` for tenant subscription SKUs — paid path is webhook/C24 (`agentstack-commerce` three-rail). Logic rules are for trials, IAP boosts, and manual `grant_tenant_subscription`.
 - `dry_run` expects a `seed`; the same seed replays deterministically (needed for CI).
 - Rules with `data_event` triggers on high-churn paths can thrash — scope by path prefix.
 - `logic.attach_template` copies on attach; updates to the template do not propagate.
@@ -82,7 +83,7 @@ Declarative rules (`when → do`), versioned, dry-runnable, attachable from temp
 ## References
 
 - Live action catalog (filter `logic.*`, `commands.*`): `GET https://agentstack.tech/mcp/actions` or run `/agentstack-capability-matrix`.
-- Related skills: `./../agentstack-signals/SKILL.md` (trigger sources), `./../agentstack-data/SKILL.md` (CDC / data_event triggers).
+- Related skills: `./../agentstack-commerce/SKILL.md` (grant rails / three-rail monetization), `./../agentstack-signals/SKILL.md` (trigger sources), `./../agentstack-data/SKILL.md` (CDC / data_event triggers).
 
 ## Triggers
 

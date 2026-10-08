@@ -13,7 +13,7 @@ One skill covers three organs because they share the same guiding principle: **d
 
 | User says                                  | Do this                                                                                           |
 |--------------------------------------------|---------------------------------------------------------------------------------------------------|
-| **tenant config / KB / fleet / menu DNA**  | **First:** `agentstack_safe_project_cycle` (master) · recipe `mcp_universal_safe_change` · `/agentstack-safe-cycle`. Detail: `agentstack_tenant_8dna_supply`. Never prod leaf writes without `generation_env_uuid`. |
+| **tenant config / KB / fleet / menu DNA**  | **First:** `agentstack_safe_project_cycle` (master) · recipe `mcp_universal_safe_change` · `/agentstack-safe-cycle`. Detail: `agentstack_tenant_8dna_supply`. Paid tenants: `auto_generation_mode` auto-forks before tracked writes; stale `generation_env_uuid` is cleared by middleware — omit uuid unless reading another fork. |
 | **mentor bot heal / menu parity / verify** | **`agentstack_tenant_ops_mcp_first`** — `bots.ensure_mentor_commands` → `bots.simulate` / `knowledge.playground` → `generation.promote`. `/agentstack-tenant-ops`. Scripts = fallback. |
 | "store user preferences"                   | MCP `projects.patch_data` path `users.<id>.prefs` with `write_mode=replace` — or REST `PATCH /projects/{id}/data` |
 | "store public project config"              | `projects.patch_data` path `config.<area>.<key>` (`write_mode=merge` on an object). `projects.update_project` is name/settings only |
