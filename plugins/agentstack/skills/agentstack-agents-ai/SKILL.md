@@ -149,6 +149,8 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `internal_execution_error` | agents.plan_recovery_scan → plan_propose mode=repair_plan; retry after catalog refresh |
 | `created_agent_not_eligible` | Provision rolled back — plan_propose mode=repair_plan or pick template with matching caps (H5) |
 | `ensure_agent_stamp_mismatch` | Replay create=false preview; create=true must match preview_template_id + graph_revision |
+| `plan_claim_required` | agents.plan_claim if_match_revision — in_progress lease before agents.plan_execute |
+| `plan_completion_blocked` | Attach completion_predicates evidence; do not retry agents.plan_execute until allowed |
 - **env_uuid:** Thread the same env_uuid across plan_get, plan_propose, plan_apply_proposal, plan_process_backlog, plan_recovery_scan, and work_next on sandbox forks.
 - **handoff:** role_mismatch / specialization_mismatch after claim → work_next handoff=true node_id=… — follow recovery.next_actions, do not retry same agent. capability_mismatch is missing required_capabilities: repair_plan or ensure_agent, not handoff.
 
