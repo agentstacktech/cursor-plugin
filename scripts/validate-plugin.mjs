@@ -540,6 +540,11 @@ if (fs.existsSync(hooksPath)) {
   if (hooks) {
     if (!hooks.hooks || typeof hooks.hooks !== 'object') fail('hooks.json: missing "hooks" object');
     else {
+      for (const key of Object.keys(hooks)) {
+        if (key !== 'version' && key !== 'hooks') {
+          fail(`hooks.json: disallowed key "${key}" — Cursor hooks manifest allows only version + hooks`);
+        }
+      }
       for (const [event, list] of Object.entries(hooks.hooks)) {
         if (!Array.isArray(list)) { fail(`hooks.json: hooks.${event} must be an array`); continue; }
         for (const entry of list) {

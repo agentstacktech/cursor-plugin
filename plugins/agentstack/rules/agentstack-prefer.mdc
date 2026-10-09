@@ -102,6 +102,7 @@ Bound project: call `agents.work_next` (recipe `mcp_work_loop_v1`) before catalo
 - **`authorization_pending`** (Device Code) — keep polling (not an error).
 - **Auth expired / 401 / MCP missing in the plugin / `service_caps_required_in_prod`** — Reload Window, click **Connect** on the plugin AgentStack MCP (G-A174 site login), or run `/agentstack-authorize` (Device Code). Do not ship an empty Bearer in plugin `mcp.json`.
 - **Cursor `mcp_auth` on user-agentstack** — do **not** invoke it from the agent. User clicks **Connect** on plugin MCP (G-A174). Device Code remains the fallback.
+- **Cursor MCP namespace** — `GetDynamicTools` → **`user-agentstack`** (from `~/.cursor/mcp.json` key `agentstack`), not `agentstack`. Tool: **`agentstack.execute`**. Only `mcp_auth` listed → unsigned: Connect or `/agentstack-authorize`, then Reload Window.
 - **HTTP 429 / rate limit** — honor `Retry-After` if present; otherwise exponential backoff (1s, 2s, 5s). Surface `X-Trace-Id`. Do **NOT** tight-loop.
 - **`mcp_sync_heavy_limit`** — more than one heavy LLM step (`bots.simulate`, `knowledge.playground`, `agents.run` wait=true) in a **sync** `agentstack.execute`. Run one heavy action per execute, or `options.async=true` and poll `discovery.job_status`. Sync `/mcp` is 60s `mcp_batch` for the whole batch; a single heavy step is 180s. This is not `service_cap_denied`.
 - **Network / 5xx** — retry with backoff (100ms, 500ms, 2s). Surface `X-Trace-Id` via `/agentstack-diagnose`.

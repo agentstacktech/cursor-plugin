@@ -110,6 +110,18 @@ if (!fs.existsSync(kernel)) {
 }
 console.log('OK   lib/plugin-kernel present via link');
 
+const refresh = spawnSync(process.execPath, ['scripts/refresh-cursor-runtime.mjs', '--fix'], {
+  cwd: path.resolve(__dirname, '..'),
+  encoding: 'utf8',
+});
+if (refresh.stdout) process.stdout.write(refresh.stdout);
+if (refresh.stderr) process.stderr.write(refresh.stderr);
+if ((refresh.status ?? 1) !== 0) {
+  console.error('WARN refresh-cursor-runtime --fix failed — run manually before Reload Window');
+} else {
+  console.log('OK   Cursor runtime cache synced (refresh --fix)');
+}
+
 if (maintainer) {
   const agentsSrc = path.join(MAINTAINER_ROOT, 'agents');
   const agentsDest = path.join(LINK_PATH, 'agents');

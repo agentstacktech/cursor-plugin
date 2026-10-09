@@ -8,7 +8,7 @@
  *
  * Usage:
  *   node scripts/refresh-cursor-runtime.mjs           # diagnose
- *   node scripts/refresh-cursor-runtime.mjs --fix    # strip $schema + sync manifests
+ *   node scripts/refresh-cursor-runtime.mjs --fix    # sync manifests + full package mirror when stale
  *   node scripts/refresh-cursor-runtime.mjs --purge   # delete agentstack cache dirs
  */
 import fs from 'fs';
@@ -42,6 +42,7 @@ const AUTH_SLICE = [
 
 const fix = process.argv.includes('--fix');
 const purge = process.argv.includes('--purge');
+const COPY_SKIP = new Set(['.git', 'node_modules']);
 
 let fails = 0;
 let fixed = 0;
@@ -97,6 +98,81 @@ function stripSchemaWrite(filePath, sotPath) {
   return true;
 }
 
+function countSkillDirs(pluginRoot) {
+  const skills = path.join(pluginRoot, 'skills');
+  if (!fs.existsSync(skills)) return -1;
+  return fs.readdirSync(skills, { withFileTypes: true }).filter((e) => e.isDirectory()).length;
+}
+
+function copyPackageRecursive(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (COPY_SKIP.has(entry.name)) continue;
+    const from = path.join(src, entry.name);
+    const to = path.join(dest, entry.name);
+    if (entry.isDirectory()) copyPackageRecursive(from, to);
+    else fs.copyFileSync(from, to);
+  }
+}
+
+/** Package roots Cursor may execute (cache extract, marketplace mirror, not SoT link). */
+function discoverAgentstackPackageRoots() {
+  const roots = new Set();
+  if (!fs.existsSync(CURSOR_PLUGINS)) return roots;
+  for (const file of walkJson(CURSOR_PLUGINS)) {
+    const norm = file.replace(/\\/g, '/');
+    if (!norm.toLowerCase().includes('agentstack')) continue;
+    if (!norm.endsWith('/.cursor-plugin/plugin.json')) continue;
+    roots.add(path.dirname(path.dirname(file)));
+  }
+  return roots;
+}
+
+function mirrorPackageIfStale(pluginRoot) {
+  if (samePath(pluginRoot, PLUGIN)) return;
+  const sotSkills = countSkillDirs(PLUGIN);
+  const destSkills = countSkillDirs(pluginRoot);
+  if (sotSkills < 0) return;
+
+  let stale = destSkills !== sotSkills;
+  if (!stale) {
+    const sotHooks = loadJson(SOT_HOOKS);
+    const destHooks = loadJson(path.join(pluginRoot, 'hooks', 'hooks.json'));
+    stale = !!(sotHooks && destHooks && JSON.stringify(sotHooks) !== JSON.stringify(destHooks));
+  }
+  if (!stale) return;
+
+  fail(`${pluginRoot}: package stale (skills ${destSkills}/${sotSkills})`);
+  if (!fix) return;
+  copyPackageRecursive(PLUGIN, pluginRoot);
+  fixed += 1;
+  ok(`mirrored full package → ${pluginRoot} (${sotSkills} skills)`);
+}
+
+function syncMarketplaceIndexes() {
+  const sot = loadJson(SOT_MARKETPLACE);
+  if (!sot) return;
+  const sotVer = String(sot.metadata?.version || sot.plugins?.[0]?.version || '');
+  for (const file of walkJson(CURSOR_PLUGINS)) {
+    if (path.basename(file) !== 'marketplace.json') continue;
+    const n = file.replace(/\\/g, '/').toLowerCase();
+    if (!n.includes('agentstack') && !n.includes('/marketplaces/')) continue;
+    const j = loadJson(file);
+    if (!j) continue;
+    const ver = String(j.metadata?.version || j.plugins?.[0]?.version || '');
+    const needsWrite =
+      j.$schema !== undefined ||
+      (sotVer && ver && ver !== sotVer) ||
+      (sot.plugins?.[0]?.logo && j.plugins?.[0]?.logo !== sot.plugins[0].logo);
+    if (!needsWrite) {
+      ok(`marketplace.json version=${ver || '?'} @ ${file}`);
+      continue;
+    }
+    fail(`${file}: marketplace drift (version=${ver || '?'} SoT=${sotVer})`);
+    if (fix) stripSchemaWrite(file, SOT_MARKETPLACE);
+  }
+}
+
 function syncAuthSlice(pluginRoot) {
   if (samePath(pluginRoot, PLUGIN)) return;
   for (const rel of AUTH_SLICE) {
@@ -111,7 +187,7 @@ function syncAuthSlice(pluginRoot) {
       /* missing in cache */
     }
     if (b && a.equals(b)) continue;
-    fail(`${dest}: auth-slice drift (${rel})`);
+    if (!fix) fail(`${dest}: auth-slice drift (${rel})`);
     if (fix) {
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.writeFileSync(dest, a);
@@ -209,6 +285,11 @@ function scanAndFix() {
   }
   for (const root of pluginRoots) syncAuthSlice(root);
 
+  syncMarketplaceIndexes();
+  for (const root of discoverAgentstackPackageRoots()) {
+    mirrorPackageIfStale(root);
+  }
+
   for (const file of walkJson(CURSOR_PLUGINS)) {
     const n = file.replace(/\\/g, '/').toLowerCase();
     if (path.basename(n) !== 'mcp.json') continue;
@@ -276,7 +357,7 @@ if (fix || purge) {
   console.log(`
 Next:
   1. Cursor → Developer: Reload Window
-  2. Confirm plugin shows 0.4.18 without "$schema" error; MCP appears in the plugin panel
+  2. Confirm plugin shows ${loadJson(SOT_PLUGIN_JSON)?.version || 'SoT'} without load errors; MCP appears in the plugin panel
   3. Click Connect on plugin AgentStack MCP, or /agentstack-authorize
 `);
   process.exit(fails ? 1 : 0);

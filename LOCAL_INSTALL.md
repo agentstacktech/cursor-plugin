@@ -83,7 +83,7 @@ See [FLOW.md](FLOW.md). After init you should have:
 | `ERR_MODULE_NOT_FOUND` on device-code | Run from synced tree with `lib/plugin-kernel/`; re-run `sync-plugin-kernel.mjs` in monorepo |
 | Device Code hangs then fails immediately | Ensure kernel poll handles 400 `authorization_pending` (0.4.14+) |
 | Two identical `agentstack_execute` tools | Deploy core 0.4.16; `diagnose-local.mjs` probes tools/list |
-| Two MCP servers in Cursor | Plugin 0.4.16+ removes `mcpServers`; `refresh-cursor-runtime.mjs --fix`; Reload |
+| Two MCP servers in Cursor | Plugin 0.4.18+ uses URL-only plugin `mcp.json` + user `~/.cursor/mcp.json`; `refresh-cursor-runtime.mjs --fix`; Reload. Agents: namespace **`user-agentstack`**, tool **`agentstack.execute`**. |
 | Junction needs elevation | Use install-local (junction, not symlink); avoid copying the folder |
 
 ### Stale cache locations (Windows)

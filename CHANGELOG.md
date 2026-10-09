@@ -17,6 +17,8 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 - **Prose leak gate:** SKILL examples use MCP action names only — no internal repo script paths in publish bundle.
 - **agents-ai SKILL:** closed-loop dev gate text passes `audit-plugin-prose-leaks` (no `agentstack-core/` path); `agents.run` recovery rows in when_blocked table.
+- **Runtime refresh:** `refresh-cursor-runtime.mjs --fix` mirrors full package when skill count/hooks drift; syncs marketplace.json version; `hooks.json` ships only `version` + `hooks` (no `_comment_layout`).
+- **Diagnose / install-local:** auto-run `refresh --fix` so marketplace cache cannot stay on 0.4.15 while local link is 0.4.22.
 
 ## [0.4.21] - 2026-10-03
 

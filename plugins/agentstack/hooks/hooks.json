@@ -33,6 +33,5 @@
         "matcher": "AI_NAVIGATION_MAP\\.md|AI_INDEX\\.md"
       }
     ]
-  },
-  "_comment_layout": "Scripts live under hooks/scripts/ (intentional vs Cursor template root scripts/). Cwd must be plugin root."
+  }
 }

@@ -354,16 +354,18 @@ if ((smoke.status ?? 1) !== 0) {
 }
 
 // Stale marketplace cache can keep $schema from 0.4.14 even when local link is clean.
-const runtimeScan = spawnSync(process.execPath, ['scripts/refresh-cursor-runtime.mjs'], {
+const runtimeScan = spawnSync(process.execPath, ['scripts/refresh-cursor-runtime.mjs', '--fix'], {
   cwd: ROOT,
   encoding: 'utf8',
 });
 process.stdout.write(runtimeScan.stdout || '');
 process.stderr.write(runtimeScan.stderr || '');
 if ((runtimeScan.status ?? 1) !== 0) {
-  fail('stale Cursor runtime cache has $schema — run: node scripts/refresh-cursor-runtime.mjs --fix');
+  fail(
+    'Cursor runtime cache drift — run: node scripts/refresh-cursor-runtime.mjs --fix (or --purge then Reload Window)',
+  );
 } else {
-  ok('Cursor runtime cache: no $schema in agentstack manifests');
+  ok('Cursor runtime cache synced (manifests + package mirror)');
 }
 
 console.log(`\nsummary: failed=${fails}`);
