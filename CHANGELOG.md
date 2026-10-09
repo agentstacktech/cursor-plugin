@@ -16,6 +16,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Fixed
 
 - **Prose leak gate:** SKILL examples use MCP action names only — no internal repo script paths in publish bundle.
+- **agents-ai SKILL:** closed-loop dev gate text passes `audit-plugin-prose-leaks` (no `agentstack-core/` path); `agents.run` recovery rows in when_blocked table.
 
 ## [0.4.21] - 2026-10-03
 

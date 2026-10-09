@@ -111,7 +111,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 3. **`agents.ensure_agent`** — preview `template_id` must match `work_next` top `compatible_templates[0]` (**H5** / `resolver_parity_v1`); saga **H7**: `create=false` then `create=true`; rollback on `created_agent_not_eligible`.
 4. **`agents.plan_claim`** (CAS `if_match_revision`; mismatch → `work_next handoff=true`) → **`agents.plan_execute`** — claim before execute (`WG_CLAIM_BEFORE_EXECUTE`).
 5. **Plan-only decompose:** `agents.plan_propose` with `validation_mode=persist_unexecutable` when fleet gaps expected (**H8** backlog = planner plane; **H9** facet_repair; **H10** skip `planning_artifact`).
-6. **Dev gate:** `python agentstack-core/scripts/closed_loop_harness.py doctor --full` · `npm run audit:closed-loop-harness`.
+6. **Dev gate:** `npm run audit:closed-loop-harness` (monorepo: closed_loop_harness `doctor --full`, gene `repo.ops.closed_loop.harness.gen1`).
 
 **Harness invariants (H6–H10):**
 - **H6** required_capabilities are mandatory — capability_mismatch blocks claim; route agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan; not handoff (capability_hard_gate_v1).
@@ -151,6 +151,12 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `ensure_agent_stamp_mismatch` | Replay create=false preview; create=true must match preview_template_id + graph_revision |
 | `plan_claim_required` | agents.plan_claim if_match_revision — in_progress lease before agents.plan_execute |
 | `plan_completion_blocked` | Attach completion_predicates evidence; do not retry agents.plan_execute until allowed |
+| `run_failed` | agents.work_next detail=compact — inspect run traces; repair_plan or reclaim before retry |
+| `invalid_parameters` | project_id and run_id required — agent_id is optional when run_id is supplied. |
+| `run_not_found` | No run row for run_id in this project — verify run_id from agents.run or traces. |
+| `run_mismatch` | run_id does not belong to the supplied agent_id — omit agent_id or fix the pair. |
+| `agent_not_found` | agent_id not in project fleet — use agents.team or plan_get before run_get. |
+| `waiting_for_approval` | Run status waiting_for_approval — agents.approve_run with approval_artifact_hash from run_detail. |
 - **env_uuid:** Thread the same env_uuid across plan_get, plan_propose, plan_apply_proposal, plan_process_backlog, plan_recovery_scan, and work_next on sandbox forks.
 - **handoff:** role_mismatch / specialization_mismatch after claim → work_next handoff=true node_id=… — follow recovery.next_actions, do not retry same agent. capability_mismatch is missing required_capabilities: repair_plan or ensure_agent, not handoff.
 
