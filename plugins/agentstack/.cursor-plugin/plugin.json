@@ -1,6 +1,6 @@
 {
   "name": "agentstack",
-  "displayName": "AgentStack — Work Graph MCP",
+  "displayName": "AgentStack",
   "version": "0.4.22",
   "description": "Work Graph control plane: bound project starts at agents.work_next (recipe mcp_work_loop_v1) via one MCP tool (agentstack.execute). Catalog search is fallback. Also hosting (/s/), storage, 8DNA, logic, payments, RAG. Live capabilities from GET /mcp/actions.",
   "author": {
@@ -10,7 +10,7 @@
   "license": "MIT",
   "repository": "https://github.com/agentstacktech/cursor-plugin",
   "homepage": "https://agentstack.tech",
-  "logo": "assets/logo.png",
+  "logo": "assets/icon.png",
   "keywords": [
     "work-graph",
     "mcp",

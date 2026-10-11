@@ -1,6 +1,6 @@
 # Cursor Marketplace — form fields (ready to paste)
 
-**Version:** 0.4.16 · **Repo:** https://github.com/agentstacktech/cursor-plugin  
+**Version:** 0.4.22 · **Repo:** https://github.com/agentstacktech/cursor-plugin  
 **Submit URL:** https://cursor.com/marketplace/publish  
 **SoT:** `plugins/agentstack/.cursor-plugin/plugin.json` + `.cursor-plugin/listing.json` · philosophy: Creation over Conflict (offer value, no competitor attacks)
 
@@ -47,7 +47,7 @@ the live-catalog description above for the official listing text.
 
 | Field | Paste |
 |-------|--------|
-| **Plugin name / display name** | `AgentStack — Work Graph MCP` |
+| **Plugin name / display name** | `AgentStack` |
 | **Repository URL** | `https://github.com/agentstacktech/cursor-plugin` |
 | **Description** | Use **Recommended** block above |
 | **Category** | `Productivity` (or `AI` / `Backend` if offered) |

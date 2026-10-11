@@ -87,6 +87,7 @@ const REQUIRED_PLUGIN_FILES = [
   'lib/plugin-kernel/deviceCodeClient.mjs',
   'assets/logo.svg',
   'assets/logo-dark.svg',
+  'assets/icon.png',
   'assets/logo.png',
   'assets/brand-mark.svg',
 ];
@@ -291,10 +292,12 @@ if (fs.existsSync(pluginPath)) {
     if (!logoPath) fail('plugin.json: logo is required by current Cursor plugin docs');
     else if (!fs.existsSync(path.join(PLUGIN, logoPath))) fail(`plugin.json: logo path does not exist: ${logoPath}`);
     else ok(`plugin.json: logo path exists (${logoPath})`);
-    if (logoPath && logoPath.endsWith('.png')) {
-      ok('plugin.json: logo is PNG (Cursor chip raster; SVG gradients often flatten to empty)');
+    if (logoPath === 'assets/icon.png') {
+      ok('plugin.json: logo is MCP brand icon (400×400 PNG from sync_mcp_brand_icon.py)');
+    } else if (logoPath && logoPath.endsWith('.png')) {
+      ok('plugin.json: logo is PNG');
     } else if (logoPath && !logoPath.endsWith('.svg')) {
-      warn('plugin.json: logo should be PNG (chip) or SVG (marketplace)');
+      warn('plugin.json: logo should be assets/icon.png, logo.png, or SVG fallback');
     }
     if (Array.isArray(plugin.keywords) && plugin.keywords.length >= 5) ok(`plugin.json: ${plugin.keywords.length} keywords`);
     else fail('plugin.json: at least 5 keywords recommended');

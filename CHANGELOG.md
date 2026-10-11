@@ -11,6 +11,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 ### Changed
 
+- **Marketplace vitrine:** `displayName` is `AgentStack` (not the long Work Graph subtitle). `logo` is `assets/icon.png` (400×400 MCP brand mark from `shared/seo/assets/mcp_icon.png` via monorepo `scripts/sync_mcp_brand_icon.py`); `assets/logo.png` remains the 64×64 chip derivative for local cache refresh.
 - **Plugin version** aligned to Core `0.4.22` (Work Graph instruction plane + MCP `discovery.search_actions` alias).
 
 ### Fixed
