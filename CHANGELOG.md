@@ -2,6 +2,13 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.23] - 2026-10-16
+
+### Changed
+
+- **Plugin version** aligned to Core **0.4.23** (Work Graph execution loop: REST/MCP plan slice parity, compact MCP wire, `mcp_work_loop_v1` spine).
+- **Work Graph MCP instructions:** `agentstack_work_graph` / `agentstack-agents-ai` SKILL — follow `packet.next_action`; compact `plan_get` / slim `discovery.describe` defaults on the wire.
+
 ## [0.4.22] - 2026-10-08
 
 ### Added

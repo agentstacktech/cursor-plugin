@@ -111,7 +111,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 3. **`agents.ensure_agent`** — preview `template_id` must match `work_next` top `compatible_templates[0]` (**H5** / `resolver_parity_v1`); saga **H7**: `create=false` then `create=true`; rollback on `created_agent_not_eligible`.
 4. **`agents.plan_claim`** (CAS `if_match_revision`; mismatch → `work_next handoff=true`) → **`agents.plan_execute`** — claim before execute (`WG_CLAIM_BEFORE_EXECUTE`).
 5. **Plan-only decompose:** `agents.plan_propose` with `validation_mode=persist_unexecutable` when fleet gaps expected (**H8** backlog = planner plane; **H9** facet_repair; **H10** skip `planning_artifact`).
-6. **Dev gate:** `npm run audit:closed-loop-harness` (monorepo: closed_loop_harness `doctor --full`, gene `repo.ops.closed_loop.harness.gen1`).
+6. **Dev gate:** `npm run test:closed-loop:doctor:full` · `npm run audit:closed-loop-harness` (from platform monorepo root).
 
 **Harness invariants (H6–H10):**
 - **H6** required_capabilities are mandatory — capability_mismatch blocks claim; route agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan; not handoff (capability_hard_gate_v1).
@@ -128,22 +128,44 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `no_compatible_agent` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
 | `planning_required` | agents.plan_propose mode=create_plan or decompose_node — strategic/decomposition node, not execution |
 | `planning_blocked` | agents.plan_propose mode=decompose_node or plan_process_backlog — finish planner plane first |
-| `dependency_blocked` | dependency_ready=false — wait deps; do not ensure_agent |
+| `dependency_blocked` | agents.plan_get to inspect upstream deps; do not ensure_agent; do not claim |
+| `checklist_gate_open` | Complete checklist gates on meta.checklist_gates (plan_node entity); agents.plan_get node_id=… — do not patch description as a blocker |
+| `claim_empty` | agents.work_next handoff=true — no nodes claimed; refresh claimable set |
+| `node_not_found` | agents.plan_get include_claimable=true — node_id absent from graph slice |
+| `node_not_eligible` | agents.plan_get on the same home — node failed evaluate_work_eligibility; agents.work_next handoff=true and follow recovery.next_actions |
+| `plan_claim_owner_conflict` | agents.work_next handoff=true — another operator holds the lease |
 | `role_mismatch` | work_next handoff=true node_id=… — do not retry same agent |
 | `specialization_mismatch` | work_next handoff=true — follow recovery.next_actions |
 | `capability_mismatch` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
 | `verification_failed` | agents.plan_recovery_scan → plan_propose mode=repair_plan |
 | `fully_provisionable` | ensure_agent create=false (H5) then create=true (preferred over create_from_template) |
+| `generation_fork_required` | auto_generation_mode on — call generation.fork (or omit env_uuid for MCP auto-fork), then retry with env_uuid from receipt on home=project |
 | `supersede_in_progress` | agents.plan_get then wait/retry — in-progress node cannot be superseded without options.force_supersede_in_progress (retryable) |
+| `unknown_skill_id` | Fix node skill_ids to ecosystem catalog (agents.skills_list); use rag.retrieval / rag.ingest_acceptance — not MCP action names; re-run plan_propose after enrich |
+| `missing_required_dependency` | agents.plan_propose mode=decompose_node or repair_plan — facet DAG edge missing (storage→knowledge, logic→scheduler); inspect dependencies_to_add |
 | `planner_duplicate_children` | agents.plan_get — semantic facet children already exist; re-propose is a no-op or use mode=replan_subtree |
 | `plan_revision_conflict` | agents.plan_get reload if_match_revision; retry claim/apply (retryable) |
+| `text_revision_conflict` | patch_text — re-read the field from plan_get; refresh expected_text_sha256 |
+| `ambiguous_anchor` | patch_text search_replace — longer find, set count, or graph_file_get text window |
 | `expired_claim` | agents.plan_reclaim_stale — lease expired; do not treat as dependency_blocked |
 | `wip_full` | Agent WIP cap reached — agents.plan_get then complete/release in_progress claims; retry plan_claim |
+| `plan_graph_load_failed` | Graph slice failed to load — plan_get then retry patch or claim |
+| `pin_inventory_full` | Goal pin inventory at active_max — unpin a slot (plan affinity) then retry agents.plan_claim |
+| `pin_slot_not_found` | No matching goal pin slot for skill_id and agent_id — agents.plan_get pin_slots then retry |
+| `claim_heartbeat_failed` | No active in_progress lease for node_id — plan_claim the node before heartbeat_only pin ops |
+| `session_user_required` | Personal or session-scoped home needs a signed-in operator user_id in MCP context (or principal_user_id on the tool). |
+| `permission_denied` | Project RBAC denied — rbac.check_permission, confirm membership, or dev-operator persona for platform substrate tools. |
+| `run_not_found` | No run row for run_id in this project — verify run_id from agents.run or traces. |
+| `run_not_waiting_for_approval` | agents.run_get — run is not waiting_for_approval; poll status before approve_run |
+| `approval_hash_mismatch` | agents.run_get — approval_artifact_hash must match pending tool call on the run |
+| `import_pack_personal_home_unsupported` | Orchestrator import pack requires home=project; personal session graphs use export/read paths only. |
 | `terminal` | agents.work_next — skip terminal node; pick another leaf (completed/cancelled not claimable) |
 | `waiting_input` | agents.work_next — ask_user recovery; do not plan_claim until operator input arrives |
 | `waiting_approval` | agents.work_next — wait approval gate; agents.plan_get to inspect approval meta |
 | `decomposition_blocked` | agents.plan_propose mode=decompose_node — parent has open decomposition children |
 | `already_claimed` | agents.work_next — check in_progress lease (H11); handoff if wrong agent; plan_reclaim_stale if stale |
+| `not_executable` | kind note and catalog are memory, not work. Do not plan_claim them. Claim a task, step, or issue on the same home. |
+| `status_not_claimable` | agents.plan_get on the same home. Claim only pending or ready nodes, or an in_progress node whose lease has expired. |
 | `skill_mismatch` | agents.work_next handoff=true — skill_ids mismatch; follow recovery.next_actions |
 | `missing_capability` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
 | `internal_execution_error` | agents.plan_recovery_scan → plan_propose mode=repair_plan; retry after catalog refresh |
@@ -152,11 +174,39 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `plan_claim_required` | agents.plan_claim if_match_revision — in_progress lease before agents.plan_execute |
 | `plan_completion_blocked` | Attach completion_predicates evidence; do not retry agents.plan_execute until allowed |
 | `run_failed` | agents.work_next detail=compact — inspect run traces; repair_plan or reclaim before retry |
+| `plan_focus_invalid` | agents.work_next detail=compact — refresh focus_node_id from packet next_action |
+| `orchestrator_binding_stale` | agents.reconcile_binding repair=true |
 | `invalid_parameters` | project_id and run_id required — agent_id is optional when run_id is supplied. |
-| `run_not_found` | No run row for run_id in this project — verify run_id from agents.run or traces. |
+| `batch_semantic_anchor_conflict` | Align step NL with batch goal anchor — use one goal_text for the batch or split batches |
+| `conflicting_semantic_anchor` | Same as batch_semantic_anchor_conflict — per-step NL vs batch semantic_contract |
+| `batch_semantic_anchor_required` | Batch includes a mutating or non-plain-read step: set options.goal, focus_node_id, or plan_execute_mode. Plain reads and audit_batch_allowed steps may run without goal (see audit_batch_policy + discovery.describe effect.audit_batch_allowed) |
+| `dependency_error` | Batch DAG: a prior step failed or was skipped — fix the first failed step_id; not a domain error on this action. For notifications.deliver alone, check channel binding. |
+| `template_not_found` | agents.templates_list — template_id missing from catalog; agents.template_preview before create=true |
+| `provisioning_failed` | create_from_template or bind failed — retry agents.ensure_agent create=false (H5) then create=true |
+| `validation_error` | Re-run agents.plan_propose; inspect validation.errors — agents.plan_get before plan_apply_proposal |
+| `mode_not_implemented` | Use create_plan | decompose_node | replan_subtree | repair_plan | optimize_plan — discovery.describe agents.plan_propose |
+| `node_already_atomic` | Complexity too low to decompose — agents.work_next or agents.plan_get for another leaf |
+| `replan_budget_exceeded` | Max replans per node exceeded — agents.plan_propose mode=repair_plan on parent or escalation |
+| `forbidden` | Project write or project_admin required — rbac.check_permission before agents.reconcile_binding repair=true |
+| `env_uuid_project_only` | Omit env_uuid or set home=project and retry. self and project_self are the session row and cannot take a sandbox slice. |
+| `graph_home_unknown` | home must be project, self, or project_self. Retry agents.plan_get or agents.plan_patch with one of those values. |
+| `graph_home_address_required` | Personal home needs a resolved session address. Pass home on the tool and ensure the operator session has user_id before patch. |
 | `run_mismatch` | run_id does not belong to the supplied agent_id — omit agent_id or fix the pair. |
 | `agent_not_found` | agent_id not in project fleet — use agents.team or plan_get before run_get. |
 | `waiting_for_approval` | Run status waiting_for_approval — agents.approve_run with approval_artifact_hash from run_detail. |
+| `workflow_batch_bind_failed` | agents.reconcile_binding repair=true — guidance bind failed; check member row / session |
+| `workflow_batch_context_bind_failed` | agents.reconcile_binding repair=true — batch context bind failed |
+| `workflow_state_key_stamp_failed` | agents.reconcile_binding repair=true — workflow_state_key stamp failed |
+| `workflow_inverse_sync_failed` | agents.reconcile_binding repair=true — inverse session sync failed |
+| `workflow_batch_receipt_failed` | Step succeeded but receipt stamp failed — agents.reconcile_binding repair=true; retry read-only agents.plan_get before mutating |
+| `workflow_receipt_context_missing` | Active workflow receipt missing workflow_run_id or step_id — agents.reconcile_binding repair=true; agents.work_next handoff=true detail=compact |
+| `workflow_receipt_unbound` | Workflow receipt not bound to session — agents.reconcile_binding repair=true |
+| `orchestration_step_violation` | Action outside current workflow step — follow packet next_action / inverse_resume; do not mutate graph until step advances |
+| `workflow_batch_bind_skipped` | Binding skipped (read-only batch or missing workflow_run_id) — agents.work_next handoff=true if follow-up work is expected |
+| `work_next_enrich_failed` | agents.work_next handoff=true detail=compact |
+| `work_next_repeat_reconcile_failed` | agents.reconcile_binding repair=true |
+| `guidance_user_row_not_found` | auth.get_profile then agents.work_next handoff=true |
+| `dependency_failed` | Prerequisite batch step did not succeed — fix or remove dependsOn; poll verification_action before retrying dependent step |
 - **env_uuid:** Thread the same env_uuid across plan_get, plan_propose, plan_apply_proposal, plan_process_backlog, plan_recovery_scan, and work_next on sandbox forks.
 - **handoff:** role_mismatch / specialization_mismatch after claim → work_next handoff=true node_id=… — follow recovery.next_actions, do not retry same agent. capability_mismatch is missing required_capabilities: repair_plan or ensure_agent, not handoff.
 
