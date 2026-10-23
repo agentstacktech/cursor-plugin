@@ -14,8 +14,10 @@
       }
     ],
     "beforeMCPExecution": [
+      { "command": "node ./hooks/scripts/pre-mcp-auth-bridge.mjs" },
       { "command": "node ./hooks/scripts/pre-mcp-session-handoff.mjs" },
-      { "command": "node ./hooks/scripts/pre-mcp-cap-check.mjs" }
+      { "command": "node ./hooks/scripts/pre-mcp-cap-check.mjs" },
+      { "command": "node ./hooks/scripts/pre-mcp-semantic-anchor-hint.mjs" }
     ],
     "postToolUse": [
       { "command": "node ./hooks/scripts/post-tool-telemetry.mjs" }

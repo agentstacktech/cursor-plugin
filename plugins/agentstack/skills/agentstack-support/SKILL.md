@@ -20,7 +20,7 @@ Support threads use messenger delta plane with `psup_*` channel ids on project 8
 <!-- BEGIN:AUTOGEN-SUPPORT-MATRIX -->
 | Plane | action | when_to_use |
 |-------|--------|-------------|
-| messenger | `social.chat.crdt_state` | Read the current CRDT snapshot + raw updates for a channel. |
+| messenger | `social.chat.crdt_state` | Read the CRDT snapshot and update log for a channel. |
 | messenger | `social.chat.crdt_update` | Apply a Y.js CRDT update to a channel's shared document (bodies / pins / deletes). |
 | messenger | `social.chat.delta` | Unified incremental delta for a messenger channel — one call returns new messages, |
 | messenger | `social.chat.history` | Messenger channel history — use social.support.history for support tickets. |

@@ -1,10 +1,39 @@
 /**
- * Shared MCP surface contract probes (0.4.16+).
- * Canonical copy for cursor-plugin, vscode-plugin, and publication scripts.
+ * MCP surface contract probes (0.4.16+).
+ * SoT: provided_plugins/scripts/lib/mcpSurfaceProbe.mjs — keep in sync via sync-plugin-kernel.mjs.
  */
 
 export const MCP_EXECUTE_TOOL_CANONICAL = 'agentstack.execute';
 export const MCP_EXECUTE_TOOL_ALIAS = 'agentstack_execute';
+
+/** Minimal tools/list row for unit tests (outputSchema + inputSchema wire). */
+export function minimalExecuteToolFixture() {
+  return {
+    name: MCP_EXECUTE_TOOL_CANONICAL,
+    outputSchema: { type: 'object', properties: { ok: { type: 'boolean' } } },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        steps: { type: 'array' },
+        context: { type: 'object', properties: { project_id: { type: 'integer' } } },
+        options: {
+          type: 'object',
+          properties: {
+            async: {},
+            idempotency_key: {},
+            goal: {},
+            focus_node_id: {},
+            plan_execute_mode: {},
+            execution_intent: {},
+            stopOnError: {},
+            continueOnError: {},
+            recipe_id: {},
+          },
+        },
+      },
+    },
+  };
+}
 
 /**
  * @param {string} baseUrl
@@ -39,6 +68,49 @@ export function evaluateSingleToolSurface(tools) {
   if (tools[0]?.name !== MCP_EXECUTE_TOOL_CANONICAL) {
     return { ok: false, reason: `expected ${MCP_EXECUTE_TOOL_CANONICAL}, got ${tools[0]?.name}` };
   }
+  const schema = tools[0]?.outputSchema;
+  const union = schema && (schema.oneOf || schema.anyOf || schema.$defs);
+  if (!schema || schema.type !== 'object' || union) {
+    return {
+      ok: false,
+      reason:
+        'agentstack.execute outputSchema root must be type:object with properties (Cursor drops tools/call on oneOf+$defs)',
+    };
+  }
+  const inputCheck = evaluateExecuteInputSchema(tools);
+  if (!inputCheck.ok) return inputCheck;
+  return { ok: true };
+}
+
+/** @param {object[]} tools */
+export function evaluateExecuteInputSchema(tools) {
+  const schema = tools[0]?.inputSchema;
+  if (!schema || typeof schema !== 'object') {
+    return { ok: false, reason: 'agentstack.execute missing inputSchema' };
+  }
+  const props = schema.properties;
+  if (!props?.steps || !props?.context?.properties?.project_id) {
+    return { ok: false, reason: 'inputSchema wire missing steps or context.project_id' };
+  }
+  const optProps = props?.options?.properties;
+  if (!optProps || typeof optProps !== 'object') {
+    return { ok: false, reason: 'inputSchema missing options.properties' };
+  }
+  for (const key of [
+    'async',
+    'idempotency_key',
+    'goal',
+    'focus_node_id',
+    'plan_execute_mode',
+    'execution_intent',
+    'stopOnError',
+    'continueOnError',
+    'recipe_id',
+  ]) {
+    if (!(key in optProps)) {
+      return { ok: false, reason: `inputSchema.options missing ${key}` };
+    }
+  }
   return { ok: true };
 }
 
@@ -47,6 +119,37 @@ export function evaluateSingleToolSurface(tools) {
  * @param {string} baseUrl
  * @param {Record<string, string>} authHeaders
  */
+/**
+ * Session truth probe — tools/list and discovery.list alone can false-green.
+ * @param {string} baseUrl
+ * @param {Record<string, string>} authHeaders
+ */
+export async function postToolsCallAuthGetProfile(baseUrl, authHeaders) {
+  const root = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
+  const res = await fetch(`${root}/mcp`, {
+    method: 'POST',
+    headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: MCP_EXECUTE_TOOL_CANONICAL,
+        arguments: {
+          steps: [{ id: 'auth1', action: 'auth.get_profile', params: {} }],
+          options: { stopOnError: true },
+        },
+      },
+      id: 3,
+    }),
+  });
+  if (!res.ok) throw new Error(`tools/call auth.get_profile HTTP ${res.status}`);
+  const body = await res.json();
+  if (body?.result?.isError !== false) {
+    throw new Error(`auth.get_profile: ${toolsCallErrorDetail(body)}`);
+  }
+  return body;
+}
+
 export async function postToolsCallExecuteAlias(baseUrl, authHeaders) {
   const root = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
   const res = await fetch(`${root}/mcp`, {
@@ -79,28 +182,13 @@ export async function postToolsCallExecuteAlias(baseUrl, authHeaders) {
  * @returns {string}
  */
 export function toolsCallErrorDetail(body) {
-  const structured = body?.result?.structuredContent;
-  if (structured && typeof structured === 'object') {
-    const scErr = structured.error;
-    if (scErr && typeof scErr === 'object') {
-      const code = scErr.code || structured.error_code;
-      const msg = scErr.message || structured.message;
-      if (msg) {
-        return [code, msg].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
-      }
-    }
-    if (structured.ok === false && typeof structured.message === 'string') {
-      const code = structured.error?.code || structured.error_code;
-      return [code, structured.message].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
-    }
-  }
   const text = body?.result?.content?.[0]?.text;
   if (typeof text === 'string' && text.trim()) {
     const raw = text.trim();
     try {
       const parsed = JSON.parse(raw);
-      const code = parsed.error_code || parsed.code || parsed.error?.code;
-      const err = parsed.error?.message || parsed.error || parsed.message;
+      const code = parsed.error_code || parsed.code;
+      const err = parsed.error || parsed.message;
       if (err) {
         return [code, err].filter(Boolean).join(': ').replace(/\s+/g, ' ').trim().slice(0, 280);
       }

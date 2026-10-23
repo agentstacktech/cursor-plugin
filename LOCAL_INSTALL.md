@@ -79,6 +79,7 @@ See [FLOW.md](FLOW.md). After init you should have:
 | Symptom | Fix |
 |---------|-----|
 | **`Unsupported plugin manifest $schema version`** | Cursor is loading a **stale marketplace cache** (often 0.4.14). Local link can already be clean. Run `node scripts/refresh-cursor-runtime.mjs --fix`, then **Reload Window**. If it persists: `--purge` and re-add the marketplace. |
+| **Installed but empty `plugins/cache/agentstack`** | Marketplace registered the plugin before files extracted (or failed fetch). Run `node scripts/diagnose-local.mjs`, then `node scripts/refresh-cursor-runtime.mjs --purge`, **Reload Window**, re-add marketplace or `install-local.mjs --force`. Click **Connect** on plugin MCP (G-A174) — skills need OAuth, not an empty cache dir alone. |
 | Plugin not listed after install | Reload Window; confirm `install-local.mjs --check` |
 | `ERR_MODULE_NOT_FOUND` on device-code | Run from synced tree with `lib/plugin-kernel/`; re-run `sync-plugin-kernel.mjs` in monorepo |
 | Device Code hangs then fails immediately | Ensure kernel poll handles 400 `authorization_pending` (0.4.14+) |

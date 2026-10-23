@@ -111,7 +111,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 3. **`agents.ensure_agent`** — preview `template_id` must match `work_next` top `compatible_templates[0]` (**H5** / `resolver_parity_v1`); saga **H7**: `create=false` then `create=true`; rollback on `created_agent_not_eligible`.
 4. **`agents.plan_claim`** (CAS `if_match_revision`; mismatch → `work_next handoff=true`) → **`agents.plan_execute`** — claim before execute (`WG_CLAIM_BEFORE_EXECUTE`).
 5. **Plan-only decompose:** `agents.plan_propose` with `validation_mode=persist_unexecutable` when fleet gaps expected (**H8** backlog = planner plane; **H9** facet_repair; **H10** skip `planning_artifact`).
-6. **Dev gate:** `npm run test:closed-loop:doctor:full` · `npm run audit:closed-loop-harness` (from platform monorepo root).
+6. **Dev gate:** `npm run audit:closed-loop-harness` (monorepo closed-loop harness doctor).
 
 **Harness invariants (H6–H10):**
 - **H6** required_capabilities are mandatory — capability_mismatch blocks claim; route agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan; not handoff (capability_hard_gate_v1).
@@ -145,6 +145,11 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `missing_required_dependency` | agents.plan_propose mode=decompose_node or repair_plan — facet DAG edge missing (storage→knowledge, logic→scheduler); inspect dependencies_to_add |
 | `planner_duplicate_children` | agents.plan_get — semantic facet children already exist; re-propose is a no-op or use mode=replan_subtree |
 | `plan_revision_conflict` | agents.plan_get reload if_match_revision; retry claim/apply (retryable) |
+| `invalid_state_transition` | agents.plan_get node status — legal FSM only; completed↔cancelled retries are no-ops |
+| `plan_patch_ops_limit` | Too many ops[] in one plan_patch — split batches; plan_get between writes (max 50) |
+| `plan_patch_inline_body_spill` | Inline prose exceeds chunk seal — agents.graph_file_put; follow spill recovery in error data |
+| `wire_budget_exceeded` | Slice too large — narrow node_id, max_depth, or use detail=cards (detail=body|full past wire budget) |
+| `invalid_detail` | detail/projection/limit validation — see problem.field in error payload |
 | `text_revision_conflict` | patch_text — re-read the field from plan_get; refresh expected_text_sha256 |
 | `ambiguous_anchor` | patch_text search_replace — longer find, set count, or graph_file_get text window |
 | `expired_claim` | agents.plan_reclaim_stale — lease expired; do not treat as dependency_blocked |
@@ -155,6 +160,12 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `claim_heartbeat_failed` | No active in_progress lease for node_id — plan_claim the node before heartbeat_only pin ops |
 | `session_user_required` | Personal or session-scoped home needs a signed-in operator user_id in MCP context (or principal_user_id on the tool). |
 | `permission_denied` | Project RBAC denied — rbac.check_permission, confirm membership, or dev-operator persona for platform substrate tools. |
+| `plan_graph_private` | Orchestrator graph is private — sign in (user_id in MCP context) or set orchestrator public_read; project API keys must include created_by user. |
+| `not_authenticated` | No MCP operator session — auth.get_profile first. Cursor plugin: Connect (G-A174) or Device Code /agentstack-authorize; do not call mcp_auth from the agent. |
+| `unauthorized` | Same as auth_required — OAuth Connect, Device Code, or Bearer from profile API key; then agentstack_session_setup and context.project_id. |
+| `auth_required` | Authenticate before work-graph spine — auth.get_profile → context.project_id → agents.work_next (not discovery.search). |
+| `service_caps_required_in_prod` | Project API key has no L1 service_caps — recreate with admin permissions (auto agents_autonomous_loop in prod) or user.apikeys.create preset agents_autonomous_loop / full_project; pass context.project_id=1 for ecosystem graph. |
+| `service_cap_denied` | Key lacks required L1 cap (often mcp_read or project_admin for plan_patch). Widen via apikeys.create (full_project) or reconnect MCP with full OAuth scope. If project role is owner/admin, MCP widens caps for execute project_id — call auth.get_profile (credential_plane) to confirm key_preview and caps; align context.project_id with the tenant before agents.plan_get / plan_patch. |
 | `run_not_found` | No run row for run_id in this project — verify run_id from agents.run or traces. |
 | `run_not_waiting_for_approval` | agents.run_get — run is not waiting_for_approval; poll status before approve_run |
 | `approval_hash_mismatch` | agents.run_get — approval_artifact_hash must match pending tool call on the run |
@@ -176,11 +187,14 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `run_failed` | agents.work_next detail=compact — inspect run traces; repair_plan or reclaim before retry |
 | `plan_focus_invalid` | agents.work_next detail=compact — refresh focus_node_id from packet next_action |
 | `orchestrator_binding_stale` | agents.reconcile_binding repair=true |
+| `invalid_channel` | channel must be workspace, messenger, bot, mcp, or api — retry agents.orchestrate with a supported surface |
+| `orchestrator_agent_missing` | projects.orchestrator.get then projects.orchestrator.patch (or owner/agents_admin auto-provision on prod); sandbox env_uuid cannot provision — bind on prod and reconcile before sandbox orchestrate |
+| `orchestrate_failed` | resolve_and_run failed — read data.error_code; agents.fleet_diagnostics, agents.reconcile_binding, or agents.run_get when run_uuid is present |
 | `invalid_parameters` | project_id and run_id required — agent_id is optional when run_id is supplied. |
 | `batch_semantic_anchor_conflict` | Align step NL with batch goal anchor — use one goal_text for the batch or split batches |
 | `conflicting_semantic_anchor` | Same as batch_semantic_anchor_conflict — per-step NL vs batch semantic_contract |
-| `batch_semantic_anchor_required` | Batch includes a mutating or non-plain-read step: set options.goal, focus_node_id, or plan_execute_mode. Plain reads and audit_batch_allowed steps may run without goal (see audit_batch_policy + discovery.describe effect.audit_batch_allowed) |
-| `dependency_error` | Batch DAG: a prior step failed or was skipped — fix the first failed step_id; not a domain error on this action. For notifications.deliver alone, check channel binding. |
+| `batch_semantic_anchor_required` | Batch includes a mutating or non-plain-read step: set options.execution_intent=direct for authorized CRUD, or options.goal, focus_node_id, or plan_execute_mode for workflow. Plain reads and validate_only (e.g. script.put) may run without goal. Use preflight.check simulate_batch_actions + simulate_batch_params (or execution_intent) to preview anchor. |
+| `dependency_error` | Batch only — DAG: a prior step failed or was skipped; fix the first failed step_id. Standalone notifications.deliver / channels.deliver use channel_not_linked or channels.create_bind_link, not dependency_error. |
 | `template_not_found` | agents.templates_list — template_id missing from catalog; agents.template_preview before create=true |
 | `provisioning_failed` | create_from_template or bind failed — retry agents.ensure_agent create=false (H5) then create=true |
 | `validation_error` | Re-run agents.plan_propose; inspect validation.errors — agents.plan_get before plan_apply_proposal |
@@ -194,6 +208,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `run_mismatch` | run_id does not belong to the supplied agent_id — omit agent_id or fix the pair. |
 | `agent_not_found` | agent_id not in project fleet — use agents.team or plan_get before run_get. |
 | `waiting_for_approval` | Run status waiting_for_approval — agents.approve_run with approval_artifact_hash from run_detail. |
+| `batch_project_scope_leak` | A failed MCP batch step with params.project_id does not retarget later steps — only auth.switch_project may promote batch context.project_id. Re-bind context.project_id before mutations if a step used a probe pid. |
 | `workflow_batch_bind_failed` | agents.reconcile_binding repair=true — guidance bind failed; check member row / session |
 | `workflow_batch_context_bind_failed` | agents.reconcile_binding repair=true — batch context bind failed |
 | `workflow_state_key_stamp_failed` | agents.reconcile_binding repair=true — workflow_state_key stamp failed |
@@ -201,12 +216,14 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `workflow_batch_receipt_failed` | Step succeeded but receipt stamp failed — agents.reconcile_binding repair=true; retry read-only agents.plan_get before mutating |
 | `workflow_receipt_context_missing` | Active workflow receipt missing workflow_run_id or step_id — agents.reconcile_binding repair=true; agents.work_next handoff=true detail=compact |
 | `workflow_receipt_unbound` | Workflow receipt not bound to session — agents.reconcile_binding repair=true |
-| `orchestration_step_violation` | Action outside current workflow step — follow packet next_action / inverse_resume; do not mutate graph until step advances |
+| `orchestration_step_violation` | Action outside current workflow step — follow packet next_action / inverse_resume; do not mutate graph until step advances. For notifications.deliver inside a playbook: run preflight.check first or use packet.next_action — not a raw deliver outside the step allow-list. |
+| `discovery_search_recursion` | Run one discovery.search with a concrete q=, then discovery.describe on canonical action ids. Do not chain or batch many discovery.search steps. |
 | `workflow_batch_bind_skipped` | Binding skipped (read-only batch or missing workflow_run_id) — agents.work_next handoff=true if follow-up work is expected |
 | `work_next_enrich_failed` | agents.work_next handoff=true detail=compact |
 | `work_next_repeat_reconcile_failed` | agents.reconcile_binding repair=true |
 | `guidance_user_row_not_found` | auth.get_profile then agents.work_next handoff=true |
 | `dependency_failed` | Prerequisite batch step did not succeed — fix or remove dependsOn; poll verification_action before retrying dependent step |
+| `graph_storage_empty` | Prod task_list leaf is empty at revision 0 — restore via generation supply and agents.plan_patch; do not empty-overwrite revision 0. |
 - **env_uuid:** Thread the same env_uuid across plan_get, plan_propose, plan_apply_proposal, plan_process_backlog, plan_recovery_scan, and work_next on sandbox forks.
 - **handoff:** role_mismatch / specialization_mismatch after claim → work_next handoff=true node_id=… — follow recovery.next_actions, do not retry same agent. capability_mismatch is missing required_capabilities: repair_plan or ensure_agent, not handoff.
 

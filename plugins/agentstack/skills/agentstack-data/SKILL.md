@@ -51,7 +51,37 @@ One skill covers three organs because they share the same guiding principle: **d
 }
 ```
 
-## Example 2 — FAP: admin-only email field
+## Example 2 — execute batch DAG (`dependsOn`)
+
+Self-describing `agentstack.execute` steps may declare dependencies; the server runs steps after predecessors succeed.
+
+```json
+{
+  "tool": "agentstack.execute",
+  "params": {
+    "steps": [
+      { "id": "preflight", "action": "preflight.check", "params": { "project_id": "{{project_id}}" } },
+      {
+        "id": "status",
+        "action": "hosting.project.status",
+        "dependsOn": ["preflight"],
+        "params": { "project_id": "{{project_id}}" }
+      }
+    ],
+    "options": {
+      "workflow_run_id": "<from agents.work_next or prior execute>",
+      "observed": { "succeeded": ["preflight.check"], "workflow_revision": 1 }
+    },
+    "context": { "project_id": "{{project_id}}" }
+  }
+}
+```
+
+Echo hoisted response fields on the next batch: `workflow_completion`, top-level `goal_verification` (`verified`, `pending[]`), and `observed` — see `agentstack-work-graph` skill.
+
+`depends_on` (snake_case) is accepted as an alias of `dependsOn` on each step (self-describing execute budget schema).
+
+## Example 3 — FAP: admin-only email field
 
 ```json
 {

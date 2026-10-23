@@ -5,6 +5,8 @@ description: Use when the user mentions telegram bot, whatsapp bot, instagram bo
 
 # AgentStack Bots — channel bots + Bot Studio
 
+Live catalog: `GET https://agentstack.tech/mcp/actions` (authoritative action list; do not trust static counts).
+
 ## MCP-first tenant ops (mentor fleet)
 
 **Before writing code or running local scripts** for tenant bot menu drift:

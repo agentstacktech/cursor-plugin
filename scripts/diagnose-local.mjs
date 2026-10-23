@@ -24,10 +24,12 @@ import {
   formatAgentstackStatusCard,
   fetchAuthMeBrief,
   readPinnedTenantProjectId,
+  describeMcpWriteCapGap,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   evaluateSingleToolSurface,
   postToolsList,
+  postToolsCallAuthGetProfile,
   postToolsCallExecuteAlias,
 } from './lib/mcpSurfaceProbe.mjs';
 import {
@@ -81,7 +83,7 @@ function maybeEmitDuplicateSurfaceBeacon(tools) {
     event: 'plugin_mcp_duplicate_surface',
     tool_count: tools?.length ?? 0,
     tool_names: (tools || []).map((t) => t?.name).filter(Boolean),
-    plugin_version: '0.4.18',
+    plugin_version: JSON.parse(fs.readFileSync(path.join(PLUGIN, '.cursor-plugin/plugin.json'), 'utf8')).version,
     base_url: BASE_URL,
   };
   try {
@@ -207,6 +209,27 @@ if (!fs.existsSync(MCP)) {
   fail('~/.cursor/mcp.json missing — run /agentstack-authorize');
 } else {
   let cfg = JSON.parse(fs.readFileSync(MCP, 'utf8'));
+  const serverKeys = Object.keys(cfg.mcpServers || {});
+  const agentstackKeys = serverKeys.filter((k) => /^agentstack/i.test(k));
+  if (agentstackKeys.length > 1) {
+    const bearerOk = agentstackKeys.filter((k) => {
+      const h = cfg.mcpServers[k]?.headers || {};
+      const auth = String(h.Authorization || '');
+      return auth.startsWith('Bearer ') && !auth.includes('${') && !/placeholder/i.test(auth);
+    });
+    if (bearerOk.length !== 1) {
+      fail(
+        `multiple agentstack MCP servers (${agentstackKeys.join(', ')}) — ` +
+          'keep exactly one with a real Device Code Bearer (mcpServers.agentstack); ' +
+          'remove agentstack-dev or duplicate entries, then Reload Window',
+      );
+    } else {
+      warn(
+        `multiple agentstack* keys (${agentstackKeys.join(', ')}) — only ${bearerOk[0]} has Bearer; ` +
+          'consider removing dev-only servers to avoid Cursor shadowing',
+      );
+    }
+  }
   const entry = cfg.mcpServers?.agentstack;
   if (!entry) fail('mcpServers.agentstack missing');
   else {
@@ -244,6 +267,16 @@ if (!fs.existsSync(MCP)) {
     const pin = await readPinnedTenantProjectId(path.dirname(MCP));
     const profile =
       auth && gate.kind === 'ok' ? await fetchAuthMeBrief(auth, { baseUrl: BASE_URL }) : null;
+    const dualSurface =
+      gate.kind === 'ok' &&
+      claims.jwtType === 'user_api_key';
+    if (dualSurface) {
+      warn(
+        'DUAL_SURFACE: ~/.cursor/mcp.json Bearer is OK for user-agentstack / mcp-execute, ' +
+          'but plugin-agentstack-* stays unsigned until Connect (G-A174). ' +
+          'Agents should use mcp-execute.mjs or you Connect on plugin MCP + Reload Window.',
+      );
+    }
     console.log(
       formatAgentstackStatusCard({
         gateKind: gate.kind,
@@ -251,6 +284,10 @@ if (!fs.existsSync(MCP)) {
         auth: claims,
         pin,
         profile,
+        transportRecommended: dualSurface ? 'connect' : gate.kind === 'ok' ? 'ok' : undefined,
+        namespaceHint: dualSurface
+          ? 'DUAL_SURFACE: Connect plugin MCP for CallDynamicTool plugin-agentstack-*'
+          : undefined,
       }),
     );
     if (gate.kind === 'null_caps' && /agentstack\.tech/i.test(String(cur.url || ''))) {
@@ -278,10 +315,37 @@ if (!fs.existsSync(MCP)) {
         warn(`tools/list probe failed: ${e.message}`);
       }
       try {
-        await postToolsCallExecuteAlias(BASE_URL, auth);
-        ok('tools/call transport (system.ping) OK — not a catalog check');
+        await postToolsCallAuthGetProfile(BASE_URL, auth);
+        ok('tools/call auth.get_profile — MCP operator session OK');
+        const capGap = describeMcpWriteCapGap(cfg);
+        if (capGap.missing && capGap.reason) {
+          warn(capGap.reason);
+        }
       } catch (e) {
-        fail(`tools/call execute failed: ${e.message}`);
+        fail(`MCP session probe failed (auth.get_profile): ${e.message}`);
+      }
+      const bridgeScript = path.join(ROOT, 'scripts', 'mcp-execute.mjs');
+      if (fs.existsSync(bridgeScript)) {
+        const bridge = spawnSync(
+          process.execPath,
+          [bridgeScript, 'auth.get_profile'],
+          { cwd: ROOT, encoding: 'utf8', timeout: 45_000 },
+        );
+        if ((bridge.status ?? 1) === 0) {
+          ok('mcp-execute auth.get_profile — Bearer HTTP bridge OK');
+        } else {
+          warn(
+            `mcp-execute bridge failed (exit ${bridge.status}) — ${(bridge.stderr || bridge.stdout || '').trim().slice(0, 200)}`,
+          );
+        }
+      } else {
+        warn('scripts/mcp-execute.mjs missing — skip Bearer bridge probe');
+      }
+      try {
+        await postToolsCallExecuteAlias(BASE_URL, auth);
+        ok('tools/call transport (discovery.list alias) OK — not a session check');
+      } catch (e) {
+        warn(`tools/call alias probe: ${e.message}`);
       }
       try {
         const catalogRes = await fetch(`${BASE_URL}/mcp/actions`, { headers: auth });

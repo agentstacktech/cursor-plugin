@@ -28,7 +28,7 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 
 Cursor `/agentstack-authorize` and ChatGPT MCP Connect issue a **user-scoped** Bearer (often ecosystem `project_id=1`). **SPA password login** uses the same model (`bearer_token`). Set **`context.project_id`** (or per-step **`params.project_id`**) to the workspace you are mutating — **membership RBAC** authorizes writes without OAuth reconnect when you are owner/admin/member on that project.
 
-**Workspace switch ≠ OAuth reconnect.** When the human switches projects in the dual-shell UI (header chip), you only change **`context.project_id`** on the next MCP batch — do not call OAuth authorize again unless **`required_client_action`** is **`reconnect_oauth`**.
+**Workspace switch ≠ OAuth reconnect.** When the human switches projects in the dual-shell UI (header chip), you only change **`context.project_id`** on the next MCP batch — do not call OAuth authorize again unless **`required_client_action`** is **`apply_bearer`** (project-scoped keys only — user-scoped OAuth uses **`context.project_id`** per G13/G14).
 
 Confirm **`auth.get_profile`** → **`mutation_allowed`** before tenant writes; **`auth.switch_project` + apply_bearer** only when **`required_client_action`** is **`apply_bearer`** (project-pinned API key). Check **`auth_surface.session_ready`**, **`project_access_granted`**, and **`preflight.check` → `can_execute_mutation`** before writes.
 

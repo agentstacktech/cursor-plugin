@@ -12,6 +12,7 @@ One authentication surface, one role model, one permission check — delivered v
 | User says                                              | MCP action                                                         |
 |--------------------------------------------------------|--------------------------------------------------------------------|
 | "authorize Cursor plugin / Device Code / no API key"   | Click **Connect** on plugin MCP (G-A174) or `/agentstack-authorize` — not `auth.login` |
+| "ChatGPT / mobile MCP Connect in browser"              | Human: `GET /mcp/connect` (`connect_help_uri` in OAuth metadata) → login → `POST /api/auth/mcp-oauth-bridge` + authorize hop — not raw `location.replace(chatgpt.com)` |
 | "Cursor mcp_auth / Connect MCP"                        | User clicks Connect in the plugin panel. Do not call native `mcp_auth` from the agent. |
 | "let user sign in with email + password"               | `auth.login` (email, password) — returns token                     |
 | "register new user"                                    | `auth.register`                                                    |
@@ -53,6 +54,16 @@ const can = await as.rbac.checkPermission({ projectId, permission: 'logic.write'
 ```
 
 For React components, use `<RequireCapability permission="admin">` from `@agentstack/react`.
+
+## Hosted visitor plane (`/s/{project_id}/` games & shops)
+
+**Not the same as MCP operator auth.** Browser players use embedded login on the hosted page:
+
+1. `POST /api/auth/login` with tenant `project_id` (or SDK `auth.login` in the game bundle).
+2. `POST /api/hosted-apps/{project_id}/session` with Bearer JWT → `hosted_app` cookie (`mintHostedAppSession` in `@agentstack/sdk/commerce/hosted`).
+3. `POST /s/{project_id}/mcp` with `credentials: 'include'`.
+
+Do **not** send visitors to `agentstack.tech/login` in another tab for the default game flow. MFA/OAuth/checkout bridge may redirect briefly — see platform **hosted login recipe** docs.
 
 ## Example — signup → assign role → grant 7-day trial
 

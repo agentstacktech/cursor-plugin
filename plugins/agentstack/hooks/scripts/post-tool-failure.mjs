@@ -6,11 +6,75 @@ import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { stdin } from 'node:process';
+import { recoveryHintForCode } from '../../lib/plugin-kernel/canonicalCopy.mjs';
+import {
+  buildMcpExecuteRetryCommand,
+  shouldSemanticAnchorRetry,
+} from '../../lib/plugin-kernel/mcpExecuteBridge.mjs';
 
 const CURSOR_DIR = join(homedir(), '.cursor');
 const SETTINGS_PATH = join(CURSOR_DIR, 'settings.json');
 const BUFFER_PATH = join(CURSOR_DIR, 'agentstack-telemetry.jsonl');
 const MAX_LINES = 500;
+
+function normalizeErrText(event) {
+  const candidates = [
+    event.error,
+    event.message,
+    event.result,
+    event.result?.error,
+    event.result?.message,
+  ];
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.trim()) return c.slice(0, 400);
+    if (c && typeof c === 'object') {
+      try {
+        return JSON.stringify(c).slice(0, 400);
+      } catch {
+        /* skip */
+      }
+    }
+  }
+  const hint =
+    event.recovery_hint ||
+    event.result?.recovery_hint ||
+    event.error?.recovery_hint;
+  if (typeof hint === 'string' && hint.trim()) return hint.slice(0, 400);
+  return 'unknown';
+}
+
+function extractErrorCode(event, errText) {
+  const direct =
+    event.error_code ||
+    event.code ||
+    event.result?.error_code ||
+    event.result?.error?.code ||
+    event.result?.code;
+  if (typeof direct === 'string' && direct) return direct;
+  try {
+    const parsed = typeof errText === 'string' ? JSON.parse(errText) : null;
+    const fromJson =
+      parsed?.error_code || parsed?.code || parsed?.error?.code || parsed?.error?.error_code;
+    if (typeof fromJson === 'string' && fromJson) return fromJson;
+  } catch {
+    const m = errText.match(/"error_code"\s*:\s*"([^"]+)"/);
+    if (m?.[1]) return m[1];
+  }
+  if (/rbac_blocked/i.test(errText)) return 'rbac_blocked';
+  if (/not_authenticated/i.test(errText)) return 'not_authenticated';
+  if (/\bunauthorized\b/i.test(errText) || /User not authenticated/i.test(errText)) {
+    return 'unauthorized';
+  }
+  if (/\bauth_required\b/i.test(errText)) return 'auth_required';
+  return null;
+}
+
+function isAgentstackMcpTool(event) {
+  const id = String(
+    event.toolName || event.tool || event.namespace || event.mcpServerName || '',
+  );
+  return /agentstack|mcp_execute|plugin-agentstack/i.test(id);
+}
 
 async function readStdinJson() {
   return new Promise((resolve) => {
@@ -54,14 +118,39 @@ async function main() {
     null;
   const traceHint = traceId ? ` X-Trace-Id: ${traceId}.` : '';
 
+  const errText = normalizeErrText(event);
+  let errorCode = extractErrorCode(event, errText);
+  const authTrap =
+    isAgentstackMcpTool(event) &&
+    (errorCode === 'not_authenticated' ||
+      errorCode === 'unauthorized' ||
+      errorCode === 'auth_required' ||
+      /not_authenticated|unauthorized|User not authenticated/i.test(errText));
+  if (authTrap && !errorCode) errorCode = 'not_authenticated';
+
+  const recoveryLine = errorCode ? recoveryHintForCode(errorCode) : null;
+  if (recoveryLine) {
+    console.error(`[agentstack] ${recoveryLine}`);
+  } else if (authTrap) {
+    const fallback = recoveryHintForCode('not_authenticated');
+    if (fallback) console.error(`[agentstack] ${fallback}`);
+  }
+  const anchorTrap =
+    isAgentstackMcpTool(event) && shouldSemanticAnchorRetry(event, errorCode);
+  if (authTrap || anchorTrap) {
+    const retryCli = buildMcpExecuteRetryCommand(event, { errorCode });
+    if (retryCli) {
+      const label = authTrap ? 'Bearer bridge (same batch)' : 'Semantic anchor retry';
+      console.error(`[agentstack] ${label}: ${retryCli}`);
+    }
+  }
+
   const optIn = !!(settings.agentstack?.sendTelemetry || settings['agentstack.sendTelemetry']);
   if (!optIn) {
-    // Still print a short stderr hint for the agent/user
     console.error(`[agentstack] tool failure — run /agentstack-diagnose.${traceHint}`);
     process.exit(0);
   }
 
-  const errText = String(event.error || event.message || event.result || 'unknown').slice(0, 200);
   const entry = {
     ts: new Date().toISOString(),
     kind: 'tool_failure',
@@ -70,7 +159,8 @@ async function main() {
     success: false,
     error: errText.replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]'),
     trace_id: traceId,
-    hint: 'Run /agentstack-diagnose',
+    error_code: errorCode,
+    hint: recoveryLine || recoveryHintForCode('not_authenticated') || 'Run /agentstack-diagnose',
   };
 
   await mkdir(CURSOR_DIR, { recursive: true });

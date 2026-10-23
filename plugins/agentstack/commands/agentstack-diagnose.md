@@ -21,6 +21,9 @@ Run these in order and present results as a single Markdown table.
 10. **MCP cache** — `POST /mcp/cache/clear` (expected 200, `cleared: true`).
 11. **MCP surface** — plugin 0.4.18 shows AgentStack MCP in the plugin panel (click **Connect** if needed). `POST /mcp` JSON-RPC `tools/list` (expect **1** tool `agentstack.execute`) **and** `tools/call` `auth.get_profile` or `projects.get_stats`. List-only or `system.ping` alone is a false OK. Cursor may show native `mcp_auth` — do **not** call it from the agent; user clicks Connect. Device Code `user-agentstack` may coexist. Empty Bearer on `plugin-agentstack-*` is still the placeholder trap.
 12. **Local layout (optional)** — from the publish checkout: `node scripts/diagnose-local.mjs` and `node scripts/audit-layers.mjs`.
+13. **Dual surface (DUAL_SURFACE)** — if `diagnose-local.mjs` warns `DUAL_SURFACE`: Device Code Bearer in `~/.cursor/mcp.json` is OK for **user-agentstack** / `mcp-execute`, but **plugin-agentstack-*** stays unsigned until **Connect (G-A174)** + Reload Window. Primary CTA: Connect; secondary: keep using `mcp-execute.mjs` only. Runbook: platform **MCP operator auth** (Cursor Connect G-A174 + Device Code fallback).
+14. **Bearer bridge (required when plugin unsigned)** — with Device Code in `~/.cursor/mcp.json`: `node scripts/mcp-execute.mjs auth.get_profile` (same POST `/mcp` as hooks). Hooks print a copy-paste retry on `not_authenticated`. See `MCP_QUICKSTART.md` § two transports.
+15. **mcp_write cap** — if JWT `service_caps` lacks `mcp_write`, `agents.plan_claim` returns `rbac_blocked` (not auth). Widen via `apikeys.create` (agent_runner preset) or Device Code user token.
 
 ## Output
 

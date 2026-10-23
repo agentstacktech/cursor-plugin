@@ -9,7 +9,7 @@
  */
 export function catalogActionsUrl(baseUrl, { sinceEtag = null, delta = false, hot = false } = {}) {
   const url = new URL('/mcp/actions', baseUrl);
-  if (hot) url.searchParams.set('schemas', 'hot');
+  url.searchParams.set('schemas', hot ? 'hot' : 'public');
   if (sinceEtag) url.searchParams.set('since_etag', sinceEtag);
   if (delta && sinceEtag) url.searchParams.set('delta', '1');
   return url.toString();

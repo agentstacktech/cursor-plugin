@@ -14,6 +14,33 @@ description: Use when the user mentions mentor, knowledge KB, knowledge.playgrou
 
 Runbook: MCP prompts `agentstack_knowledge_*` + `/agentstack-safe-cycle` (sandbox → diff → promote).
 
+## Tenant MCP edit ladder (paid)
+
+**Genes:** `core.knowledge.platform.gen1` · `core.tenant.8dna_generation_supply.gen1` · `core.mcp.self_description.gen1`
+
+1. `preflight.check` (+ `simulate_batch_steps` for multi-step batches) + `knowledge.health`
+2. Mutate (one logical change per sync batch when possible)
+3. `knowledge.retrieve.probe` or `knowledge.playground` (one **heavy_llm** per sync execute)
+4. `generation.diff_vs_prod` → `generation.gates` → `generation.promote`
+
+On `generation_fork_required`: omit `env_uuid` to auto-fork, or pass sandbox `env_uuid`.
+
+| Goal | MCP action | Avoid |
+|------|------------|--------|
+| Offer → product_id | `knowledge.config.patch` `{"product_id_map":{"<offer>":"<pid>"}}` | Full map replace via secrets unless bulk |
+| One FAQ route | `knowledge.phenotype.upsert` | Full `gene_pack` fixture in `config.patch` |
+| Pinned glossary binding | `knowledge.gene_pack.pinned_shape.upsert` | Raw gene_pack JSON |
+| KB document text | `knowledge.content.patch` / `knowledge.kb.ingest` | `projects.patch_data` on knowledge paths |
+| Plan / tone | `knowledge.prompt.patch` | Editing outline from `config.get` |
+| Safety playbooks | `knowledge.config.patch` + `safety_playbooks_write_mode: patch` | Wiping playbooks with `replace` by mistake |
+| Playground default bot | `knowledge.config.patch` `default_playground_bot_uuid` | Paused legacy bot UUID |
+| Read counts | `knowledge.config.get` `response=stats` | `len(phenotypes)` on item_page without `shape.n` |
+| Read bodies | `knowledge.config.get` `detail=full` | Patching `outline` when `config` is null |
+
+**`knowledge.config.patch` response:** default `response=compact` (json_view) + `config_stats`; use `response=stats` after patch; `response=full` only to echo entire config.
+
+Full runbook: platform **tenant knowledge MCP edit** guide (REST parity under `/api/projects/{id}/knowledge/*`).
+
 ## Decision matrix
 
 | Intent signal | Prefer | Over |

@@ -20,7 +20,7 @@ AgentStack **is** the backend. Tenant apps use MCP + `@agentstack/sdk` + 8DNA �
 | static_site | mcp_hosting_quickstart | sdk.hosting.quickStart |
 | hosted_site_edit | mcp_hosting_edit_site_safe | sdk.hosting.quickStart |
 | bot_channel | mcp_bots_simulate | — |
-| showcase_portfolio_storefront | mcp_showcase_catalog_safe | sdk.hosting.quickStart |
+| showcase_portfolio_storefront | mcp_universal_safe_change | sdk.protocol |
 | migrate_legacy | mcp_session_setup | sdk.protocol |
 | hosted_vertical_saas | mcp_hosted_vertical_bootstrap | @agentstack/hosted-wire |
 | service_business | mcp_read_bootstrap | — |

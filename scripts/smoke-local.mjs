@@ -59,6 +59,7 @@ run('validate-plugin', ['scripts/validate-plugin.mjs', ...(strict ? ['--strict-s
 run('audit-layers', ['scripts/audit-layers.mjs']);
 run('test-hooks-contract', ['scripts/test-hooks-contract.mjs']);
 run('test-kernel-catalog', ['scripts/test-kernel-catalog.mjs']);
+run('test-batch-semantic-anchor', ['scripts/test-batch-semantic-anchor.mjs']);
 run('device-code --help', ['plugins/agentstack/hooks/scripts/device-code.mjs', '--help']);
 
 console.log(`\nsummary: failed=${failed}`);

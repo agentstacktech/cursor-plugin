@@ -81,6 +81,25 @@ Personal Premium/VIP **never** raises project quotas. Team management (`projects
 
 **Prompt:** `agentstack_tenant_buff_grant` · **Recipe:** `mcp_tenant_manual_entitlement_grant` · Requires project **write** on tenant PID (>1). **Not** `buffs.grant_subscription` (platform only).
 
+## Game soft currency IAP (GOO) — hosted `/s/{pid}/`
+
+**Gene:** `core.commerce.tenant_iap.gen1` · ADR `TENANT_IN_APP_IAP_SHOP.md`
+
+| Surface | Visitor / player | Owner |
+|---------|------------------|-------|
+| Catalog + checkout | `shop.products.list`, `shop.checkout.create`, `payments.list_methods` | `shop.products.upsert`, `shop.sinks.upsert` |
+| Balance + spend | `wallets.balance`, `wallets.spend`, `wallets.ledger.list` | `shop.reports.summary`, `shop.refund` |
+| REST (cookie) | `GET/POST /api/commerce/iap/*` | same BFF |
+| SDK | `@agentstack/sdk/commerce/iap` | — |
+
+1. `assets.create` — preset `game_currency` (validate grants in `shop.products.upsert`)
+2. **Hosted players:** `shop.checkout.create` only — server price from SKU DNA + SQL order; **never** browser `payments.create` (blocked on `/s/{pid}/mcp`)
+3. **Operator / API key:** legacy `payments.create` with `metadata.order_id` still binds amount to the SQL order (anti-tamper)
+4. Fulfillment: webhook → `fulfill_order` → `soft_currency_grant` + IAP ledger
+5. Poll `shop.orders.get` or `payments.get` (`soft_currency_grant.status=ok`)
+
+**Do not** use `wallets.deposit` on `hosted_app` sessions or `commerce.participant.grant_holding` for buyer IAP.
+
 Examples below with `pro_monthly` are **tenant-app** SKU slugs — not AgentStack platform tier slugs.
 
 ## Prefer-over

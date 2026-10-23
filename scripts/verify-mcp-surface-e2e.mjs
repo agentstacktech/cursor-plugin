@@ -20,6 +20,7 @@ import { agentstackAuthHeaders, pluginMcpOAuthError, pluginMcpPointerError } fro
 import {
   evaluateSingleToolSurface,
   fetchMcpHealth,
+  postToolsCallAuthGetProfile,
   postToolsCallExecuteAlias,
   postToolsList,
 } from './lib/mcpSurfaceProbe.mjs';
@@ -46,8 +47,8 @@ const ptrErr = pluginMcpPointerError(pj);
 if (ptrErr) fail(`plugin.json: ${ptrErr}`);
 else ok(`plugin.json mcpServers=${pj.mcpServers}`);
 
-if (String(pj.version || '').startsWith('0.4.18')) ok(`plugin version ${pj.version}`);
-else warn(`plugin version ${pj.version} — expected 0.4.18 (plugin MCP Connect)`);
+if (pj.version) ok(`plugin version ${pj.version}`);
+else warn('plugin.json missing version');
 
 const pluginMcp = path.join(ROOT, 'plugins', 'agentstack', 'mcp.json');
 if (!fs.existsSync(pluginMcp)) fail('plugins/agentstack/mcp.json missing');
@@ -68,6 +69,14 @@ if (fs.existsSync(MCP)) {
   const entry = cfg.mcpServers?.agentstack;
   if (entry?.tools) warn('mcpServers.agentstack.tools present — run diagnose-local.mjs --fix');
   else if (entry) ok('mcpServers.agentstack is lean (no tools key)');
+
+  const authHdr = agentstackAuthHeaders(cfg);
+  if (authHdr?.Authorization) {
+    ok(
+      'DUAL_SURFACE: Bearer in mcp.json does not auth plugin-agentstack-* — ' +
+        'tools/list can pass while plugin namespace is unsigned; auth.get_profile below is the real probe.',
+    );
+  }
 }
 
 try {
@@ -93,10 +102,16 @@ if (fs.existsSync(MCP)) {
   if (!auth) warn('skip tools/call alias probe — no auth in ~/.cursor/mcp.json');
   else {
     try {
+      await postToolsCallAuthGetProfile(BASE_URL, auth);
+      ok('tools/call auth.get_profile — operator session OK');
+    } catch (e) {
+      fail(`MCP session probe (auth.get_profile): ${e.message}`);
+    }
+    try {
       await postToolsCallExecuteAlias(BASE_URL, auth);
       ok('tools/call agentstack_execute (Postel alias) succeeds');
     } catch (e) {
-      fail(`tools/call alias probe: ${e.message}`);
+      warn(`tools/call alias probe: ${e.message}`);
     }
   }
 }

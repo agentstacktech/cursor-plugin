@@ -1,0 +1,6 @@
+{
+  "toolName": "plugin-agentstack-agentstack_execute",
+  "namespace": "plugin-agentstack-agentstack",
+  "error_code": "not_authenticated",
+  "error": "not_authenticated: User not authenticated"
+}

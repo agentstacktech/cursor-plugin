@@ -16,8 +16,9 @@ import {
   updateDeviceLoginLock,
 } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
 import { resolveScopePreset, SCOPE_PRESETS } from '../../lib/plugin-kernel/oauthScopePresets.mjs';
-import { writeTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import { refreshTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { applyAgentstackMcpBearer, readPinnedTenantProjectId } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CLIENT_ID = 'cursor-plugin';
@@ -98,15 +99,15 @@ async function authorize(scopes, traceId) {
 }
 
 async function writeMcpJson(accessToken, token = {}) {
-  let cfg = {};
-  try { cfg = JSON.parse(await readFile(MCP_PATH, 'utf8')); } catch { /* first install */ }
-  applyAgentstackMcpBearer(cfg, {
-    accessToken,
-    baseUrl: BASE_URL,
-    projectId: (await readPinnedTenantProjectId(CURSOR_DIR)) ?? token.project_id,
+  const pin = (await readPinnedTenantProjectId(CURSOR_DIR)) ?? token.project_id;
+  await withMcpJsonRmW(CURSOR_DIR, (cfg) => {
+    applyAgentstackMcpBearer(cfg, {
+      accessToken,
+      baseUrl: BASE_URL,
+      projectId: pin,
+    });
+    return cfg;
   });
-  await mkdir(CURSOR_DIR, { recursive: true });
-  await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
 async function writeRefreshToken(refreshToken, token) {
@@ -131,13 +132,13 @@ async function clearMcpCache(accessToken, traceId) {
 }
 
 async function seedCapabilitySnapshot(accessToken) {
+  const auth = { Authorization: `Bearer ${accessToken}` };
   try {
-    const res = await fetch(`${BASE_URL}/mcp/actions`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!res.ok) return;
-    await writeTenantCapabilitySnapshot(CURSOR_DIR, await res.json());
-  } catch { /* next sessionStart */ }
+    const n = await refreshTenantCapabilitySnapshot(CURSOR_DIR, BASE_URL, auth);
+    if (n > 0) return;
+  } catch (e) {
+    process.stderr.write(`[agentstack] device-code: catalog snapshot failed (${e.message})\n`);
+  }
 }
 
 async function main() {

@@ -34,6 +34,7 @@ import {
 import {
   evaluateSingleToolSurface,
   MCP_EXECUTE_TOOL_CANONICAL,
+  minimalExecuteToolFixture,
   toolsCallErrorDetail,
 } from './lib/mcpSurfaceProbe.mjs';
 import {
@@ -142,7 +143,7 @@ assert.deepEqual(stripLeanServerKeys({ url: 'https://x/mcp', tools: {}, baseUrl:
   url: 'https://x/mcp',
 });
 
-assert.equal(evaluateSingleToolSurface([{ name: MCP_EXECUTE_TOOL_CANONICAL }]).ok, true);
+assert.equal(evaluateSingleToolSurface([minimalExecuteToolFixture()]).ok, true);
 assert.equal(evaluateSingleToolSurface([{ name: 'a' }, { name: 'b' }]).ok, false);
 assert.match(
   toolsCallErrorDetail({

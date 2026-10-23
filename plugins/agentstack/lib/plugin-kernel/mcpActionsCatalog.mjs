@@ -20,6 +20,22 @@ import {
 export const CAPABILITY_SNAPSHOT_FILENAME = 'agentstack-capabilities.json';
 export { flattenMcpActionsCatalog, actionsFromSnapshot };
 
+/** True when snapshot mtime is within maxAge and actions array is valid (no catalog fetch). */
+export async function tenantCapabilitySnapshotFresh(
+  cursorDir,
+  { maxAgeMs = 24 * 60 * 60 * 1000, now = Date.now() } = {},
+) {
+  const snapPath = join(cursorDir, CAPABILITY_SNAPSHOT_FILENAME);
+  try {
+    const st = await stat(snapPath);
+    if (now - st.mtimeMs >= maxAgeMs) return false;
+    const existing = JSON.parse(await readFile(snapPath, 'utf8'));
+    return Array.isArray(existing?.actions) && existing.actions.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Flatten live catalog and keep tenant-facing actions only (public docs parity). */
 export function tenantActionsFromCatalog(payload) {
   return filterTenantActions(flattenMcpActionsCatalog(payload));

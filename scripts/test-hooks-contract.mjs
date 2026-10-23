@@ -36,7 +36,9 @@ function assertExists(rel) {
 // Cwd contract: hooks resolve when cwd = plugin package root
 assertExists('hooks/scripts/pre-shell-scan.mjs');
 assertExists('hooks/scripts/pre-mcp-cap-check.mjs');
+assertExists('hooks/scripts/pre-mcp-auth-bridge.mjs');
 assertExists('hooks/scripts/pre-mcp-session-handoff.mjs');
+assertExists('hooks/scripts/pre-mcp-semantic-anchor-hint.mjs');
 assertExists('hooks/scripts/session-end.mjs');
 assertExists('hooks/scripts/post-tool-failure.mjs');
 assertExists('hooks/scripts/pre-nav-index-edit.mjs');
@@ -47,6 +49,40 @@ runHook('pre-shell-scan.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-shell-allow.json', 0);
 runHook('pre-mcp-cap-check.mjs', 'pre-mcp-agentstack-execute.json', 0);
 runHook('pre-mcp-session-handoff.mjs', 'pre-mcp-agentstack-execute.json', 0);
+
+const postFailAuth = spawnSync(process.execPath, ['hooks/scripts/post-tool-failure.mjs'], {
+  input: fs.readFileSync(path.join(fixtures, 'post-tool-failure-auth.json'), 'utf8'),
+  encoding: 'utf8',
+  cwd: PLUGIN,
+});
+if (postFailAuth.status !== 0) {
+  console.error('FAIL post-tool-failure auth fixture exit', postFailAuth.status, postFailAuth.stderr);
+  process.exit(1);
+}
+const postErr = String(postFailAuth.stderr || '');
+if (!/\[agentstack\]/.test(postErr) || !/auth\.get_profile|Connect|not_authenticated/i.test(postErr)) {
+  console.error('FAIL post-tool-failure auth fixture missing recovery stderr:', postErr);
+  process.exit(1);
+}
+console.log('OK   post-tool-failure.mjs + post-tool-failure-auth.json');
+
+const hooksJson = JSON.parse(
+  fs.readFileSync(path.join(PLUGIN, 'hooks/hooks.json'), 'utf8'),
+);
+const beforeMcp = (hooksJson.hooks?.beforeMCPExecution || []).map((h) =>
+  path.basename(String(h.command || '')),
+);
+const expected = [
+  'pre-mcp-auth-bridge.mjs',
+  'pre-mcp-session-handoff.mjs',
+  'pre-mcp-cap-check.mjs',
+  'pre-mcp-semantic-anchor-hint.mjs',
+];
+if (beforeMcp.join('|') !== expected.join('|')) {
+  console.error('FAIL beforeMCPExecution order', beforeMcp, 'expected', expected);
+  process.exit(1);
+}
+console.log('OK   hooks.json beforeMCPExecution order');
 
 const help = spawnSync(process.execPath, ['hooks/scripts/device-code.mjs', '--help'], {
   cwd: PLUGIN,

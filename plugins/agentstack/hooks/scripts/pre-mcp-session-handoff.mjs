@@ -16,6 +16,7 @@ import {
   readPinnedTenantProjectId,
   switchProjectViaRest,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
@@ -72,8 +73,7 @@ async function readMcp() {
 }
 
 async function writeMcpFile(cfg) {
-  await mkdir(CURSOR_DIR, { recursive: true });
-  await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+  await withMcpJsonRmW(CURSOR_DIR, () => cfg);
 }
 
 async function main() {
@@ -112,11 +112,10 @@ async function main() {
     process.exit(0);
   }
 
-  const pin = (await readPinnedTenantProjectId(CURSOR_DIR)) || targetPid;
   applyAgentstackMcpBearer(cfg, {
     accessToken,
     baseUrl: BASE_URL,
-    projectId: pin,
+    projectId: targetPid,
   });
   await writeMcpFile(cfg);
   process.stderr.write(

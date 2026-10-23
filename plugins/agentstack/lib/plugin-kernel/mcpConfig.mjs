@@ -325,7 +325,37 @@ export function shouldAutoDeviceLogin(
   { fromHook = false, disable = false, includeUnsigned = false } = {},
 ) {
   if (disable || !fromHook) return false;
-  return gateNeedsDeviceLogin(kind, { includeUnsigned });
+  const envUnsigned =
+    process.env.AGENTSTACK_AUTO_DEVICE_LOGIN_UNSIGNED === '1' ||
+    process.env.AGENTSTACK_AUTO_DEVICE_LOGIN_UNSIGNED === 'true';
+  return gateNeedsDeviceLogin(kind, { includeUnsigned: includeUnsigned || envUnsigned });
+}
+
+function peekJwtPayload(bearer) {
+  const raw = String(bearer || '').replace(/^Bearer\s+/i, '').trim();
+  if (!raw.startsWith('eyJ')) return null;
+  const parts = raw.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const json = Buffer.from(parts[1], 'base64url').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+export function bearerExpWarn(auth) {
+  if (!auth?.expInSec && auth?.expInSec !== 0) return null;
+  if (auth.expInSec < 0) {
+    return { level: 'error', message: 'Bearer expired — Connect on plugin MCP or /agentstack-authorize' };
+  }
+  if (auth.expInSec < 600) {
+    return {
+      level: 'warn',
+      message: `Bearer expires in ${Math.round(auth.expInSec / 60)}m — Connect on plugin MCP before it lapses`,
+    };
+  }
+  return null;
 }
 
 /**
@@ -344,9 +374,19 @@ export function formatAgentstackStatusCard({
   auth,
   pin,
   profile,
+  transportRecommended,
+  namespaceHint,
 } = {}) {
   if (gateKind && gateKind !== 'ok') {
-    return additionalContext || `AgentStack: not signed in. Run ${AUTHORIZE_SLASH}.`;
+    const transport =
+      transportRecommended ||
+      (gateKind === 'unsigned' ? 'connect' : 'device_code');
+    return [
+      additionalContext || `AgentStack: not signed in. Run ${AUTHORIZE_SLASH}.`,
+      `transport_recommended=${transport}`,
+      namespaceHint ||
+        'Agents using plugin-agentstack-*: Connect (G-A174). Hooks use ~/.cursor/mcp.json.',
+    ].join('\n');
   }
   const who =
     (profile && (profile.displayName || profile.email || profile.username)) ||
@@ -360,11 +400,23 @@ export function formatAgentstackStatusCard({
     else if (auth.expInSec < 3600) exp = `expires ${Math.round(auth.expInSec / 60)}m`;
     else exp = `expires ${Math.round(auth.expInSec / 3600)}h`;
   }
-  return [
+  const jwtType = auth?.jwtType || '';
+  const transport =
+    transportRecommended ||
+    (jwtType === 'user_api_key' ? 'device_code' : 'connect');
+  const expWarn = bearerExpWarn(auth);
+  const lines = [
     `AgentStack: ${who}${role}`,
     `project ${pid} · ${caps} · ${exp}`,
-    'After Reload, click Connect on the plugin MCP. Device Code keeps hooks signed in.',
-  ].join('\n');
+    `transport_recommended=${transport}`,
+    namespaceHint ||
+      'plugin-agentstack-* → Connect; user-agentstack / mcp-execute → Device Code Bearer.',
+  ];
+  if (expWarn?.message) lines.push(expWarn.message);
+  else if (transport === 'connect') {
+    lines.push('Primary: Connect on plugin MCP after Reload Window.');
+  }
+  return lines.join('\n');
 }
 
 /**
@@ -409,6 +461,29 @@ export async function switchProjectViaRest(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** Session-start / hooks: identity from JWT only (no /api/auth/me round-trip). */
+export function profileBriefFromJwt(authHeaders) {
+  if (!authHeaders?.Authorization?.startsWith('Bearer ')) return null;
+  const bearer = authHeaders.Authorization.slice('Bearer '.length).trim();
+  const payload = bearer ? decodeJwtPayload(bearer) : null;
+  if (!payload || typeof payload !== 'object') return null;
+  const displayName = String(
+    payload.name || payload.display_name || payload.username || '',
+  ).trim();
+  const email =
+    typeof payload.email === 'string' && payload.email
+      ? payload.email
+      : typeof payload.sub === 'string' && payload.sub.includes('@')
+        ? payload.sub
+        : null;
+  const rawUid = payload.user_id ?? payload.uid ?? null;
+  const userId =
+    rawUid != null && Number.isFinite(Number(rawUid)) ? Number(rawUid) : null;
+  const role = typeof payload.role === 'string' ? payload.role : '';
+  if (!email && !displayName && userId == null) return null;
+  return { email, displayName: displayName || null, userId, role };
 }
 
 export async function fetchAuthMeBrief(headers, { baseUrl = 'https://agentstack.tech', timeoutMs = 2500 } = {}) {

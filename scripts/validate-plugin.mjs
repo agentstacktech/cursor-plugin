@@ -80,7 +80,10 @@ const REQUIRED_PLUGIN_FILES = [
   'hooks/scripts/pre-shell-scan.mjs',
   'hooks/scripts/post-tool-telemetry.mjs',
   'hooks/scripts/capability-refresh.mjs',
+  'hooks/scripts/pre-mcp-auth-bridge.mjs',
   'hooks/scripts/pre-mcp-cap-check.mjs',
+  'hooks/scripts/pre-mcp-semantic-anchor-hint.mjs',
+  'hooks/scripts/pre-mcp-session-handoff.mjs',
   'hooks/scripts/session-end.mjs',
   'hooks/scripts/post-tool-failure.mjs',
   'hooks/scripts/pre-nav-index-edit.mjs',
@@ -106,7 +109,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.23';
+const TARGET_VERSION = '0.4.24';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 

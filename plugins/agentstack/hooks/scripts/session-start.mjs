@@ -8,7 +8,10 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { randomUUID } from 'node:crypto';
-import { refreshTenantCapabilitySnapshotIfStale } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
+import {
+  refreshTenantCapabilitySnapshotIfStale,
+  tenantCapabilitySnapshotFresh,
+} from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import {
   applyAgentstackMcpBearer,
   agentstackAuthHeaders,
@@ -19,10 +22,11 @@ import {
   shouldAutoDeviceLogin,
   readPinnedTenantProjectId,
   formatAgentstackStatusCard,
-  fetchAuthMeBrief,
+  profileBriefFromJwt,
   switchProjectViaRest,
   AUTHORIZE_SLASH,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
 import {
   loadConfidentialClient,
   spawnDetachedDeviceCode,
@@ -58,8 +62,7 @@ async function readMcp() {
 }
 
 async function writeMcpFile(cfg) {
-  await mkdir(CURSOR_DIR, { recursive: true });
-  await writeFile(MCP_PATH, JSON.stringify(cfg, null, 2), 'utf8');
+  await withMcpJsonRmW(CURSOR_DIR, () => cfg);
 }
 
 async function writeMcp(cfg, accessToken) {
@@ -117,11 +120,6 @@ async function refresh(refreshToken, traceId) {
 
 async function maybeRefreshCapabilitySnapshot(authHeaders) {
   try {
-    const summaryRes = await fetch(`${BASE_URL}/mcp/actions/summary`);
-    if (summaryRes.ok) {
-      const summary = await summaryRes.json().catch(() => ({}));
-      log(`catalog summary: ${summary.total_actions ?? '?'} actions`);
-    }
     const result = await refreshTenantCapabilitySnapshotIfStale(
       CURSOR_DIR,
       BASE_URL,
@@ -232,11 +230,17 @@ async function main() {
 
   const gate = describeAgentstackAuthGate(cfg);
   const extras = [];
-  const authHeaders = agentstackAuthHeaders(cfg);
-  let profile = null;
+  let authHeaders = agentstackAuthHeaders(cfg);
+
   if (authHeaders && gate.kind === 'ok') {
-    profile = await fetchAuthMeBrief(authHeaders, { baseUrl: BASE_URL });
+    const rotateMsg = await maybeRotateBearer(cfg);
+    if (rotateMsg) extras.push(rotateMsg);
+    cfg = await readMcp();
+    authHeaders = agentstackAuthHeaders(cfg);
   }
+
+  const profile =
+    authHeaders && gate.kind === 'ok' ? profileBriefFromJwt(authHeaders) : null;
   extras.push(
     formatAgentstackStatusCard({
       gateKind: gate.kind,
@@ -263,12 +267,18 @@ async function main() {
     );
   }
 
-  if (authHeaders) {
-    await maybeRefreshCapabilitySnapshot(authHeaders);
-    const rotateMsg = await maybeRotateBearer(cfg);
-    if (rotateMsg) extras.push(rotateMsg);
+  if (authHeaders && gate.kind === 'ok') {
+    const snapFresh = await tenantCapabilitySnapshotFresh(CURSOR_DIR, {
+      maxAgeMs: SNAPSHOT_MAX_AGE_MS,
+    });
+    if (!snapFresh) {
+      await maybeRefreshCapabilitySnapshot(authHeaders);
+    } else {
+      log('capability snapshot fresh — skip catalog fetch');
+    }
     if (pin && cfg) {
-      const bearer = authHeaders.Authorization?.startsWith('Bearer ')
+      authHeaders = agentstackAuthHeaders(cfg);
+      const bearer = authHeaders?.Authorization?.startsWith('Bearer ')
         ? authHeaders.Authorization.slice('Bearer '.length).trim()
         : '';
       const payload = bearer ? decodeJwtPayload(bearer) : null;

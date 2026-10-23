@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AgentStack Work Graph control plane — agents.work_next via one tool (agentstack.execute).",
-    "version": "0.4.23",
+    "version": "0.4.24",
     "pluginRoot": "plugins"
   },
   "plugins": [
@@ -14,7 +14,7 @@
       "name": "agentstack",
       "source": "agentstack",
       "description": "Work Graph control plane: agents.work_next (mcp_work_loop_v1) via agentstack.execute. Catalog search is fallback. Also hosting (/s/), storage, 8DNA, logic, payments, RAG.",
-      "version": "0.4.23",
+      "version": "0.4.24",
       "author": {
         "name": "AgentStack",
         "email": "support@agentstack.tech"

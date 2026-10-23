@@ -1,7 +1,7 @@
 # Data & call flow — AgentStack Cursor plugin
 
 **Gene:** `repo.plugins.oauth_device_code.gen1` · `repo.plugins.hooks.contract.gen1` · `repo.plugins.capability_routing.gen1`  
-**Version:** 0.4.18 · Start here for install → MCP → hooks; one-pager: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
+**Version:** 0.4.24 · Start here for install → MCP → hooks; one-pager: [MCP_QUICKSTART.md](MCP_QUICKSTART.md)
 
 ## Repo layout (Cursor 2.6+)
 
@@ -39,8 +39,8 @@ sequenceDiagram
   Hooks->>MCP: sessionStart refresh only if a leftover refresh_token file exists (device grant returns a long-lived PAT)
   Hooks->>Snap: refresh if older than 24h
   MCP->>AS: agentstack.execute steps
-  Note over MCP,AS: tools/list can succeed while tools/call fails (prod rejects JWT service_caps=null)
-  Hooks->>Snap: beforeMCPExecution cap hint
+  Note over MCP,AS: tools/list can false-green — diagnose requires tools/call auth.get_profile
+  Hooks->>Snap: beforeMCPExecution auth-bridge, session-handoff, cap-check, semantic-anchor
 ```
 
 ## Artifacts on disk
@@ -71,9 +71,9 @@ node scripts/diagnose-local.mjs
 node scripts/diagnose-local.mjs --fix --seed-snapshot
 ```
 
-`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot using Bearer **or** `X-API-Key`, and **always** emits a compact auth/profile status card (`GET /api/auth/me` when signed in). If the gate still needs login it spawns `device-code.mjs` once (lock file) so Activate opens without pasting a key. Tests must not pass `--from-hook`. Logs go to stderr so stdout stays valid JSON. Stale Cursor marketplace cache is synced with `scripts/refresh-cursor-runtime.mjs --fix`. Same card: `/agentstack-status`.
+`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot when stale, and emits a compact auth card (`GET /api/auth/me` only when the snapshot is already fresh; otherwise JWT-derived profile while catalog refresh runs). If the gate still needs login it spawns `device-code.mjs` once (lock file). Tests must not pass `--from-hook`. Live MCP health: `node scripts/diagnose-local.mjs` probes **`auth.get_profile`** via execute (not list-only). Logs go to stderr; stdout is JSON. Stale marketplace cache: `scripts/refresh-cursor-runtime.mjs --fix`. Same card: `/agentstack-status`.
 
-## MCP registration plane (0.4.18)
+## MCP registration plane (0.4.24)
 
 **Plugin panel:** `plugin.json` `mcpServers: "./mcp.json"` → URL-only streamable-http (no Bearer, **no** `variables` API-key form). Cursor shows AgentStack MCP — click **Connect** (G-A174 login). Status: sessionStart card + `/agentstack-status`. **Hooks / Device Code:** `/agentstack-authorize` still writes `~/.cursor/mcp.json` (`user-agentstack`). **Forbidden:** `${AGENTSTACK_ACCESS_TOKEN}` or any `Authorization` in the shipped plugin `mcp.json` (G-A162), an **inline** `mcpServers` object in `plugin.json`, and `variables.AGENTSTACK_ACCESS_TOKEN` (old Configure window).
 
@@ -83,7 +83,7 @@ flowchart LR
     PH["plugin mcp.json Authorization placeholder"]
     PH --> CS1[empty plugin-agentstack-*]
   end
-  subgraph pluginPlane [Plugin 0.4.18]
+  subgraph pluginPlane [Plugin 0.4.24]
     PJ["plugin.json mcpServers ./mcp.json"]
     PJ --> MCPF[URL-only mcp.json]
     MCPF --> CS3[plugin AgentStack MCP]
@@ -101,7 +101,7 @@ flowchart LR
 
 | Anti-pattern | Symptom | Fix |
 |--------------|---------|-----|
-| Empty Bearer in plugin `mcp.json` | `discovery.list` OK, execute unauthorized | 0.4.18 URL-only file; Reload; Connect |
+| Empty Bearer in plugin `mcp.json` | `discovery.list` OK, execute unauthorized | 0.4.24 URL-only file; Reload; Connect |
 | Inline `mcpServers` object in plugin.json | Duplicate / broken registration | Path string `./mcp.json` only |
 | Stale marketplace cache | Old plugin without MCP or with placeholder | `refresh-cursor-runtime.mjs --fix` |
 | Backend lists 2 tools | Two `agentstack_execute` in tools panel | Deploy core 0.4.16 |

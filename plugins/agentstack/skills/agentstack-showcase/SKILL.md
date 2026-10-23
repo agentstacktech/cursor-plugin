@@ -21,6 +21,9 @@ Use when editing the public `/showcase` gallery, ecosystem catalog DNA on **proj
 |------|--------|
 | Gallery card metadata (title, tagline, featured, order) | pid=1 showcase tools |
 | Tenant hosting bytes, bots, KB, commerce | `agentstack_safe_project_cycle` on **tenant** `project_id` |
-| Platform proof sites (1438–1443) | Bootstrap / republish — not tenant generation F1 |
+| Platform proof sites (1438–1443) | VPS sync + `hosting.site.build` / `showcase.build.republish_entry` — **not** `generation.promote` |
+| Portfolio tenants (1472, 1444, …) | `agentstack_safe_project_cycle` on tenant `project_id` |
+
+Prompts: `agentstack_showcase_ops` (gallery DNA) · `agentstack_showcase_vps_ops` (proof publish loop).
 
 Catalog ids are **kebab-case** (`helpdesk-bot`, not `helpdesk_bot`).

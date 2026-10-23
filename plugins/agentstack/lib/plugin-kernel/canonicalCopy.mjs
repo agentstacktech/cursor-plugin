@@ -57,6 +57,12 @@ export function formatClaudeMcpAddCommand({
 export const MCP_RECOVERY_HINTS = {
   auth_required:
     'Add X-API-Key or complete OAuth in Custom GPT Actions or MCP Connector settings.',
+  not_authenticated:
+    'Connect (G-A174) or /agentstack-authorize — then auth.get_profile (or node scripts/mcp-execute.mjs auth.get_profile) before context.project_id.',
+  unauthorized:
+    'Same as auth_required — Connect, Device Code, or Bearer from profile API key.',
+  plan_graph_private:
+    'Sign in (auth.get_profile) or set orchestrator public_read on the project before agents.plan_get.',
   service_cap_denied:
     'Widen API key caps via apikeys.create (preset agent_runner) or call discovery.list first.',
   action_not_found:
@@ -65,6 +71,8 @@ export const MCP_RECOVERY_HINTS = {
     'Ask the user to confirm destructive, payment, or access-changing operations.',
   mcp_sync_heavy_limit:
     'Split the batch or use async execute for heavy LLM actions.',
+  service_caps_required_in_prod:
+    'Run /agentstack-authorize or Connect — production requires scoped service_caps on the JWT.',
 };
 
 export function recoveryHintForCode(code) {

@@ -5,7 +5,8 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
@@ -151,6 +152,37 @@ for (const ev of requiredEvents) {
 if (!fs.existsSync(path.join(PLUGIN, 'hooks/scripts/device-code.mjs'))) {
   fail('hooks/scripts/device-code.mjs missing');
 } else ok('device-code.mjs present (install path)');
+
+const kernelAnchor = path.join(PLUGIN, 'lib/plugin-kernel/batchSemanticAnchor.mjs');
+if (!fs.existsSync(kernelAnchor)) {
+  fail('lib/plugin-kernel/batchSemanticAnchor.mjs missing (Wave A-1 kernel)');
+} else {
+  try {
+    await import(pathToFileURL(kernelAnchor).href);
+    ok('plugin-kernel batchSemanticAnchor import');
+  } catch (e) {
+    fail(`batchSemanticAnchor import: ${e.message}`);
+  }
+}
+
+const semFixture = path.join(PLUGIN, 'hooks/fixtures/pre-mcp-agentstack-execute.json');
+const semHook = path.join(PLUGIN, 'hooks/scripts/pre-mcp-semantic-anchor-hint.mjs');
+if (!fs.existsSync(semHook)) {
+  fail('hooks/scripts/pre-mcp-semantic-anchor-hint.mjs missing');
+} else if (!fs.existsSync(semFixture)) {
+  fail('hooks/fixtures/pre-mcp-agentstack-execute.json missing');
+} else {
+  const semRun = spawnSync(process.execPath, [semHook], {
+    cwd: PLUGIN,
+    input: fs.readFileSync(semFixture, 'utf8'),
+    encoding: 'utf8',
+  });
+  if ((semRun.status ?? 1) !== 0) {
+    fail(`pre-mcp-semantic-anchor-hint.mjs fixture run exit ${semRun.status}`);
+  } else {
+    ok('pre-mcp-semantic-anchor-hint.mjs import + fixture smoke');
+  }
+}
 
 // Backend router covers skill folders (name match or known alias)
 const backend = fs.readFileSync(path.join(PLUGIN, 'skills/agentstack-backend/SKILL.md'), 'utf8');

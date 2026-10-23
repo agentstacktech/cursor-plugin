@@ -2,6 +2,25 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.24] - 2026-10-23
+
+### Added
+
+- **MCP execute bridge:** `scripts/mcp-execute.mjs` + kernel HTTP helpers for Device Code when plugin MCP is unsigned.
+- **Batch semantic anchor:** pre-MCP hooks (`pre-mcp-semantic-anchor-hint`, `batchSemanticAnchor`) for safer multi-step executes.
+- **StackScript:** `agentstack-stackscript` command + skill; commerce/knowledge skill refresh from live catalog.
+
+### Changed
+
+- **Work Graph SKILL:** `discovery.describe` self-desc table (`loop_compact`, `slice_compact`, `ops_compact`) and perf hints for post-core-deploy.
+- **MCP hooks:** auth bridge, post-tool-failure recovery, capability refresh; catalog matrix regen from live `GET /mcp/actions`.
+- **Marketplace / plugin.json** at **0.4.24** (align with Core substrate; server must ship matching describe payloads).
+
+### Fixed
+
+- **Prose leaks:** plugin bundle docs avoid monorepo-only paths (`audit-plugin-prose-leaks`).
+- **LOCAL_INSTALL / MCP_QUICKSTART:** empty cache + Connect (G-A174) troubleshooting.
+
 ## [0.4.23] - 2026-10-16
 
 ### Changed
