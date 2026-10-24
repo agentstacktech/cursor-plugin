@@ -20,7 +20,7 @@ Runbook: MCP prompts `agentstack_knowledge_*` + `/agentstack-safe-cycle` (sandbo
 
 1. `preflight.check` (+ `simulate_batch_steps` for multi-step batches) + `knowledge.health`
 2. Mutate (one logical change per sync batch when possible)
-3. `knowledge.retrieve.probe` or `knowledge.playground` (one **heavy_llm** per sync execute)
+3. `knowledge.retrieve.probe` or `knowledge.playground` simulate (one **heavy_llm** per sync execute; prefer `options.async=true` + `discovery.job_status` — see catalog `async_execute` on `discovery.list` rows)
 4. `generation.diff_vs_prod` → `generation.gates` → `generation.promote`
 
 On `generation_fork_required`: omit `env_uuid` to auto-fork, or pass sandbox `env_uuid`.
