@@ -41,6 +41,8 @@ import {
   MCP_EXECUTE_TOOL_CANONICAL,
   minimalExecuteToolFixture,
   toolsCallErrorDetail,
+  interpretPluginCacheProbe,
+  pluginCacheMcpPostContext,
 } from './lib/mcpSurfaceProbe.mjs';
 import {
   extractMcpAction,
@@ -164,6 +166,18 @@ assert.deepEqual(stripLeanServerKeys({ url: 'https://x/mcp', tools: {}, baseUrl:
 });
 
 assert.equal(evaluateSingleToolSurface([minimalExecuteToolFixture()]).ok, true);
+const unsignedCache = pluginCacheMcpPostContext({
+  mcpServers: { agentstack: { type: 'streamable-http', url: 'https://agentstack.tech/mcp' } },
+});
+assert.equal(unsignedCache.signed, false);
+assert.equal(
+  interpretPluginCacheProbe({
+    signed: false,
+    toolCount: 1,
+    surface: evaluateSingleToolSurface([minimalExecuteToolFixture()]),
+  }).cursorLikelyZeroTools,
+  true,
+);
 assert.equal(evaluateSingleToolSurface([{ name: 'a' }, { name: 'b' }]).ok, false);
 assert.match(
   toolsCallErrorDetail({
@@ -275,9 +289,25 @@ const runtimeCfg = buildPluginRuntimeMcpConfig({
   },
 });
 assert.ok(runtimeCfg.mcpServers.agentstack.headers.Authorization.startsWith('Bearer '));
-assert.match(pluginMcpRuntimeCacheError(buildPluginRuntimeMcpConfig({
-  mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}`, 'X-Project-ID': '1444' } } },
-})), /service_caps|PAT/);
+assert.throws(
+  () =>
+    buildPluginRuntimeMcpConfig({
+      mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}`, 'X-Project-ID': '1444' } } },
+    }),
+  /PAT|X-API-Key/,
+);
+assert.match(
+  pluginMcpRuntimeCacheError({
+    mcpServers: {
+      agentstack: {
+        type: 'streamable-http',
+        url: 'https://agentstack.tech/mcp',
+        headers: { Authorization: `Bearer ${fakeJwt}` },
+      },
+    },
+  }),
+  /service_caps|PAT/,
+);
 assert.equal(pluginMcpRuntimeCacheError(runtimeCfg), null);
 assert.match(pluginMcpOAuthError(runtimeCfg), /Authorization/);
 assert.match(

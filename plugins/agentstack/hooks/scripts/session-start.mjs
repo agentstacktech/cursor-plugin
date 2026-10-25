@@ -279,7 +279,7 @@ async function main() {
       /* best effort */
     }
   }
-  if (gateFinal.kind === 'ok' && agentstackAuthHeaders(cfg)) {
+  if (gateFinal.kind === 'ok' && gateFinal.authMode !== 'api_key' && agentstackAuthHeaders(cfg)) {
     try {
       const drifted = await pluginCacheBearerDrifted(cfg, { baseUrl: BASE_URL });
       const sync = drifted
@@ -363,6 +363,12 @@ async function main() {
       auth: describeAgentstackMcpAuth(cfg),
       pin,
       profile,
+      transportRecommended:
+        gateFinal.authMode === 'api_key'
+          ? 'api_key'
+          : gateFinal.authMode === 'bearer_pat'
+            ? 'device_code'
+            : undefined,
     }),
   );
 

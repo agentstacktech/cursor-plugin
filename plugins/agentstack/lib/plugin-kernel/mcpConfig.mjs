@@ -483,9 +483,16 @@ export function formatAgentstackStatusCard({
     transportRecommended ||
     (auth?.apiKeyPresent ? 'api_key' : jwtType === 'user_api_key' ? 'device_code' : 'connect');
   const expWarn = bearerExpWarn(auth);
+  const authModeLine = auth?.apiKeyPresent ? 'auth_mode=api_key' : auth?.jwtType ? `auth_mode=${auth.jwtType}` : '';
+  const namespaceLine =
+    auth?.apiKeyPresent
+      ? 'active_namespace=user-agentstack (hooks); plugin-agentstack-* → Connect'
+      : 'active_namespace=user-agentstack + plugin-agentstack-* (after Connect or PAT mirror)';
   const lines = [
     `AgentStack: ${who}${role}`,
     `project ${pid} · ${caps} · ${exp}`,
+    ...(authModeLine ? [authModeLine] : []),
+    ...(namespaceLine ? [namespaceLine] : []),
     `transport_recommended=${transport}`,
     namespaceHint ||
       'plugin-agentstack-* → Connect; user-agentstack / mcp-execute → Device Code Bearer.',

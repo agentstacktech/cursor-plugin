@@ -28,13 +28,18 @@ async function main() {
   }
 
   const catalogActions = actionsFromSnapshot(snapshot);
+  const capByAction = new Map();
+  for (const row of catalogActions) {
+    if (row?.action) capByAction.set(row.action, row.required_cap);
+    if (row?.safe_action) capByAction.set(row.safe_action, row.required_cap);
+  }
   const seen = new Set();
   for (const action of stepActions) {
     if (!action || !String(action).includes('.') || seen.has(action)) continue;
     seen.add(action);
-    const row = catalogActions.find((a) => a.action === action || a.safe_action === action);
-    if (row?.required_cap) {
-      console.error(`[agentstack] action ${action} requires cap ${row.required_cap}`);
+    const requiredCap = capByAction.get(action);
+    if (requiredCap) {
+      console.error(`[agentstack] action ${action} requires cap ${requiredCap}`);
     }
   }
   process.exit(0);

@@ -43,9 +43,12 @@ async function main() {
   if (!isPluginAgentstackMcp(event)) process.exit(0);
 
   const cfg = await readMcp();
+  const gate = describeAgentstackAuthGate(cfg);
+  if (gate.kind !== 'ok') process.exit(0);
+  if (gate.authMode === 'api_key') process.exit(0);
+
   const authHeaders = agentstackAuthHeaders(cfg);
   if (!authHeaders) process.exit(0);
-  if (describeAgentstackAuthGate(cfg).kind !== 'ok') process.exit(0);
 
   if (!(await pluginCacheBearerDrifted(cfg))) {
     process.exit(0);
@@ -59,7 +62,6 @@ async function main() {
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'false';
   const hint =
     strict ||
-    !hintOptOut ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === '1' ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'true';
   if (!hint) process.exit(0);

@@ -205,6 +205,97 @@ export function toolsCallErrorDetail(body) {
  * @param {string} baseUrl
  * @returns {Promise<{ mcp_surface_tools?: number, tools_count?: number }|null>}
  */
+/**
+ * POST context from plugin cache mcp.json only (not user ~/.cursor/mcp.json).
+ * @param {object|null} cacheMcpJson
+ */
+export function pluginCacheMcpPostContext(cacheMcpJson) {
+  const entry = cacheMcpJson?.mcpServers?.agentstack;
+  const url = String(entry?.url || 'https://agentstack.tech/mcp').replace(/\/$/, '');
+  const m = url.match(/^(https?:\/\/[^/]+)/i);
+  const baseUrl = m ? m[1] : 'https://agentstack.tech';
+  const headers = { 'Content-Type': 'application/json' };
+  const raw = entry?.headers;
+  if (raw && typeof raw === 'object') {
+    for (const [k, v] of Object.entries(raw)) {
+      if (typeof v === 'string' && v.trim() && !String(v).includes('${')) {
+        headers[k] = v.trim();
+      }
+    }
+  }
+  const auth = headers.Authorization || headers.authorization || '';
+  const signed =
+    typeof auth === 'string' && auth.startsWith('Bearer ') && auth.length > 'Bearer '.length;
+  return { baseUrl, headers, signed };
+}
+
+/**
+ * @param {{ signed: boolean, toolCount: number, surface: { ok: boolean, reason?: string } }}
+ */
+export function interpretPluginCacheProbe({ signed, toolCount, surface }) {
+  if (!signed) {
+    return {
+      cursorLikelyZeroTools: true,
+      cursorReason:
+        'cache mcp.json OAuth-only (no Bearer) — plugin-agentstack-* needs Connect (G-A174) or PAT mirror; ' +
+        'HTTP tools/list may still return 1 tool anonymously',
+    };
+  }
+  if (!surface.ok) {
+    return {
+      cursorLikelyZeroTools: true,
+      cursorReason: surface.reason || 'surface contract failed',
+    };
+  }
+  if (toolCount === 0) {
+    return {
+      cursorLikelyZeroTools: true,
+      cursorReason: 'tools/list returned 0 tools with cache Bearer',
+    };
+  }
+  return { cursorLikelyZeroTools: false, cursorReason: null };
+}
+
+/**
+ * tools/list using plugin cache mcp.json headers only.
+ * @param {object} cacheMcpJson
+ * @param {{ fallbackBaseUrl?: string }} [opts]
+ */
+export async function probePluginCacheToolsList(cacheMcpJson, opts = {}) {
+  const ctx = pluginCacheMcpPostContext(cacheMcpJson);
+  const baseUrl = ctx.baseUrl || opts.fallbackBaseUrl || 'https://agentstack.tech';
+  try {
+    const tools = await postToolsList(baseUrl, ctx.headers);
+    const surface = evaluateSingleToolSurface(tools);
+    const { cursorLikelyZeroTools, cursorReason } = interpretPluginCacheProbe({
+      signed: ctx.signed,
+      toolCount: tools.length,
+      surface,
+    });
+    return {
+      signed: ctx.signed,
+      baseUrl,
+      toolCount: tools.length,
+      tools,
+      surface,
+      cursorLikelyZeroTools,
+      cursorReason,
+    };
+  } catch (e) {
+    const msg = e?.message || String(e);
+    return {
+      signed: ctx.signed,
+      baseUrl,
+      toolCount: 0,
+      tools: [],
+      surface: { ok: false, reason: msg },
+      cursorLikelyZeroTools: true,
+      cursorReason: msg,
+      error: msg,
+    };
+  }
+}
+
 export async function fetchMcpHealth(baseUrl) {
   const root = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
   const res = await fetch(`${root}/mcp/health`);

@@ -43,9 +43,17 @@ export function buildPluginRuntimeMcpConfig(userCfg, { baseUrl } = {}) {
   const existing = root.mcpServers?.agentstack || {};
   const prevHeaders =
     existing.headers && typeof existing.headers === 'object' ? { ...existing.headers } : {};
-  const auth = agentstackAuthHeaders(root);
+  const prevH = existing.headers && typeof existing.headers === 'object' ? existing.headers : {};
+  const rawAuth = prevH.Authorization;
+  const bearer =
+    typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
+      ? rawAuth.slice('Bearer '.length).trim()
+      : '';
+  if (!isDeviceCodeMcpBearer(bearer)) {
+    throw new Error('buildPluginRuntimeMcpConfig requires Device Code PAT Bearer (not X-API-Key)');
+  }
   const url = baseUrl || baseUrlFromCfg(root);
-  const headers = { 'Content-Type': 'application/json', ...(auth || {}) };
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` };
   stampAgentstackProjectHeader(
     headers,
     resolveAgentstackProjectPin(prevHeaders, headers['X-Project-ID']),
@@ -108,10 +116,21 @@ export async function resetPluginCacheMcpToOAuthOnly(opts = {}) {
   return updated;
 }
 
+const CACHE_PATHS_TTL_MS = 15_000;
+let _cachePathsAt = 0;
+let _cachePathsMemo = [];
+
+const DRIFT_TTL_MS = 30_000;
+let _driftAt = 0;
+let _driftMemo = false;
+
 /**
  * @returns {string[]}
  */
 function listPluginCacheMcpPaths() {
+  if (_cachePathsMemo.length && Date.now() - _cachePathsAt < CACHE_PATHS_TTL_MS) {
+    return _cachePathsMemo;
+  }
   const cacheRoot = path.join(os.homedir(), '.cursor', 'plugins', 'cache', 'agentstack');
   const out = [];
   if (!fsSync.existsSync(cacheRoot)) return out;
@@ -124,6 +143,8 @@ function listPluginCacheMcpPaths() {
       else if (entry.name === 'mcp.json') out.push(full);
     }
   }
+  _cachePathsMemo = out;
+  _cachePathsAt = Date.now();
   return out;
 }
 
@@ -202,26 +223,49 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
  * @returns {Promise<boolean>}
  */
 export async function pluginCacheBearerDrifted(userCfg, opts = {}) {
+  if (!opts.force && Date.now() - _driftAt < DRIFT_TTL_MS) {
+    return _driftMemo;
+  }
   const rawAuth = userCfg?.mcpServers?.agentstack?.headers?.Authorization;
   const bearer =
     typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
       ? rawAuth.slice('Bearer '.length).trim()
       : '';
-  if (!bearer || !isDeviceCodeMcpBearer(bearer)) return false;
+  if (!bearer || !isDeviceCodeMcpBearer(bearer)) {
+    _driftMemo = false;
+    _driftAt = Date.now();
+    return false;
+  }
   const runtime = buildPluginRuntimeMcpConfig(userCfg, {
     baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
   });
-  if (pluginMcpRuntimeCacheError(runtime)) return false;
+  if (pluginMcpRuntimeCacheError(runtime)) {
+    _driftMemo = false;
+    _driftAt = Date.now();
+    return false;
+  }
   const target = JSON.stringify(runtime);
   const paths = listPluginCacheMcpPaths();
-  if (!paths.length) return true;
+  if (!paths.length) {
+    _driftMemo = true;
+    _driftAt = Date.now();
+    return true;
+  }
   for (const p of paths) {
     try {
       const cur = JSON.parse(await fs.readFile(p, 'utf8'));
-      if (JSON.stringify(cur) !== target) return true;
+      if (JSON.stringify(cur) !== target) {
+        _driftMemo = true;
+        _driftAt = Date.now();
+        return true;
+      }
     } catch {
+      _driftMemo = true;
+      _driftAt = Date.now();
       return true;
     }
   }
+  _driftMemo = false;
+  _driftAt = Date.now();
   return false;
 }

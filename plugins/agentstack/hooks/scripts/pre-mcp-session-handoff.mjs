@@ -71,7 +71,14 @@ async function main() {
   if (!targetPid) process.exit(0);
 
   const cfg = await readMcp();
-  if (!cfg || describeAgentstackAuthGate(cfg).kind !== 'ok') process.exit(0);
+  const gate = describeAgentstackAuthGate(cfg);
+  if (!cfg || gate.kind !== 'ok') process.exit(0);
+  if (gate.authMode === 'api_key') {
+    process.stderr.write(
+      '[agentstack] session handoff: X-API-Key — set context.project_id in batch; REST switch-project needs PAT Bearer.\n',
+    );
+    process.exit(0);
+  }
   const authHeaders = agentstackAuthHeaders(cfg);
   if (!authHeaders?.Authorization?.startsWith('Bearer ')) process.exit(0);
   const currentBearer = authHeaders.Authorization.slice('Bearer '.length).trim();

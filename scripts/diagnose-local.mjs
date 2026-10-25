@@ -40,6 +40,7 @@ import {
   postToolsList,
   postToolsCallAuthGetProfile,
   postToolsCallExecuteAlias,
+  probePluginCacheToolsList,
 } from './lib/mcpSurfaceProbe.mjs';
 import {
   writeTenantCapabilitySnapshot,
@@ -247,8 +248,23 @@ if (fs.existsSync(cacheRoot)) {
         'PAT in ~/.cursor/mcp.json but plugin cache OAuth-only — run refresh-cursor-runtime.mjs --fix + Reload Window.',
       );
     }
+    if (!wantQuick && cachedMcp.length) {
+      for (const p of cachedMcp) {
+        const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+        const probe = await probePluginCacheToolsList(parsed, { fallbackBaseUrl: BASE_URL });
+        const tag = path.basename(path.dirname(p));
+        if (probe.cursorLikelyZeroTools) {
+          fail(`plugin cache tools/list @ ${tag}: ${probe.cursorReason}`);
+          if (!zeroToolsHints.includes(probe.cursorReason)) zeroToolsHints.push(probe.cursorReason);
+        } else if (probe.surface.ok) {
+          ok(`plugin cache tools/list @ ${tag}: 1 tool (signed mirror)`);
+        } else {
+          warn(`plugin cache tools/list @ ${tag}: ${probe.surface.reason}`);
+        }
+      }
+    }
     if (wantFix) {
-      const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
+      const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL, force: true });
       if (sync.updated.length) {
         ok(`plugin cache bearer-sync (${sync.updated.length}) — Reload Window for plugin-agentstack-*`);
       }
@@ -532,7 +548,9 @@ if (zeroToolsHints.length) {
     console.log(`RCA  ${line}`);
   }
   console.log('RCA  user-agentstack / mcp-execute can work while plugin-agentstack-* shows 0 until Connect or PAT mirror.');
-  console.log('RCA  See docs/plans/CURSOR_PLUGIN_ZERO_TOOLS_DECOMPOSITION_2026-10-25.md § Phase 0');
+  console.log(
+    'RCA  Plan: AgentStack monorepo docs/plans/CURSOR_PLUGIN_ZERO_TOOLS_DECOMPOSITION_2026-10-25.md § Phase 0',
+  );
 }
 
 console.log(`\nsummary: failed=${fails}`);

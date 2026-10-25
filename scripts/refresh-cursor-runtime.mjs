@@ -190,7 +190,11 @@ function syncAuthSlice(pluginRoot) {
       /* missing in cache */
     }
     if (b && a.equals(b)) continue;
-    if (!fix) fail(`${dest}: auth-slice drift (${rel})`);
+    if (!fix) {
+      fail(
+        `${dest}: auth-slice drift (${rel}) — plugin-agentstack-* may show 0 tools until refresh-cursor-runtime.mjs --fix + Reload`,
+      );
+    }
     if (fix) {
       fs.mkdirSync(path.dirname(dest), { recursive: true });
       fs.writeFileSync(dest, a);
