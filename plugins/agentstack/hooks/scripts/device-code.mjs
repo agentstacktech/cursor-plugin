@@ -17,7 +17,12 @@ import {
 } from '../../lib/plugin-kernel/deviceCodeClient.mjs';
 import { resolveScopePreset, SCOPE_PRESETS } from '../../lib/plugin-kernel/oauthScopePresets.mjs';
 import { refreshTenantCapabilitySnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
-import { applyAgentstackMcpBearer, readPinnedTenantProjectId } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import {
+  applyAgentstackMcpBearer,
+  isDeviceCodeMcpBearer,
+  readPinnedTenantProjectId,
+} from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { syncPluginRuntimeMcpBearerFromUser } from '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
@@ -185,9 +190,18 @@ async function main() {
       clientSecret: init.__client_secret || null,
     });
 
+    if (!isDeviceCodeMcpBearer(token.access_token)) {
+      throw new Error(
+        'Device Code returned a non-PAT or null service_caps — retry /agentstack-authorize (scope-preset=full).',
+      );
+    }
+
     await writeMcpJson(token.access_token, token);
+    const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
     await writeRefreshToken(token.refresh_token, token);
-    await clearMcpCache(token.access_token, traceId);
+    if (process.env.AGENTSTACK_MCP_CACHE_CLEAR === '1') {
+      await clearMcpCache(token.access_token, traceId);
+    }
     await seedCapabilitySnapshot(token.access_token);
 
     const scope = token.scope || scopes;
@@ -197,9 +211,12 @@ async function main() {
     console.log(`  Trace:   ${traceId}`);
     console.log(`  Expires: PAT (user_api_key) — long-lived; no OAuth refresh pair (G-A166 rotates prior plugin PAT).`);
     console.log(`  Config:  ${MCP_PATH}\n`);
+    if (sync.updated.length) {
+      console.log(`  Plugin cache MCP synced (${sync.updated.length} file(s)) — plugin-agentstack-* can use Device Code Bearer.`);
+    }
     console.log(
-      '  Next: Developer: Reload Window (required — old PAT is revoked). ' +
-        'Plugin MCP: click Connect (G-A174) or keep user-agentstack from this file. /agentstack-status\n',
+      '  Next: Developer: Reload Window (required). ' +
+        'Plugin MCP uses synced Bearer, or click Connect (G-A174). /agentstack-status\n',
     );
   } finally {
     await endDeviceLoginLock(CURSOR_DIR);

@@ -5,8 +5,8 @@
 import { readFile, writeFile, mkdir, chmod } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { stdin } from 'node:process';
 import { recoveryHintForCode } from '../../lib/plugin-kernel/canonicalCopy.mjs';
+import { readHookStdinJson } from '../../lib/plugin-kernel/hookStdin.mjs';
 import {
   buildMcpExecuteRetryCommand,
   shouldSemanticAnchorRetry,
@@ -66,6 +66,11 @@ function extractErrorCode(event, errText) {
     return 'unauthorized';
   }
   if (/\bauth_required\b/i.test(errText)) return 'auth_required';
+  if (/service_caps_required_in_prod/i.test(errText)) return 'service_caps_required_in_prod';
+  if (/mcp_sync_heavy_limit/i.test(errText)) return 'mcp_sync_heavy_limit';
+  if (/hosted_cookie_missing|hosted_session_mint_failed/i.test(errText)) {
+    return 'hosted_cookie_missing';
+  }
   return null;
 }
 
@@ -76,32 +81,8 @@ function isAgentstackMcpTool(event) {
   return /agentstack|mcp_execute|plugin-agentstack/i.test(id);
 }
 
-async function readStdinJson() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve(null);
-      }
-    });
-    setTimeout(() => {
-      try {
-        resolve(data ? JSON.parse(data) : null);
-      } catch {
-        resolve(null);
-      }
-    }, 200);
-  });
-}
-
 async function main() {
-  const event = await readStdinJson();
+  const event = await readHookStdinJson();
   if (!event) process.exit(0);
 
   let settings = {};
@@ -131,6 +112,10 @@ async function main() {
   const recoveryLine = errorCode ? recoveryHintForCode(errorCode) : null;
   if (recoveryLine) {
     console.error(`[agentstack] ${recoveryLine}`);
+  }
+  if (errorCode === 'not_authenticated') {
+    const syncHint = recoveryHintForCode('dual_surface_bearer_sync');
+    if (syncHint) console.error(`[agentstack] ${syncHint}`);
   } else if (authTrap) {
     const fallback = recoveryHintForCode('not_authenticated');
     if (fallback) console.error(`[agentstack] ${fallback}`);

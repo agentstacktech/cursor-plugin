@@ -7,6 +7,7 @@ import rules from './batchParamAnchorRules.generated.json' with { type: 'json' }
 
 const MUTATES_WHEN = rules.mutates_when_by_action || {};
 const PLAIN_READ_ACTIONS = new Set(rules.plain_read_actions || []);
+const ANCHOR_EXEMPT_MUTATE = new Set(rules.anchor_exempt_mutate_actions || []);
 const FALLBACK = rules.plugin_fallback || {};
 
 /** @param {unknown} val */
@@ -70,7 +71,15 @@ export function stepAllowedWithoutSemanticAnchor(action, params, auditBatchActio
   const act = String(action || '').trim();
   if (!act) return true;
 
+  if (ANCHOR_EXEMPT_MUTATE.has(act)) return true;
+
   if (batchStepEffectiveMutates(act, params)) return false;
+
+  // Param-gated mutators (mutates_when): non-mutating param slice is anchor-free (preview paths).
+  const mutatesWhen = MUTATES_WHEN[act];
+  if (mutatesWhen && typeof mutatesWhen === 'object') {
+    return true;
+  }
 
   if (auditBatchActions?.has(act) && FALLBACK.audit_whitelist_no_anchor !== false) {
     return true;

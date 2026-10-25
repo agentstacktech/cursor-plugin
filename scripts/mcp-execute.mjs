@@ -12,8 +12,13 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { stdin } from 'node:process';
-import { agentstackAuthHeaders } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import {
+  agentstackAuthHeaders,
+  describeAgentstackAuthGate,
+  describeAgentstackMcpAuth,
+  formatAgentstackStatusCard,
+} from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import { readHookStdinJson } from '../plugins/agentstack/lib/plugin-kernel/hookStdin.mjs';
 import {
   postAgentstackExecute,
   resolveMcpBaseUrl,
@@ -27,20 +32,22 @@ function usage() {
   node scripts/mcp-execute.mjs --project-id <pid> <action> [--params JSON]
   node scripts/mcp-execute.mjs --project-id 1 --execution-intent direct --focus-node-id <id> agents.plan_claim --params '{...}'
   node scripts/mcp-execute.mjs --file batch.json
-  cat batch.json | node scripts/mcp-execute.mjs`);
-  process.exit(2);
+  cat batch.json | node scripts/mcp-execute.mjs
+
+  --help  Auth gate summary from ~/.cursor/mcp.json (exit 0).`);
 }
 
-async function readStdin() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => resolve(data.trim()));
-    setTimeout(() => resolve(data.trim()), 50);
-  });
+function printAuthHelpAndExit(cfg) {
+  const gate = describeAgentstackAuthGate(cfg);
+  const claims = describeAgentstackMcpAuth(cfg);
+  console.log(
+    formatAgentstackStatusCard({
+      gateKind: gate.kind,
+      additionalContext: gate.additionalContext,
+      auth: claims,
+    }),
+  );
+  process.exit(gate.kind === 'ok' ? 0 : 1);
 }
 
 function parseArgs(argv) {
@@ -72,10 +79,10 @@ function parseArgs(argv) {
       planExecuteMode = true;
       continue;
     }
-    if (a === '--help' || a === '-h') usage();
+    if (a === '--help' || a === '-h') return { help: true };
     rest.push(a);
   }
-  return { projectId, file, executionIntent, focusNodeId, planExecuteMode, rest };
+  return { projectId, file, executionIntent, focusNodeId, planExecuteMode, rest, help: false };
 }
 
 async function loadBatch({
@@ -100,12 +107,18 @@ async function loadBatch({
     }
     return batch;
   }
-  const piped = await readStdin();
-  if (piped) {
-    return JSON.parse(piped);
+  const piped = await readHookStdinJson({ timeoutMs: 500 });
+  if (piped && typeof piped === 'object' && Array.isArray(piped.steps)) {
+    return piped;
+  }
+  if (piped && typeof piped === 'object') {
+    return piped;
   }
   const action = rest[0];
-  if (!action || !action.includes('.')) usage();
+  if (!action || !action.includes('.')) {
+    usage();
+    process.exit(2);
+  }
   let params = {};
   const paramsIdx = rest.indexOf('--params');
   if (paramsIdx >= 0 && rest[paramsIdx + 1]) {
@@ -139,6 +152,7 @@ async function main() {
     focusNodeId,
     planExecuteMode,
     rest,
+    help,
   } = parseArgs(process.argv.slice(2));
   let cfg;
   try {
@@ -146,6 +160,18 @@ async function main() {
   } catch {
     console.error(
       'No ~/.cursor/mcp.json — run /agentstack-authorize or click Connect on plugin AgentStack MCP.',
+    );
+    process.exit(1);
+  }
+  if (help) printAuthHelpAndExit(cfg);
+  const gate = describeAgentstackAuthGate(cfg);
+  if (gate.kind !== 'ok') {
+    console.error(
+      formatAgentstackStatusCard({
+        gateKind: gate.kind,
+        additionalContext: gate.additionalContext,
+        auth: describeAgentstackMcpAuth(cfg),
+      }),
     );
     process.exit(1);
   }

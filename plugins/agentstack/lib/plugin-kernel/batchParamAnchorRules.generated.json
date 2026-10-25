@@ -110,6 +110,20 @@
         "sync_plan": true
       },
       "needs_anchor": true
+    },
+    {
+      "id": "hosting_site_build_enqueue_default",
+      "action": "hosting.site.build",
+      "params": {},
+      "needs_anchor": false
+    },
+    {
+      "id": "hosting_site_build_sync",
+      "action": "hosting.site.build",
+      "params": {
+        "async": false
+      },
+      "needs_anchor": true
     }
   ],
   "mutates_when_by_action": {
@@ -128,9 +142,11 @@
     "hosting.gc.ix": {
       "dry_run": false
     },
+    "hosting.site.build": {
+      "async": false
+    },
     "hosting.bucket.file.patch": {
-      "dry_run": false,
-      "publish": true
+      "dry_run": false
     },
     "agents.reconcile_binding": {
       "repair": true
@@ -186,7 +202,6 @@
     "agentnet.testnet.run_scenario",
     "agentnet.vault.nav",
     "agents.automation_map",
-    "agents.ensure_agent",
     "agents.fleet_diagnostics",
     "agents.gates",
     "agents.get",
@@ -194,7 +209,6 @@
     "agents.graph_file_get",
     "agents.graph_file_list",
     "agents.graph_file_put",
-    "agents.graph_health",
     "agents.health",
     "agents.instruction_rules_list",
     "agents.list",
@@ -202,9 +216,6 @@
     "agents.metrics",
     "agents.plan_get",
     "agents.plan_preview_affinities",
-    "agents.plan_process_backlog",
-    "agents.plan_propose",
-    "agents.plan_recovery_scan",
     "agents.plan_release",
     "agents.plan_suggest_tree",
     "agents.policy_preview",
@@ -220,7 +231,6 @@
     "agents.timeline",
     "agents.traces",
     "agents.version_timeline",
-    "agents.work_next",
     "agents.work_status",
     "ai_builder.build.status",
     "ai_builder.compose.preview",
@@ -230,10 +240,12 @@
     "ai_builder.source.list",
     "analytics.archive.query",
     "analytics.bump",
+    "analytics.events.list",
     "analytics.get_metrics",
     "analytics.get_usage",
     "analytics.project_snapshot",
     "apikeys.list",
+    "assets.activity",
     "assets.export",
     "assets.get",
     "assets.list",
@@ -298,8 +310,6 @@
     "commerce.storefront.list",
     "commerce.storefront.one_click_fill",
     "commerce.storefront.seed_plan",
-    "commerce.storefront.seed_undo",
-    "context.get",
     "context.hint_use_params_project_id",
     "context.resolve",
     "crm.export_contact",
@@ -320,7 +330,6 @@
     "data_access.get_policy",
     "data_access.get_triggers",
     "data_access.test_mask",
-    "diagnostics.consistency.scan",
     "diagnostics.gene_token_query",
     "diagnostics.neural_graph",
     "discovery.changelog",
@@ -353,6 +362,7 @@
     "finance.revenue.record",
     "fundraising.narrative.lint",
     "fundraising.packet.compose",
+    "games.leaderboards.top",
     "generation.archive",
     "generation.diff",
     "generation.diff_vs_prod",
@@ -402,7 +412,6 @@
     "hosting.demo_store.status",
     "hosting.project.status",
     "hosting.release.list",
-    "hosting.site.build",
     "hosting.site.build_status",
     "hosting.site.edge_health",
     "hosting.site.resolve",
@@ -413,7 +422,6 @@
     "hosting.visual.inspect",
     "hosting.workspace.file.get",
     "hosting.workspace.files.list",
-    "hosting.workspace.init",
     "hosting.workspace.meta",
     "integrations.connection_health",
     "integrations.connector_schema",
@@ -463,6 +471,7 @@
     "knowledge.content.list",
     "knowledge.correction.propose",
     "knowledge.doctor.run",
+    "knowledge.eval.retrieval",
     "knowledge.eval.run_all",
     "knowledge.export",
     "knowledge.gc.status",
@@ -521,7 +530,6 @@
     "preflight.simulate",
     "processors.get_metadata",
     "processors.list",
-    "projects.archive",
     "projects.cancel_deletion",
     "projects.catalog_summaries",
     "projects.deletion_status",
@@ -541,7 +549,6 @@
     "projects.presets.list",
     "projects.put_notify_policy",
     "projects.readiness.get",
-    "projects.schedule_deletion",
     "rag.collection_get",
     "rag.collection_list",
     "rag.document_list",
@@ -565,8 +572,7 @@
     "script.get",
     "script.list",
     "script.profile",
-    "script.recompile_version",
-    "script.test",
+    "script.studio_bundle",
     "script.versions",
     "seo.health.check",
     "seo.meta.get",
@@ -577,7 +583,6 @@
     "shop.orders.list",
     "shop.products.list",
     "shop.reports.summary",
-    "showcase.arcanestack.ensure_rules",
     "showcase.catalog.diff_vs_fixture",
     "showcase.catalog.export_fixture",
     "showcase.catalog.get",
@@ -651,6 +656,8 @@
     "storage.list_by_entity",
     "storage.list_files",
     "storage.scan",
+    "storage.upload",
+    "stream.relay.list_rooms",
     "system.ping",
     "system.version",
     "time.list",
@@ -664,6 +671,10 @@
     "wallets.ledger.list",
     "wallets.list",
     "web_push.get_health"
+  ],
+  "anchor_exempt_mutate_actions": [
+    "hosting.site.quick_start",
+    "hosting.workspace.init"
   ],
   "plugin_fallback": {
     "audit_whitelist_no_anchor": true,

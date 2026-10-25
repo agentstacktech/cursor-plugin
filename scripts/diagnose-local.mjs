@@ -6,6 +6,9 @@
  *   node scripts/diagnose-local.mjs
  *   node scripts/diagnose-local.mjs --fix   # strip mcpServers.agentstack.tools extras
  *   node scripts/diagnose-local.mjs --seed-snapshot  # GET /mcp/actions with current auth
+ *   node scripts/diagnose-local.mjs --quick          # layout + JWT gate only (no network)
+ *   node scripts/diagnose-local.mjs --sync-runtime   # refresh-cursor-runtime --fix (also with --fix)
+ *   node scripts/diagnose-local.mjs --audit-catalog  # GET /mcp/actions effect parity (heavy)
  */
 import fs from 'fs';
 import path from 'path';
@@ -22,10 +25,16 @@ import {
   AUTHORIZE_SLASH,
   isTenantProjectId,
   formatAgentstackStatusCard,
-  fetchAuthMeBrief,
+  profileBriefFromJwt,
   readPinnedTenantProjectId,
   describeMcpWriteCapGap,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import {
+  pluginMcpRuntimeCacheError,
+  syncPluginRuntimeMcpBearerFromUser,
+  pluginCacheBearerDrifted,
+  resetPluginCacheMcpToOAuthOnly,
+} from '../plugins/agentstack/lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import {
   evaluateSingleToolSurface,
   postToolsList,
@@ -51,6 +60,10 @@ const SETTINGS = path.join(os.homedir(), '.cursor', 'settings.json');
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const wantFix = process.argv.includes('--fix');
 const wantSeed = process.argv.includes('--seed-snapshot');
+const wantQuick = process.argv.includes('--quick');
+const wantAuditCatalog = process.argv.includes('--audit-catalog');
+const wantSyncRuntime =
+  process.argv.includes('--sync-runtime') || wantFix;
 
 let fails = 0;
 function ok(msg) {
@@ -175,16 +188,57 @@ if (fs.existsSync(cacheRoot)) {
       else if (entry.name === 'mcp.json') cachedMcp.push(full);
     }
   }
+  let userCfgForCacheProbe = null;
+  if (fs.existsSync(MCP)) {
+    try {
+      userCfgForCacheProbe = JSON.parse(fs.readFileSync(MCP, 'utf8'));
+    } catch {
+      /* probe later with user mcp section */
+    }
+  }
+  const userGate = userCfgForCacheProbe ? describeAgentstackAuthGate(userCfgForCacheProbe) : null;
+  const userAuth = userCfgForCacheProbe ? agentstackAuthHeaders(userCfgForCacheProbe) : null;
   if (cachedMcp.length) {
     let bad = 0;
+    let oauthOnlyInCache = 0;
     for (const p of cachedMcp) {
-      const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(p, 'utf8')));
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const hasBearer = Boolean(parsed?.mcpServers?.agentstack?.headers?.Authorization);
+      if (!hasBearer) oauthOnlyInCache += 1;
+      const mcpErr = hasBearer
+        ? pluginMcpRuntimeCacheError(parsed)
+        : pluginMcpOAuthError(parsed);
+      if (hasBearer && mcpErr && userGate?.kind === 'null_caps') {
+        fail(`${p}: ${mcpErr} (stale mirror of session JWT — run diagnose --fix)`);
+        bad += 1;
+        continue;
+      }
       if (mcpErr) {
         fail(`${p}: ${mcpErr}`);
         bad += 1;
       }
     }
-    if (!bad) ok(`cached plugin mcp.json (${cachedMcp.length}) OAuth-safe`);
+    if (!bad) ok(`cached plugin mcp.json (${cachedMcp.length}) shape OK`);
+    if (
+      userGate?.kind === 'ok' &&
+      userAuth &&
+      oauthOnlyInCache > 0 &&
+      (await pluginCacheBearerDrifted(userCfgForCacheProbe, { baseUrl: BASE_URL }))
+    ) {
+      fail(
+        `plugin cache mcp.json unsigned (OAuth-only) while ~/.cursor/mcp.json has Device Code Bearer — ` +
+          'plugin-agentstack-* may show 0 tools. Run: node scripts/refresh-cursor-runtime.mjs --fix ' +
+          'or open a new chat (sessionStart bearer-sync), then Reload Window; or Connect (G-A174).',
+      );
+    } else if (!bad && oauthOnlyInCache === 0) {
+      ok('cached plugin mcp.json bearer-mirrored');
+    }
+    if (wantFix) {
+      const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
+      if (sync.updated.length) {
+        ok(`plugin cache bearer-sync (${sync.updated.length}) — Reload Window for plugin-agentstack-*`);
+      }
+    }
   } else {
     warn('no mcp.json in marketplace plugin cache yet (Reload Window after install)');
   }
@@ -255,7 +309,8 @@ if (!fs.existsSync(MCP)) {
     if (gate.kind === 'unsigned') fail(`no Bearer and no X-API-Key — run ${AUTHORIZE_SLASH}`);
     else if (gate.kind === 'placeholder') {
       fail('user mcp.json Authorization is a placeholder — run /agentstack-authorize');
-    } else if (auth?.Authorization) ok('auth=Bearer (Device Code path)');
+    } else if (auth?.Authorization && gate.kind === 'ok') ok('auth=Bearer (Device Code PAT)');
+    else if (auth?.Authorization) fail(`auth=Bearer but gate=${gate.kind} — run ${AUTHORIZE_SLASH}`);
     else ok(`auth=X-API-Key (legacy/CI path; prefer ${AUTHORIZE_SLASH} for Device Code)`);
     const claims = describeAgentstackMcpAuth(cfg);
     if (claims.jwtType) {
@@ -266,7 +321,7 @@ if (!fs.existsSync(MCP)) {
     }
     const pin = await readPinnedTenantProjectId(path.dirname(MCP));
     const profile =
-      auth && gate.kind === 'ok' ? await fetchAuthMeBrief(auth, { baseUrl: BASE_URL }) : null;
+      auth && gate.kind === 'ok' ? profileBriefFromJwt(auth) : null;
     const dualSurface =
       gate.kind === 'ok' &&
       claims.jwtType === 'user_api_key';
@@ -290,10 +345,23 @@ if (!fs.existsSync(MCP)) {
           : undefined,
       }),
     );
-    if (gate.kind === 'null_caps' && /agentstack\.tech/i.test(String(cur.url || ''))) {
+    if (gate.kind === 'null_caps') {
+      if (wantFix) {
+        const cleared = await resetPluginCacheMcpToOAuthOnly({ baseUrl: BASE_URL });
+        if (cleared.length) {
+          ok(`cleared invalid Bearer from plugin cache (${cleared.length}) — use Connect or ${AUTHORIZE_SLASH}`);
+        }
+        // Do not re-mirror user Bearer here — invalid PAT would repopulate cache (0-tools trap).
+      }
       fail(
-        'Bearer JWT has service_caps=null — prod MCP rejects unrestricted tenant keys ' +
-          `(service_caps_required_in_prod). Run ${AUTHORIZE_SLASH} (Device Code), or deploy shared+core G-A169/170.`,
+        'Invalid MCP Bearer (user_token or service_caps=null) — plugin cache may show 0 tools. ' +
+          `Run ${AUTHORIZE_SLASH} (Device Code PAT only), then refresh-cursor-runtime.mjs --fix and Reload Window. ` +
+          'Do not paste profile API keys or use switch-project session JWT.',
+      );
+    }
+    if (gate.kind === 'unsigned') {
+      warn(
+        'Plugin MCP (plugin-agentstack-*) shows 0 tools until Connect (G-A174) or Device Code + cache bearer-sync.',
       );
     }
     if (String(claims.projectHeader || '') === '1') {
@@ -302,7 +370,7 @@ if (!fs.existsSync(MCP)) {
           '(AGENTSTACK_PROJECT_ID or mcp.json) e.g. 1444.',
       );
     }
-    if (auth) {
+    if (auth && !wantQuick) {
       try {
         const tools = await postToolsList(BASE_URL, auth);
         const verdict = evaluateSingleToolSurface(tools);
@@ -347,25 +415,27 @@ if (!fs.existsSync(MCP)) {
       } catch (e) {
         warn(`tools/call alias probe: ${e.message}`);
       }
-      try {
-        const catalogRes = await fetch(`${BASE_URL}/mcp/actions`, { headers: auth });
-        if (!catalogRes.ok) {
-          warn(`GET /mcp/actions HTTP ${catalogRes.status} — skip effect parity`);
-        } else {
-          const catalog = await catalogRes.json();
-          const actions = flattenMcpActionsCatalog(catalog);
-          const mismatches = scanCatalogEffectParityMismatches(actions);
-          if (!mismatches.length) {
-            ok(`catalog effect parity OK (${actions.length} actions)`);
+      if (wantAuditCatalog) {
+        try {
+          const catalogRes = await fetch(`${BASE_URL}/mcp/actions`, { headers: auth });
+          if (!catalogRes.ok) {
+            warn(`GET /mcp/actions HTTP ${catalogRes.status} — skip effect parity`);
           } else {
-            for (const row of mismatches) {
-              warn(`effect parity: ${row.action} — ${row.issue}`);
+            const catalog = await catalogRes.json();
+            const actions = flattenMcpActionsCatalog(catalog);
+            const mismatches = scanCatalogEffectParityMismatches(actions);
+            if (!mismatches.length) {
+              ok(`catalog effect parity OK (${actions.length} actions)`);
+            } else {
+              for (const row of mismatches) {
+                warn(`effect parity: ${row.action} — ${row.issue}`);
+              }
+              fail('catalog effect.kind mismatches read_only_hint / preflight read set');
             }
-            fail('catalog effect.kind mismatches read_only_hint / preflight read set');
           }
+        } catch (e) {
+          warn(`catalog effect parity probe failed: ${e.message}`);
         }
-      } catch (e) {
-        warn(`catalog effect parity probe failed: ${e.message}`);
       }
     }
   }
@@ -405,20 +475,23 @@ if (wantSeed) {
   }
 }
 
-// offline gates
-const smoke = spawnSync(process.execPath, ['scripts/smoke-local.mjs'], {
-  cwd: ROOT,
-  encoding: 'utf8',
-});
-if ((smoke.status ?? 1) !== 0) {
-  fail('smoke-local failed');
-  process.stderr.write(smoke.stderr || smoke.stdout || '');
-} else {
-  ok('smoke-local passed');
+if (!wantQuick) {
+  const smoke = spawnSync(process.execPath, ['scripts/smoke-local.mjs'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if ((smoke.status ?? 1) !== 0) {
+    fail('smoke-local failed');
+    process.stderr.write(smoke.stderr || smoke.stdout || '');
+  } else {
+    ok('smoke-local passed');
+  }
 }
 
-// Stale marketplace cache can keep $schema from 0.4.14 even when local link is clean.
-const runtimeScan = spawnSync(process.execPath, ['scripts/refresh-cursor-runtime.mjs', '--fix'], {
+const runtimeArgs = wantSyncRuntime
+  ? ['scripts/refresh-cursor-runtime.mjs', '--fix']
+  : ['scripts/refresh-cursor-runtime.mjs'];
+const runtimeScan = spawnSync(process.execPath, runtimeArgs, {
   cwd: ROOT,
   encoding: 'utf8',
 });
@@ -426,10 +499,14 @@ process.stdout.write(runtimeScan.stdout || '');
 process.stderr.write(runtimeScan.stderr || '');
 if ((runtimeScan.status ?? 1) !== 0) {
   fail(
-    'Cursor runtime cache drift — run: node scripts/refresh-cursor-runtime.mjs --fix (or --purge then Reload Window)',
+    wantSyncRuntime
+      ? 'Cursor runtime cache drift — run: node scripts/refresh-cursor-runtime.mjs --fix (or --purge then Reload Window)'
+      : 'Cursor runtime cache check failed — run diagnose with --sync-runtime or --fix',
   );
-} else {
+} else if (wantSyncRuntime) {
   ok('Cursor runtime cache synced (manifests + package mirror)');
+} else {
+  ok('Cursor runtime cache check (read-only; use --sync-runtime to apply --fix)');
 }
 
 console.log(`\nsummary: failed=${fails}`);

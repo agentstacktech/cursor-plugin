@@ -5,33 +5,16 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { stdin } from 'node:process';
 import { extractMcpExecuteSteps } from '../../lib/plugin-kernel/extractMcpAction.mjs';
+import { readHookStdinJson } from '../../lib/plugin-kernel/hookStdin.mjs';
 import {
   agentstackAuthHeaders,
   describeAgentstackAuthGate,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
 import { buildMcpExecuteRetryCommand } from '../../lib/plugin-kernel/mcpExecuteBridge.mjs';
+import { pluginCacheBearerDrifted } from '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 
 const MCP_PATH = join(homedir(), '.cursor', 'mcp.json');
-
-async function readStdinJson() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve(null);
-      }
-    });
-    setTimeout(() => resolve(null), 200);
-  });
-}
 
 function isPluginAgentstackMcp(event) {
   const id = String(
@@ -54,7 +37,7 @@ async function readMcp() {
 }
 
 async function main() {
-  const event = await readStdinJson();
+  const event = await readHookStdinJson();
   if (!event) process.exit(0);
   if (!extractMcpExecuteSteps(event).length) process.exit(0);
   if (!isPluginAgentstackMcp(event)) process.exit(0);
@@ -64,13 +47,27 @@ async function main() {
   if (!authHeaders) process.exit(0);
   if (describeAgentstackAuthGate(cfg).kind !== 'ok') process.exit(0);
 
+  if (!(await pluginCacheBearerDrifted(cfg))) {
+    process.exit(0);
+  }
+
   const strict =
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_STRICT === '1' ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_STRICT === 'true';
+  const hintOptOut =
+    process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === '0' ||
+    process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'false';
+  const hint =
+    strict ||
+    !hintOptOut ||
+    process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === '1' ||
+    process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'true';
+  if (!hint) process.exit(0);
 
   const retryCli = buildMcpExecuteRetryCommand(event);
   process.stderr.write(
-    '[agentstack] plugin MCP is unsigned; ~/.cursor/mcp.json has Bearer — use CLI bridge or Connect (G-A174). ' +
+    '[agentstack] DUAL_SURFACE: ~/.cursor/mcp.json has Bearer but plugin cache MCP is not bearer-synced — ' +
+      'run refresh-cursor-runtime.mjs --fix + Reload Window, or use CLI bridge / Connect (G-A174). ' +
       'Do not call mcp_auth from agents.\n',
   );
   if (retryCli) {

@@ -178,7 +178,27 @@ export function normalizeAgentstackMcpConfig(cfg, { baseUrl, projectId } = {}) {
  * @param {string|number} [opts.projectId] — tenant working project; ecosystem `1` is ignored
  * @returns {object} cfg
  */
+/**
+ * Device Code integration PAT — not browser session JWT (user_token) or null service_caps.
+ * @param {string} accessToken
+ */
+export function isDeviceCodeMcpBearer(accessToken) {
+  const raw = String(accessToken || '').trim();
+  if (!raw) return false;
+  if (!raw.startsWith('eyJ')) return false;
+  const p = decodeJwtPayload(raw);
+  if (!p || typeof p !== 'object') return false;
+  if (p.type !== 'user_api_key') return false;
+  const sc = p.service_caps;
+  return Array.isArray(sc) && sc.length > 0;
+}
+
 export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl, projectId } = {}) {
+  if (!isDeviceCodeMcpBearer(accessToken)) {
+    throw new Error(
+      `Refusing mcp.json Bearer: need user_api_key PAT with service_caps[]. Run ${AUTHORIZE_SLASH}.`,
+    );
+  }
   const root = cfg && typeof cfg === 'object' ? cfg : {};
   root.mcpServers = root.mcpServers || {};
   const existing = root.mcpServers.agentstack || {};
@@ -294,14 +314,24 @@ export function describeAgentstackAuthGate(cfg) {
         `Run ${AUTHORIZE_SLASH} or click Connect on the plugin MCP, then Reload Window.`,
     };
   }
-  if (desc.serviceCaps === 'null' && desc.jwtType === 'user_api_key') {
-    return {
-      kind: 'null_caps',
-      additionalContext:
-        'AgentStack MCP JWT has service_caps=null. tools/list can look connected while tools/call ' +
-        `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} (Device Code, no API key) ` +
-        'to mint a scoped token, then Reload Window.',
-    };
+  if (headers?.Authorization?.startsWith('Bearer ')) {
+    const bearer = headers.Authorization.slice('Bearer '.length).trim();
+    if (!isDeviceCodeMcpBearer(bearer)) {
+      let additionalContext =
+        'AgentStack mcp.json Bearer is not a Device Code PAT (user_api_key with service_caps[]). ' +
+        `Run ${AUTHORIZE_SLASH} and Reload Window — do not paste profile API keys.`;
+      if (desc.jwtType === 'user_token') {
+        additionalContext =
+          'AgentStack mcp.json has a browser session JWT (user_token), not a Device Code PAT. ' +
+          `Run ${AUTHORIZE_SLASH} and Reload Window — do not paste profile API keys.`;
+      } else if (desc.serviceCaps === 'null') {
+        additionalContext =
+          'AgentStack MCP JWT has service_caps=null. tools/list can look connected while tools/call ' +
+          `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} (Device Code, no API key) ` +
+          'to mint a scoped token, then Reload Window.';
+      }
+      return { kind: 'null_caps', additionalContext };
+    }
   }
   return { kind: 'ok', additionalContext: null };
 }
@@ -461,6 +491,41 @@ export async function switchProjectViaRest(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * API-key JWTs may lack mcp_write — plan_claim then fails with rbac_blocked (not auth).
+ * @param {object|null} cfg
+ * @returns {{ missing: boolean, reason: string|null }}
+ */
+export function describeMcpWriteCapGap(cfg) {
+  const headers = agentstackAuthHeaders(cfg);
+  if (!headers?.Authorization) {
+    return { missing: false, reason: null };
+  }
+  const payload = decodeJwtPayload(headers.Authorization);
+  if (!payload || typeof payload !== 'object') {
+    return { missing: false, reason: null };
+  }
+  const caps = payload.service_caps;
+  if (caps == null) {
+    return {
+      missing: true,
+      reason:
+        'JWT service_caps=null — prod may reject writes. Prefer Device Code (/agentstack-authorize) or apikeys.create with mcp_write.',
+    };
+  }
+  if (!Array.isArray(caps)) {
+    return { missing: false, reason: null };
+  }
+  if (caps.includes('mcp_write') || caps.includes('admin.write')) {
+    return { missing: false, reason: null };
+  }
+  return {
+    missing: true,
+    reason:
+      'JWT missing mcp_write — agents.plan_claim / mutations may return rbac_blocked. Widen caps via apikeys.create (agent_runner preset).',
+  };
 }
 
 /** Session-start / hooks: identity from JWT only (no /api/auth/me round-trip). */

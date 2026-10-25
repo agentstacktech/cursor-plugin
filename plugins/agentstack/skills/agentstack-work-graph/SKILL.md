@@ -26,13 +26,19 @@ Follow `next_action`. The compact packet is enough to claim or execute.
 
 ## Self-desc (`discovery.describe`)
 
-After deploy, one `discovery.describe` call returns wire SoT — no guessing params:
+Call once **per action** with `{"action": "agents.work_next"}` (etc.). Compact wire keys below appear on that action’s describe payload — not on a single global describe.
+
+After deploy, use **per-action** `discovery.describe` (`{"action":"agents.work_next"}`) for wire SoT — compact keys are not global.
 
 | Action | Payload key | Use |
 |--------|-------------|-----|
 | `agents.work_next` | `loop_compact` | Hot loop: `detail=compact`, `home=project`, recipe `mcp_work_loop_v1` |
 | `agents.plan_get` | `slice_compact` | Read slice: `limit=20`, `max_depth=0` |
-| `agents.plan_patch` | `ops_compact` | Canonical ops + aliases (`add` → `add_child`) |
+| `agents.plan_patch` | `ops_compact` | Canonical ops + aliases (`add` → `add_child`); `archive_ids_only` batch |
+| `agents.plan_claim` | `claim_compact` | CAS: `if_match_revision` + `node_ids` |
+| `agents.plan_propose` | `propose_compact` | Modes: `decompose_node`, `repair_plan`, … |
+| `agents.plan_apply_proposal` | `apply_compact` | CAS apply after propose; same `env_uuid` / `validation_mode` |
+| `agents.plan_recovery_scan` | `recovery_compact` | Read-only scan; follow with repair propose |
 
 Errors: `plan_ops_unknown` includes `allowed_ops`; `plan_completion_gates` includes `example_ops` (waive → completed). `archive_ids` only is valid with `if_match_revision`.
 
@@ -72,3 +78,7 @@ Step-level batch DAG: use `dependsOn` (or `depends_on`) on each step object — 
 | `continueOnError` | `false` | When `false`, a failed step skips downstream dependents; plain reads may still continue per mixed-batch policy |
 
 Hoist `workflow_run_id` and `observed` on the next `options` after every workflow-bound execute.
+
+## References
+
+- Live catalog: `GET /mcp/actions` — filter `agents.*`; wire SoT per action via `discovery.describe`

@@ -10,6 +10,7 @@ import {
   tenantCapabilitySnapshotFresh,
 } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { agentstackAuthHeaders } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import { syncPluginRuntimeMcpBearerFromUser } from '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
@@ -68,6 +69,14 @@ async function main() {
   }
   if (result?.reason) {
     log(`${result.reason} (${result.actionCount ?? 0} actions)`);
+  }
+  try {
+    const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
+    if (sync.updated.length) {
+      log(`plugin cache MCP bearer-sync (${sync.updated.length} file)`);
+    }
+  } catch (e) {
+    log(`plugin bearer-sync skipped (${e.message})`);
   }
 }
 

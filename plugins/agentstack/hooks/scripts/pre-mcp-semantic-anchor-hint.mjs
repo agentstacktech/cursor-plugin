@@ -1,30 +1,12 @@
 #!/usr/bin/env node
 // beforeMCPExecution — non-blocking hint when mutating batch lacks options.goal (W1-A).
 
-import { stdin } from 'node:process';
 import { extractMcpExecuteSteps } from '../../lib/plugin-kernel/extractMcpAction.mjs';
+import { readHookStdinJson } from '../../lib/plugin-kernel/hookStdin.mjs';
 import {
   batchNeedsSemanticAnchor,
   ensureBatchSemanticAnchor,
 } from '../../lib/plugin-kernel/batchSemanticAnchor.mjs';
-
-async function readStdinJson() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve(null);
-      }
-    });
-    setTimeout(() => resolve(null), 200);
-  });
-}
 
 function executeBodyFromEvent(event) {
   const roots = [
@@ -45,7 +27,7 @@ function executeBodyFromEvent(event) {
 }
 
 async function main() {
-  const event = await readStdinJson();
+  const event = await readHookStdinJson();
   if (!event) process.exit(0);
   const body = executeBodyFromEvent(event);
   if (!body || !Array.isArray(body.steps)) process.exit(0);

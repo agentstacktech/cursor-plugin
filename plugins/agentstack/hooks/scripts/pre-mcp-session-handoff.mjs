@@ -5,40 +5,25 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { stdin } from 'node:process';
 import {
   extractMcpExecuteSteps,
 } from '../../lib/plugin-kernel/extractMcpAction.mjs';
+import { readHookStdinJson } from '../../lib/plugin-kernel/hookStdin.mjs';
 import {
   applyAgentstackMcpBearer,
   agentstackAuthHeaders,
+  describeAgentstackAuthGate,
+  isDeviceCodeMcpBearer,
   decodeJwtPayload,
   readPinnedTenantProjectId,
   switchProjectViaRest,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
 import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
+import { syncPluginRuntimeMcpBearerFromUser } from '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 
 const BASE_URL = process.env.AGENTSTACK_BASE_URL || 'https://agentstack.tech';
 const CURSOR_DIR = join(homedir(), '.cursor');
 const MCP_PATH = join(CURSOR_DIR, 'mcp.json');
-
-async function readStdinJson() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve(null);
-      }
-    });
-    setTimeout(() => resolve(null), 200);
-  });
-}
 
 function extractSwitchTargetProjectId(event) {
   const roots = [
@@ -77,7 +62,7 @@ async function writeMcpFile(cfg) {
 }
 
 async function main() {
-  const event = await readStdinJson();
+  const event = await readHookStdinJson({ timeoutMs: 350 });
   if (!event) process.exit(0);
   const actions = extractMcpExecuteSteps(event);
   if (!actions.includes('auth.switch_project')) process.exit(0);
@@ -86,8 +71,11 @@ async function main() {
   if (!targetPid) process.exit(0);
 
   const cfg = await readMcp();
+  if (!cfg || describeAgentstackAuthGate(cfg).kind !== 'ok') process.exit(0);
   const authHeaders = agentstackAuthHeaders(cfg);
   if (!authHeaders?.Authorization?.startsWith('Bearer ')) process.exit(0);
+  const currentBearer = authHeaders.Authorization.slice('Bearer '.length).trim();
+  if (!isDeviceCodeMcpBearer(currentBearer)) process.exit(0);
 
   const payload = decodeJwtPayload(authHeaders.Authorization.slice('Bearer '.length).trim());
   const jwtPid = payload?.project_id != null ? Number(payload.project_id) : null;
@@ -112,12 +100,28 @@ async function main() {
     process.exit(0);
   }
 
+  if (!isDeviceCodeMcpBearer(accessToken)) {
+    process.stderr.write(
+      '[agentstack] session handoff: switch-project token is not Device Code PAT — run /agentstack-authorize.\n',
+    );
+    process.exit(0);
+  }
   applyAgentstackMcpBearer(cfg, {
     accessToken,
     baseUrl: BASE_URL,
     projectId: targetPid,
   });
   await writeMcpFile(cfg);
+  try {
+    const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
+    if (sync.updated?.length) {
+      process.stderr.write(
+        `[agentstack] plugin cache MCP synced (${sync.updated.length}) — Reload Window.\n`,
+      );
+    }
+  } catch {
+    /* best effort */
+  }
   process.stderr.write(
     `[agentstack] session handoff: REST switch-project -> ${targetPid} (mcp.json Bearer updated)\n`,
   );

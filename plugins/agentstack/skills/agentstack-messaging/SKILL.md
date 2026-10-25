@@ -89,6 +89,10 @@ messaging.ensure_auth_templates
 messaging.get_auth_email_readiness
 ```
 
+## References
+
+- Live catalog: `GET /mcp/actions` — filter `messaging.*`
+
 ## Triggers
 
 mail, email, resend, smtp, postmark, ses, mail hub, confirm email, password reset, activation link, template, bounce, suppression, transactional

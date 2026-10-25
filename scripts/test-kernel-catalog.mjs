@@ -30,7 +30,12 @@ import {
   readPinnedTenantProjectId,
   PROJECT_PIN_FILENAME,
   formatAgentstackStatusCard,
+  describeMcpWriteCapGap,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import {
+  buildPluginRuntimeMcpConfig,
+  pluginMcpRuntimeCacheError,
+} from '../plugins/agentstack/lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import {
   evaluateSingleToolSurface,
   MCP_EXECUTE_TOOL_CANONICAL,
@@ -85,6 +90,21 @@ assert.equal(
 );
 assert.equal(buildTenantCapabilitySnapshot(mixed, { now: 42, catalogEtag: 'def456' }).catalog_etag, 'def456');
 
+const jwtHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+const jwtPatPayload = Buffer.from(
+  JSON.stringify({ type: 'user_api_key', user_id: 7, service_caps: ['mcp_read'], exp: 9999999999 }),
+).toString('base64url');
+const fixturePatJwt = `${jwtHeader}.${jwtPatPayload}.sig`;
+
+assert.throws(
+  () =>
+    applyAgentstackMcpBearer(
+      { mcpServers: { agentstack: { headers: {} } } },
+      { accessToken: 'opaque-not-jwt', baseUrl: 'https://agentstack.tech' },
+    ),
+  /user_api_key PAT/,
+);
+
 const cfg = applyAgentstackMcpBearer(
   {
     mcpServers: {
@@ -96,11 +116,11 @@ const cfg = applyAgentstackMcpBearer(
       },
     },
   },
-  { accessToken: 'tok', baseUrl: 'https://agentstack.tech' },
+  { accessToken: fixturePatJwt, baseUrl: 'https://agentstack.tech' },
 );
 assert.equal(cfg.mcpServers.agentstack.type, 'streamable-http');
 assert.equal(cfg.mcpServers.agentstack.url, 'https://agentstack.tech/mcp');
-assert.equal(cfg.mcpServers.agentstack.headers.Authorization, 'Bearer tok');
+assert.equal(cfg.mcpServers.agentstack.headers.Authorization, `Bearer ${fixturePatJwt}`);
 assert.equal(cfg.mcpServers.agentstack.headers['X-API-Key'], undefined);
 assert.equal(cfg.mcpServers.agentstack.tools, undefined);
 
@@ -166,7 +186,12 @@ const payload = Buffer.from(
   JSON.stringify({ type: 'user_api_key', user_id: 7, service_caps: null, exp: 9999999999 }),
 ).toString('base64url');
 const fakeJwt = `${header}.${payload}.sig`;
+const validPatPayload = Buffer.from(
+  JSON.stringify({ type: 'user_api_key', user_id: 7, service_caps: ['mcp_read'], exp: 9999999999 }),
+).toString('base64url');
+const fakePatJwt = `${header}.${validPatPayload}.sig`;
 assert.equal(decodeJwtPayload(fakeJwt).type, 'user_api_key');
+assert.equal(decodeJwtPayload(fakePatJwt).type, 'user_api_key');
 assert.equal(isTenantProjectId(1), false);
 assert.equal(isTenantProjectId(1444), true);
 const described = describeAgentstackMcpAuth({
@@ -205,6 +230,15 @@ assert.match(
 );
 assert.match(formatAgentstackStatusCard({ gateKind: 'unsigned' }), /agentstack-authorize/);
 
+assert.equal(
+  describeMcpWriteCapGap({
+    mcpServers: {
+      agentstack: { headers: { Authorization: `Bearer ${fakeJwt}` } },
+    },
+  }).missing,
+  true,
+);
+
 assert.equal(pluginMcpPointerError({ mcpServers: './mcp.json' }), null);
 assert.match(pluginMcpPointerError({ mcpServers: { agentstack: {} } }), /string path/);
 assert.equal(
@@ -213,6 +247,20 @@ assert.equal(
   }),
   null,
 );
+
+const runtimeCfg = buildPluginRuntimeMcpConfig({
+  mcpServers: {
+    agentstack: {
+      headers: { Authorization: `Bearer ${fakePatJwt}`, 'X-Project-ID': '1444' },
+    },
+  },
+});
+assert.ok(runtimeCfg.mcpServers.agentstack.headers.Authorization.startsWith('Bearer '));
+assert.match(pluginMcpRuntimeCacheError(buildPluginRuntimeMcpConfig({
+  mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}`, 'X-Project-ID': '1444' } } },
+})), /service_caps|PAT/);
+assert.equal(pluginMcpRuntimeCacheError(runtimeCfg), null);
+assert.match(pluginMcpOAuthError(runtimeCfg), /Authorization/);
 assert.match(
   pluginMcpOAuthError({
     mcpServers: {
@@ -236,13 +284,13 @@ const keptPin = applyAgentstackMcpBearer(
       },
     },
   },
-  { accessToken: 'tok2', baseUrl: 'https://agentstack.tech', projectId: 1 },
+  { accessToken: fixturePatJwt, baseUrl: 'https://agentstack.tech', projectId: 1 },
 );
 assert.equal(keptPin.mcpServers.agentstack.headers['X-Project-ID'], '1444');
 
 const droppedEco = applyAgentstackMcpBearer(
   { mcpServers: { agentstack: { headers: { 'X-Project-ID': '1' } } } },
-  { accessToken: 'tok3', baseUrl: 'https://agentstack.tech', projectId: 1 },
+  { accessToken: fixturePatJwt, baseUrl: 'https://agentstack.tech', projectId: 1 },
 );
 assert.equal(droppedEco.mcpServers.agentstack.headers['X-Project-ID'], undefined);
 

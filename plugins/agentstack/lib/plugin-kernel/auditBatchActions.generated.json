@@ -35,6 +35,7 @@
     "knowledge.content.get",
     "knowledge.doctor.run",
     "notifications.list_prefs",
+    "payments.list_methods",
     "permissions.effective",
     "preflight.check",
     "projects.get_data",
@@ -45,6 +46,7 @@
     "rag.search",
     "script.put",
     "seo.health.check",
+    "shop.enablement.status",
     "storage.get_quota",
     "system.ping",
     "system.version"

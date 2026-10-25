@@ -37,7 +37,7 @@ If Cursor shows the plugin installed but `plugins/cache/agentstack` is empty, se
 | **Plugin MCP** (`plugin-agentstack-*` in Cursor) | Marketplace install; click **Connect** (G-A174) | After OAuth Connect on plugin panel |
 | **User MCP** (`~/.cursor/mcp.json` → `agentstack`) | Device Code `/agentstack-authorize` or profile API key | Bearer / X-API-Key in headers |
 
-**Common trap:** Cursor agents often call **plugin** MCP without Bearer. `mcp_auth` does **not** copy Device Code into the plugin transport. Symptom: `not_authenticated` while `context.project_id` is set. **Fix:** Connect on plugin MCP **or** run the CLI bridge below (same POST `/mcp` as hooks).
+**Common trap:** Cursor agents call **plugin** MCP without Bearer. `/agentstack-authorize` writes `~/.cursor/mcp.json` only — run `node scripts/refresh-cursor-runtime.mjs --fix` (or re-authorize; device-code syncs cache) then **Reload Window** so plugin cache `mcp.json` gets the same Bearer. `mcp_auth` does **not** bridge Device Code. Fallback: Connect (G-A174) or `mcp-execute.mjs` below.
 
 OAuth 2.1 Device Code via `/agentstack-authorize` (or `/agentstack-init`) → Bearer in `~/.cursor/mcp.json`.
 

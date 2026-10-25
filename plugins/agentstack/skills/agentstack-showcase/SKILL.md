@@ -27,3 +27,7 @@ Use when editing the public `/showcase` gallery, ecosystem catalog DNA on **proj
 Prompts: `agentstack_showcase_ops` (gallery DNA) · `agentstack_showcase_vps_ops` (proof publish loop).
 
 Catalog ids are **kebab-case** (`helpdesk-bot`, not `helpdesk_bot`).
+
+## References
+
+- Live catalog: `GET /mcp/actions` — filter `showcase.*`

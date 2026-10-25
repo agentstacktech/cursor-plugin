@@ -31,13 +31,16 @@ sequenceDiagram
     DC->>AS: POST /api/oauth2/token
     Note over AS: 400 + authorization_pending until approved
   end
-  AS-->>DC: access_token (user PAT JWT + service_caps; no refresh_token)
-  DC->>MCP: write ~/.cursor/mcp.json Bearer
-  DC->>AS: POST /mcp/cache/clear
-  DC->>AS: GET /mcp/actions
+  AS-->>DC: access_token (+ refresh_token when grant provides it; PAT is long-lived user_api_key)
+  DC->>MCP: write ~/.cursor/mcp.json Bearer (agentstack-mcp.lock)
+  DC->>MCP: sync plugin cache mcp.json Bearer (all marketplace copies)
+  opt AGENTSTACK_MCP_CACHE_CLEAR=1
+    DC->>AS: POST /mcp/cache/clear
+  end
+  DC->>AS: GET /mcp/actions (capability.lock — one fetch at a time)
   DC->>Snap: flat actions[] snapshot
-  Hooks->>MCP: sessionStart refresh only if a leftover refresh_token file exists (device grant returns a long-lived PAT)
-  Hooks->>Snap: refresh if older than 24h
+  Hooks->>MCP: sessionStart Bearer rotate near expiry (refresh_token file) or Connect reminder
+  Hooks->>Snap: refresh if older than 24h (same capability.lock)
   MCP->>AS: agentstack.execute steps
   Note over MCP,AS: tools/list can false-green — diagnose requires tools/call auth.get_profile
   Hooks->>Snap: beforeMCPExecution auth-bridge, session-handoff, cap-check, semantic-anchor
@@ -71,7 +74,7 @@ node scripts/diagnose-local.mjs
 node scripts/diagnose-local.mjs --fix --seed-snapshot
 ```
 
-`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot when stale, and emits a compact auth card (`GET /api/auth/me` only when the snapshot is already fresh; otherwise JWT-derived profile while catalog refresh runs). If the gate still needs login it spawns `device-code.mjs` once (lock file). Tests must not pass `--from-hook`. Live MCP health: `node scripts/diagnose-local.mjs` probes **`auth.get_profile`** via execute (not list-only). Logs go to stderr; stdout is JSON. Stale marketplace cache: `scripts/refresh-cursor-runtime.mjs --fix`. Same card: `/agentstack-status`.
+`sessionStart` (`--from-hook` from `hooks.json`) normalizes lean `mcpServers.agentstack` (drops ecosystem `X-Project-ID=1`, applies `agentstack-project` when it is a tenant), refreshes the flat capability snapshot when stale, and emits a compact auth card (`profileBriefFromJwt` — no `/api/auth/me` on session start). If the gate still needs login it spawns `device-code.mjs` once (lock file). Tests must not pass `--from-hook`. Live MCP health: `node scripts/diagnose-local.mjs` probes **`auth.get_profile`** via execute (not list-only). Logs go to stderr; stdout is JSON. Stale marketplace cache: `scripts/refresh-cursor-runtime.mjs --fix`. Same card: `/agentstack-status`.
 
 ## MCP registration plane (0.4.24)
 

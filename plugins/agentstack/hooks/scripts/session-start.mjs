@@ -26,6 +26,10 @@ import {
   switchProjectViaRest,
   AUTHORIZE_SLASH,
 } from '../../lib/plugin-kernel/mcpConfig.mjs';
+import {
+  pluginCacheBearerDrifted,
+  syncPluginRuntimeMcpBearerFromUser,
+} from '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import { withMcpJsonRmW } from '../../lib/plugin-kernel/mcpJsonRmW.mjs';
 import {
   loadConfidentialClient,
@@ -69,6 +73,7 @@ async function writeMcp(cfg, accessToken) {
   const pinned = await readPinnedTenantProjectId(CURSOR_DIR);
   applyAgentstackMcpBearer(cfg, { accessToken, baseUrl: BASE_URL, projectId: pinned });
   await writeMcpFile(cfg);
+  await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL }).catch(() => null);
 }
 
 function parseRefreshFile(raw) {
@@ -150,6 +155,13 @@ async function maybeRotateBearer(cfg) {
   // Device Code PAT (user_api_key): long-lived integration key — no OAuth refresh pair.
   if (jwtType === 'user_api_key') return null;
 
+  if (jwtType === 'user_token') {
+    log(`Session user_token in mcp.json — run ${AUTHORIZE_SLASH} (Device Code PAT).`);
+    return (
+      `AgentStack mcp.json has browser session JWT (user_token), not integration PAT. Run ${AUTHORIZE_SLASH}.`
+    );
+  }
+
   if (typeof payload.exp !== 'number') return null;
 
   const secondsLeft = payload.exp - Math.floor(Date.now() / 1000);
@@ -180,6 +192,7 @@ async function maybeRotateBearer(cfg) {
     const data = await refresh(refreshToken, traceId);
     await writeMcp(cfg, data.access_token);
     await writeRefreshFile(data.refresh_token ? data : { ...data, refresh_token: refreshToken });
+    await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL }).catch(() => null);
     log(`Bearer refreshed, expires in ${data.expires_in || '?'}s. trace=${traceId}`);
     return null;
   } catch (e) {
@@ -225,6 +238,7 @@ async function main() {
     if (changed) {
       await writeMcpFile(cfg);
       log('mcp.json agentstack entry normalized (lean streamable-http)');
+      await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL }).catch(() => null);
     }
   }
 
@@ -232,27 +246,14 @@ async function main() {
   const extras = [];
   let authHeaders = agentstackAuthHeaders(cfg);
 
-  if (authHeaders && gate.kind === 'ok') {
+  const autoMsg = await maybeAutoDeviceLogin(gate.kind);
+  if (autoMsg) extras.push(autoMsg);
+  else if (gate.kind === 'ok' && authHeaders) {
     const rotateMsg = await maybeRotateBearer(cfg);
     if (rotateMsg) extras.push(rotateMsg);
     cfg = await readMcp();
     authHeaders = agentstackAuthHeaders(cfg);
-  }
-
-  const profile =
-    authHeaders && gate.kind === 'ok' ? profileBriefFromJwt(authHeaders) : null;
-  extras.push(
-    formatAgentstackStatusCard({
-      gateKind: gate.kind,
-      additionalContext: gate.additionalContext,
-      auth: describeAgentstackMcpAuth(cfg),
-      pin,
-      profile,
-    }),
-  );
-  const autoMsg = await maybeAutoDeviceLogin(gate.kind);
-  if (autoMsg) extras.push(autoMsg);
-  else if (gate.kind === 'unsigned' && FROM_HOOK) {
+  } else if (gate.kind === 'unsigned' && FROM_HOOK) {
     extras.push(
       'AgentStack hooks: no Bearer in ~/.cursor/mcp.json. If plugin MCP Connect is signed in, ' +
       'that is normal — use agentstack.execute on the plugin server. For hooks/catalog snapshot ' +
@@ -260,14 +261,43 @@ async function main() {
     );
   }
 
-  if (!pin) {
-    extras.push(
-      'AgentStack tenant scope unset: set context.project_id (MCP batch options) after projects.get_projects. ' +
-        'Prompt: GET /mcp/prompts/get?name=agentstack_session_setup · Command: /agentstack-product-flow',
-    );
+  const gateFinal = describeAgentstackAuthGate(cfg);
+  if (gateFinal.kind === 'null_caps' || gateFinal.kind === 'placeholder') {
+    try {
+      const { resetPluginCacheMcpToOAuthOnly } = await import(
+        '../../lib/plugin-kernel/pluginMcpRuntimeSync.mjs'
+      );
+      const cleared = await resetPluginCacheMcpToOAuthOnly({ baseUrl: BASE_URL });
+      if (cleared.length) {
+        log(`cleared invalid Bearer from plugin cache (${cleared.length})`);
+        extras.push(
+          'AgentStack: plugin cache reset to OAuth-only (invalid session JWT in mcp.json). ' +
+            `Run ${AUTHORIZE_SLASH} or Connect (G-A174), then Reload Window.`,
+        );
+      }
+    } catch {
+      /* best effort */
+    }
+  }
+  if (gateFinal.kind === 'ok' && agentstackAuthHeaders(cfg)) {
+    try {
+      const drifted = await pluginCacheBearerDrifted(cfg, { baseUrl: BASE_URL });
+      const sync = drifted
+        ? await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL })
+        : { updated: [] };
+      if (sync.updated?.length) {
+        log(`plugin cache MCP bearer-sync (${sync.updated.length}) — Reload Window for plugin-agentstack-*`);
+        extras.push(
+          'AgentStack: mirrored Device Code Bearer into plugin cache mcp.json. ' +
+            'Developer: Reload Window so plugin-agentstack-* shows agentstack.execute.',
+        );
+      }
+    } catch {
+      /* best effort */
+    }
   }
 
-  if (authHeaders && gate.kind === 'ok') {
+  if (authHeaders && gateFinal.kind === 'ok') {
     const snapFresh = await tenantCapabilitySnapshotFresh(CURSOR_DIR, {
       maxAgeMs: SNAPSHOT_MAX_AGE_MS,
     });
@@ -289,6 +319,13 @@ async function main() {
           baseUrl: BASE_URL,
         });
         if (accessToken) {
+          const { isDeviceCodeMcpBearer } = await import('../../lib/plugin-kernel/mcpConfig.mjs');
+          if (!isDeviceCodeMcpBearer(accessToken)) {
+            log('switch-project returned non-PAT token — skipping mcp.json write');
+            extras.push(
+              `AgentStack: switch-project returned session JWT, not Device Code PAT. Run ${AUTHORIZE_SLASH}.`,
+            );
+          } else {
           applyAgentstackMcpBearer(cfg, {
             accessToken,
             baseUrl: BASE_URL,
@@ -296,9 +333,44 @@ async function main() {
           });
           await writeMcpFile(cfg);
           log(`session-start auto switch-project ${jwtPid} -> ${pin}`);
+          try {
+            const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
+            if (sync.updated?.length) {
+              log(`plugin cache MCP synced (${sync.updated.length}) — Reload Window`);
+            }
+          } catch {
+            /* best effort */
+          }
+          }
+        } else if (jwtPid != null) {
+          log(`session-start switch-project ${jwtPid} -> ${pin} failed (REST)`);
+          extras.push(
+            `AgentStack: could not align JWT project ${jwtPid} to pin ${pin}. ` +
+              'Set context.project_id or run auth.switch_project.',
+          );
         }
       }
     }
+  }
+
+  authHeaders = agentstackAuthHeaders(cfg);
+  const profile =
+    authHeaders && gateFinal.kind === 'ok' ? profileBriefFromJwt(authHeaders) : null;
+  extras.unshift(
+    formatAgentstackStatusCard({
+      gateKind: gateFinal.kind,
+      additionalContext: gateFinal.additionalContext,
+      auth: describeAgentstackMcpAuth(cfg),
+      pin,
+      profile,
+    }),
+  );
+
+  if (!pin) {
+    extras.push(
+      'AgentStack tenant scope unset: set context.project_id (MCP batch options) after projects.get_projects. ' +
+        'Prompt: GET /mcp/prompts/get?name=agentstack_session_setup · Command: /agentstack-product-flow',
+    );
   }
 
   emitSessionStart(extras);

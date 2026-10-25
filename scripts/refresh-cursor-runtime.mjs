@@ -16,6 +16,7 @@ import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
 import { pluginMcpOAuthError, pluginMcpPointerError } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
+import { syncPluginRuntimeMcpBearerFromUser } from '../plugins/agentstack/lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
@@ -31,8 +32,9 @@ const AUTH_SLICE = [
   'hooks/scripts/session-start.mjs',
   'hooks/scripts/device-code.mjs',
   'lib/plugin-kernel/mcpConfig.mjs',
+  'lib/plugin-kernel/pluginMcpRuntimeSync.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
-  'mcp.json',
+  // mcp.json: SoT is OAuth URL-only; plugin cache is Bearer mirror (pluginMcpRuntimeSync) — not byte-synced.
   '.cursor-plugin/plugin.json',
   'assets/icon.png',
   'assets/logo.png',
@@ -198,7 +200,7 @@ function syncAuthSlice(pluginRoot) {
   }
 }
 
-function scanAndFix() {
+async function scanAndFix() {
   if (!fs.existsSync(CURSOR_PLUGINS)) {
     fail(`no ${CURSOR_PLUGINS}`);
     return;
@@ -296,6 +298,14 @@ function scanAndFix() {
     if (path.basename(n) !== 'mcp.json') continue;
     if (!n.includes('agentstack')) continue;
     if (samePath(file, SOT_MCP)) continue;
+    const isRuntimeCache =
+      n.includes('.cursor/plugins/') &&
+      !n.includes('provided_plugins') &&
+      (n.includes('/cache/') || n.includes('/marketplaces/'));
+    if (isRuntimeCache) {
+      ok(`plugin cache mcp.json (Device Code bearer-sync target) @ ${path.basename(path.dirname(file))}`);
+      continue;
+    }
     const cfg = loadJson(file);
     const err = pluginMcpOAuthError(cfg);
     if (err) {
@@ -309,6 +319,22 @@ function scanAndFix() {
       } else {
         ok(`oauth-safe plugin mcp.json @ ${file}`);
       }
+    }
+  }
+
+  if (fix) {
+    try {
+      const sync = await syncPluginRuntimeMcpBearerFromUser();
+      for (const f of sync.updated) {
+        ok(`plugin cache bearer-sync: ${f}`);
+        fixed += 1;
+      }
+      for (const e of sync.errors) {
+        if (String(e).startsWith('cleared invalid Bearer')) warn(e);
+        else fail(e);
+      }
+    } catch (e) {
+      fail(`plugin bearer-sync: ${e.message}`);
     }
   }
 }
@@ -330,12 +356,13 @@ function purgeCaches() {
   warn('marketplaces/ snapshot left in place; --fix syncs manifests from SoT');
 }
 
+const main = async () => {
 console.log('AgentStack Cursor runtime refresh\n');
 console.log(`SoT plugin: ${PLUGIN}`);
 console.log(`Cursor:     ${CURSOR_PLUGINS}\n`);
 
 if (purge) purgeCaches();
-scanAndFix();
+await scanAndFix();
 
 console.log(`\nsummary: fails=${fails} fixed=${fixed}`);
 if (fix || purge) {
@@ -374,3 +401,9 @@ Next:
   process.exit(1);
 }
 process.exit(0);
+};
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

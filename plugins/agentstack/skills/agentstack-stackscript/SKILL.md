@@ -62,3 +62,7 @@ export const ping = defineCommand({
 
 - Replace Logic Engine triggers with monolithic TS — keep triggers in JSON, delegate body to StackScript.
 - Put SSBC in full project JSONB blobs — platform stores bytecode in blob storage + index leaves.
+
+## References
+
+- Live catalog: `GET /mcp/actions` — filter `script.*`

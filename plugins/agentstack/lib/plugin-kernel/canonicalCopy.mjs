@@ -73,6 +73,8 @@ export const MCP_RECOVERY_HINTS = {
     'Split the batch or use async execute for heavy LLM actions.',
   service_caps_required_in_prod:
     'Run /agentstack-authorize or Connect — production requires scoped service_caps on the JWT.',
+  dual_surface_unsigned_plugin:
+    'Device Code signed user-agentstack only — click Connect on plugin-agentstack-* (G-A174) or use mcp-execute.mjs.',
 };
 
 export function recoveryHintForCode(code) {

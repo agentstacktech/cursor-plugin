@@ -73,5 +73,6 @@ Always `knowledge.prompt.get` / `knowledge.config.get` before replace. Use `writ
 
 ## References
 
+- Live catalog: `GET /mcp/actions` — filter `knowledge.*`
 - Unity mentor ops: `/agentstack-tenant-ops` · MCP prompt `agentstack_tenant_ops_mcp_first`
 - [CAPABILITY_MATRIX.md](../../../../docs/CAPABILITY_MATRIX.md) — filter `knowledge.*`

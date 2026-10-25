@@ -5,32 +5,14 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { stdin } from 'node:process';
 import { actionsFromSnapshot } from '../../lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { extractMcpExecuteSteps } from '../../lib/plugin-kernel/extractMcpAction.mjs';
+import { readHookStdinJson } from '../../lib/plugin-kernel/hookStdin.mjs';
 
 const SNAPSHOT_PATH = join(homedir(), '.cursor', 'agentstack-capabilities.json');
 
-async function readStdinJson() {
-  return new Promise((resolve) => {
-    let data = '';
-    stdin.setEncoding('utf8');
-    stdin.on('data', (c) => {
-      data += c;
-    });
-    stdin.on('end', () => {
-      try {
-        resolve(JSON.parse(data));
-      } catch {
-        resolve(null);
-      }
-    });
-    setTimeout(() => resolve(null), 200);
-  });
-}
-
 async function main() {
-  const event = await readStdinJson();
+  const event = await readHookStdinJson();
   if (!event) process.exit(0);
   const stepActions = extractMcpExecuteSteps(event);
   if (!stepActions.length) process.exit(0);

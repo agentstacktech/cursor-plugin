@@ -28,6 +28,7 @@ Locale prefixes: `/ru/services`, `/pt/services` (+ `/:sku`). `/offers` aliases t
 
 ## References
 
+- Live catalog: `GET /mcp/actions` — **no MCP domain for /services** (this skill is REST `/api/public/services/*` only)
 - Public hub: `/services` (SKU pages under `/services/:sku`; inquiry BFF on ecosystem pid=1)
 - Fixture catalog: `shared/fixtures/services_offers_v1.json` (planning estimates, not a public оферта)
 - Promo hire teaser on `/` (static SKU ids, no catalog fetch)
