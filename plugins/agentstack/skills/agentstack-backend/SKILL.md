@@ -211,7 +211,15 @@ Read-only session bootstrap: recipe `mcp_read_bootstrap` (prompt `agentstack_rea
 
 ## Execute budget (heavy LLM)
 
-Sync `agentstack.execute` is **60s for the whole batch** (`mcp_batch`) — not an RBAC limit. **At most one** heavy LLM action per sync call: `bots.simulate`, `knowledge.playground`, `agents.run` with `wait=true`. Cheap list/get may batch. Mentor CSV / long tests: one simulate per execute (unique `external_user_id`), or `options.async=true` then `discovery.job_status`. Catalog field: `GET /mcp/actions` → `execute_budget`. Prompt: `agentstack_execute_budget`.
+Sync `agentstack.execute` is **60s for the whole batch** (`mcp_batch`) — not an RBAC limit. Cheap list/get may batch. Prompt: `agentstack_execute_budget` · rollup: `GET /mcp/actions` → `execute_budget`.
+
+**Heavy LLM (one per sync execute):** prefer `options.async=true` on the step, then poll — do not stack multiple heavy steps in one sync batch.
+
+- **`knowledge.playground`** — mentor simulate; poll `discovery.job_status` after async enqueue.
+- **`bots.simulate`** — dry-run bot brain; suites: one simulate per execute (unique `external_user_id`), or async + poll.
+- **`agents.run`** with `wait=true` — poll `discovery.job_status` **or** `agents.run_get` for run-specific status.
+
+**Catalog (W9):** `discovery.list` / `discovery.list_actions` rows include **`async_execute`** when an action supports async enqueue — use before assuming sync-only. Same hint on `discovery.describe` for a single action.
 
 ## MCP guidance
 

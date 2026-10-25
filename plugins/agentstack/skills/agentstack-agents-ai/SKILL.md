@@ -44,7 +44,7 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 - Prefer preview actions before persistence: `agents.template_preview`, `ai_builder.compose.preview`.
 - For destructive lifecycle changes (`agents.delete`, `agents.kill`), ask for confirmation and surface the trace id.
 - Do not invent agent metrics or run status. Use `agents.metrics` and `agents.traces`.
-- `agents.run` with `wait=true` is a **heavy** MCP step (same 60s sync-batch rule as `bots.simulate`). Do not wait on several runs in one sync execute.
+- `agents.run` with `wait=true` is **heavy_llm** (same 60s sync-batch rule as `bots.simulate`, `knowledge.playground`) — one per sync `agentstack.execute`. Do not wait on several runs in one batch; prefer `options.async=true` then poll `discovery.job_status` or `agents.run_get` (see `async_execute` on `discovery.list` rows).
 
 ## Example
 
@@ -111,7 +111,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 3. **`agents.ensure_agent`** — preview `template_id` must match `work_next` top `compatible_templates[0]` (**H5** / `resolver_parity_v1`); saga **H7**: `create=false` then `create=true`; rollback on `created_agent_not_eligible`.
 4. **`agents.plan_claim`** (CAS `if_match_revision`; mismatch → `work_next handoff=true`) → **`agents.plan_execute`** — claim before execute (`WG_CLAIM_BEFORE_EXECUTE`).
 5. **Plan-only decompose:** `agents.plan_propose` with `validation_mode=persist_unexecutable` when fleet gaps expected (**H8** backlog = planner plane; **H9** facet_repair; **H10** skip `planning_artifact`).
-6. **Dev gate:** `npm run audit:closed-loop-harness` (monorepo closed-loop harness doctor).
+6. **Dev gate:** closed-loop harness `doctor --full` (gene `repo.ops.closed_loop.harness.gen1`) · `npm run audit:closed-loop-harness`.
 
 **Harness invariants (H6–H10):**
 - **H6** required_capabilities are mandatory — capability_mismatch blocks claim; route agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan; not handoff (capability_hard_gate_v1).
@@ -154,7 +154,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `ambiguous_anchor` | patch_text search_replace — longer find, set count, or graph_file_get text window |
 | `expired_claim` | agents.plan_reclaim_stale — lease expired; do not treat as dependency_blocked |
 | `wip_full` | Agent WIP cap reached — agents.plan_get then complete/release in_progress claims; retry plan_claim |
-| `plan_graph_load_failed` | Graph slice failed to load — plan_get then retry patch or claim |
+| `plan_graph_load_failed` | DNA/graph slice failed to load — plan_get (compact) then retry. If patch used a long title (>256), use patch_text or shorten title; see validation_error + field=title instead of this code when preflight maps PGVE. |
 | `pin_inventory_full` | Goal pin inventory at active_max — unpin a slot (plan affinity) then retry agents.plan_claim |
 | `pin_slot_not_found` | No matching goal pin slot for skill_id and agent_id — agents.plan_get pin_slots then retry |
 | `claim_heartbeat_failed` | No active in_progress lease for node_id — plan_claim the node before heartbeat_only pin ops |
@@ -162,6 +162,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `permission_denied` | Project RBAC denied — rbac.check_permission, confirm membership, or dev-operator persona for platform substrate tools. |
 | `plan_graph_private` | Orchestrator graph is private — sign in (user_id in MCP context) or set orchestrator public_read; project API keys must include created_by user. |
 | `not_authenticated` | No MCP operator session — auth.get_profile first. Cursor plugin: Connect (G-A174) or Device Code /agentstack-authorize; do not call mcp_auth from the agent. |
+| `relogin_required` | Session invalidated (deploy, eviction, or X-Session-Action: relogin_required) — re-authenticate: auth.get_profile or hosted remint; do not retry the same Bearer in a loop. |
 | `unauthorized` | Same as auth_required — OAuth Connect, Device Code, or Bearer from profile API key; then agentstack_session_setup and context.project_id. |
 | `auth_required` | Authenticate before work-graph spine — auth.get_profile → context.project_id → agents.work_next (not discovery.search). |
 | `service_caps_required_in_prod` | Project API key has no L1 service_caps — recreate with admin permissions (auto agents_autonomous_loop in prod) or user.apikeys.create preset agents_autonomous_loop / full_project; pass context.project_id=1 for ecosystem graph. |
@@ -205,6 +206,10 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `env_uuid_project_only` | Omit env_uuid or set home=project and retry. self and project_self are the session row and cannot take a sandbox slice. |
 | `graph_home_unknown` | home must be project, self, or project_self. Retry agents.plan_get or agents.plan_patch with one of those values. |
 | `graph_home_address_required` | Personal home needs a resolved session address. Pass home on the tool and ensure the operator session has user_id before patch. |
+| `plan_ops_parent_missing` | add_child parent_id is not in the graph — create the parent first or fix parent_id. |
+| `plan_graph_children_exceeded` | Direct children per parent are capped (32). Flat parent_id storage counts siblings under each parent_id — not total graph nodes. Split into sub-groups or use agents.plan_propose decompose_node. |
+| `plan_graph_too_large` | The merged graph does not fit the JSON leaf (see graph_limits.inline_write_hard_limit_bytes, typically 512 KiB). Bodies spill near chunk_spill_target_bytes (~400 KiB). For huge prose use node.prompt/detail (not only meta.description), append_storage_ref (stubs inline text), reorder_children {parent_id,child_ids}, or storage file maps in meta.storage_refs. Cards keep ~200-char stubs after spill. Read one node with plan_get detail=body and node_id. Archive completed nodes (op archive) if titles/meta still overflow. Do not retry the same blob. |
+| `plan_patch_nodes_missing_from_changed` | Revision moved but new node ids are absent on plan_get — align generation_env_uuid on context and tool params; deploy compaction protect_ids (undated completed purge); run prelude bucket parents before child ingest batches. |
 | `run_mismatch` | run_id does not belong to the supplied agent_id — omit agent_id or fix the pair. |
 | `agent_not_found` | agent_id not in project fleet — use agents.team or plan_get before run_get. |
 | `waiting_for_approval` | Run status waiting_for_approval — agents.approve_run with approval_artifact_hash from run_detail. |
@@ -237,7 +242,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 ## MCP guidance
 
 - **Catalog:** `GET https://agentstack.tech/mcp/actions` — filter `agents.*`, `ai_builder.*`, `generation.*`.
-- **Heavy runs:** `agents.run` with `wait=true` counts as one heavy LLM step per sync execute (see `agentstack_execute_budget`).
+- **Heavy runs:** `agents.run` (`wait=true`) — one **heavy_llm** per sync execute; `options.async=true` → `discovery.job_status` or `agents.run_get` (catalog `async_execute` on `discovery.list` rows). Same async pattern for `knowledge.playground` / `bots.simulate` when batched with fleet work — see `agentstack_execute_budget`.
 - **Prompts:** `agentstack_agents_fleet` via `GET /mcp/prompts/get`.
 
 ## References
