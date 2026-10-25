@@ -151,10 +151,12 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
   } catch {
     return { updated, skipped, errors };
   }
-  const authHdr = agentstackAuthHeaders(userCfg)?.Authorization;
-  if (!authHdr) return { updated, skipped, errors };
-
-  const bearer = authHdr.startsWith('Bearer ') ? authHdr.slice('Bearer '.length).trim() : '';
+  const rawAuth = userCfg?.mcpServers?.agentstack?.headers?.Authorization;
+  const bearer =
+    typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
+      ? rawAuth.slice('Bearer '.length).trim()
+      : '';
+  if (!bearer) return { updated, skipped, errors };
   if (!isDeviceCodeMcpBearer(bearer)) {
     const cleared = await resetPluginCacheMcpToOAuthOnly({
       baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
@@ -200,7 +202,11 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
  * @returns {Promise<boolean>}
  */
 export async function pluginCacheBearerDrifted(userCfg, opts = {}) {
-  const bearer = agentstackAuthHeaders(userCfg)?.Authorization?.slice('Bearer '.length)?.trim();
+  const rawAuth = userCfg?.mcpServers?.agentstack?.headers?.Authorization;
+  const bearer =
+    typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
+      ? rawAuth.slice('Bearer '.length).trim()
+      : '';
   if (!bearer || !isDeviceCodeMcpBearer(bearer)) return false;
   const runtime = buildPluginRuntimeMcpConfig(userCfg, {
     baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),

@@ -77,8 +77,10 @@ export function describeAgentstackMcpAuth(cfg) {
   const headers = cfg?.mcpServers?.agentstack?.headers;
   const h = headers && typeof headers === 'object' ? headers : {};
   const auth = typeof h.Authorization === 'string' ? h.Authorization : '';
+  const apiKeyPresent = typeof h['X-API-Key'] === 'string' && h['X-API-Key'].trim().length > 0;
   const out = {
     placeholder: Boolean(auth.includes('${') || /AGENTSTACK_ACCESS_TOKEN/i.test(auth)),
+    apiKeyPresent,
     jwtType: null,
     actorKind: null,
     userId: null,
@@ -179,7 +181,26 @@ export function normalizeAgentstackMcpConfig(cfg, { baseUrl, projectId } = {}) {
  * @returns {object} cfg
  */
 /**
- * Device Code integration PAT — not browser session JWT (user_token) or null service_caps.
+ * @param {object|null} cfg
+ * @returns {Record<string, string>|null}
+ */
+function agentstackMcpHeaderBlock(cfg) {
+  const h = cfg?.mcpServers?.agentstack?.headers;
+  return h && typeof h === 'object' ? h : null;
+}
+
+/**
+ * Scoped integration key in mcp.json (CI, admin PAT, apikeys.create).
+ * @param {object|null} cfg
+ */
+export function hasAgentstackApiKeyHeader(cfg) {
+  const h = agentstackMcpHeaderBlock(cfg);
+  return typeof h?.['X-API-Key'] === 'string' && h['X-API-Key'].trim().length > 0;
+}
+
+/**
+ * Device Code / apikeys JWT PAT shape — not browser session JWT (user_token) or null service_caps.
+ * Used for Bearer mirror into plugin cache; X-API-Key is a separate auth plane.
  * @param {string} accessToken
  */
 export function isDeviceCodeMcpBearer(accessToken) {
@@ -215,21 +236,33 @@ export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl, projectId 
 }
 
 /**
- * Auth headers for AgentStack HTTP calls from mcp.json (Bearer preferred, else X-API-Key).
+ * Auth headers for MCP/REST from ~/.cursor/mcp.json.
+ * Prefer valid integration Bearer PAT; else X-API-Key (so admin keys work when a stale user_token Bearer lingers).
  * @param {object|null} cfg
  * @returns {Record<string, string>|null}
  */
 export function agentstackAuthHeaders(cfg) {
-  const h = cfg?.mcpServers?.agentstack?.headers;
-  if (!h || typeof h !== 'object') return null;
-  if (typeof h.Authorization === 'string' && h.Authorization.startsWith('Bearer ')) {
-    const out = { Authorization: h.Authorization };
-    const pid = h['X-Project-ID'] || h['x-project-id'];
+  const h = agentstackMcpHeaderBlock(cfg);
+  if (!h) return null;
+  const pid = h['X-Project-ID'] || h['x-project-id'];
+  const stampPid = (out) => {
     if (isTenantProjectId(pid)) out['X-Project-ID'] = String(Number(pid));
     return out;
+  };
+  const auth = typeof h.Authorization === 'string' ? h.Authorization : '';
+  const bearer =
+    auth.startsWith('Bearer ') && !auth.includes('${')
+      ? auth.slice('Bearer '.length).trim()
+      : '';
+  if (bearer && isDeviceCodeMcpBearer(bearer)) {
+    return stampPid({ Authorization: `Bearer ${bearer}` });
   }
-  if (typeof h['X-API-Key'] === 'string' && h['X-API-Key'].length > 0) {
-    return { 'X-API-Key': h['X-API-Key'] };
+  const apiKey = typeof h['X-API-Key'] === 'string' ? h['X-API-Key'].trim() : '';
+  if (apiKey) {
+    return stampPid({ 'X-API-Key': apiKey });
+  }
+  if (auth.startsWith('Bearer ')) {
+    return stampPid({ Authorization: auth });
   }
   return null;
 }
@@ -292,21 +325,28 @@ export function pluginMcpOAuthError(cfg) {
  * Plugin MCP is OAuth URL-only; Device Code still writes ~/.cursor/mcp.json for hooks.
  *
  * @param {object|null} cfg
- * @returns {{ kind: 'unsigned'|'placeholder'|'null_caps'|'ok', additionalContext: string|null }}
+ * @returns {{ kind: 'unsigned'|'placeholder'|'null_caps'|'ok', additionalContext: string|null, authMode?: 'api_key'|'bearer_pat'|'bearer_other' }}
  */
 export function describeAgentstackAuthGate(cfg) {
-  const headers = agentstackAuthHeaders(cfg);
-  if (!headers) {
+  const h = agentstackMcpHeaderBlock(cfg);
+  const hasApiKey = hasAgentstackApiKeyHeader(cfg);
+  const rawAuth = typeof h?.Authorization === 'string' ? h.Authorization : '';
+  const rawBearer =
+    rawAuth.startsWith('Bearer ') && !rawAuth.includes('${')
+      ? rawAuth.slice('Bearer '.length).trim()
+      : '';
+
+  if (!h || (!rawAuth && !hasApiKey)) {
     return {
       kind: 'unsigned',
       additionalContext:
         'AgentStack MCP is not signed in. After Reload, the plugin shows an AgentStack MCP server — ' +
         'click Connect (site login, G-A174) or run ' +
-        `${AUTHORIZE_SLASH} (Device Code). Then Developer: Reload Window.`,
+        `${AUTHORIZE_SLASH} (Device Code). Or set X-API-Key (scoped apikeys.create). Then Reload Window.`,
     };
   }
   const desc = describeAgentstackMcpAuth(cfg);
-  if (desc.placeholder) {
+  if (desc.placeholder && !hasApiKey) {
     return {
       kind: 'placeholder',
       additionalContext:
@@ -314,26 +354,34 @@ export function describeAgentstackAuthGate(cfg) {
         `Run ${AUTHORIZE_SLASH} or click Connect on the plugin MCP, then Reload Window.`,
     };
   }
-  if (headers?.Authorization?.startsWith('Bearer ')) {
-    const bearer = headers.Authorization.slice('Bearer '.length).trim();
-    if (!isDeviceCodeMcpBearer(bearer)) {
+  if (hasApiKey) {
+    let additionalContext = null;
+    if (rawBearer && !isDeviceCodeMcpBearer(rawBearer)) {
+      additionalContext =
+        'Using X-API-Key for MCP. Remove stale Authorization Bearer (browser user_token) from mcp.json ' +
+        'to avoid confusion — hooks prefer valid PAT Bearer when present.';
+    }
+    return { kind: 'ok', additionalContext, authMode: 'api_key' };
+  }
+  if (rawBearer) {
+    if (!isDeviceCodeMcpBearer(rawBearer)) {
       let additionalContext =
-        'AgentStack mcp.json Bearer is not a Device Code PAT (user_api_key with service_caps[]). ' +
-        `Run ${AUTHORIZE_SLASH} and Reload Window — do not paste profile API keys.`;
+        'AgentStack mcp.json Bearer is not an integration PAT (user_api_key with service_caps[]). ' +
+        `Run ${AUTHORIZE_SLASH}, or use X-API-Key from apikeys.create (agent_runner / admin scopes).`;
       if (desc.jwtType === 'user_token') {
         additionalContext =
-          'AgentStack mcp.json has a browser session JWT (user_token), not a Device Code PAT. ' +
-          `Run ${AUTHORIZE_SLASH} and Reload Window — do not paste profile API keys.`;
+          'AgentStack mcp.json has a browser session JWT (user_token), not an integration PAT. ' +
+          `Run ${AUTHORIZE_SLASH}, or set X-API-Key for hooks/mcp-execute.`;
       } else if (desc.serviceCaps === 'null') {
         additionalContext =
           'AgentStack MCP JWT has service_caps=null. tools/list can look connected while tools/call ' +
-          `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} (Device Code, no API key) ` +
-          'to mint a scoped token, then Reload Window.';
+          `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} or apikeys.create with mcp_write.`;
       }
       return { kind: 'null_caps', additionalContext };
     }
+    return { kind: 'ok', additionalContext: null, authMode: 'bearer_pat' };
   }
-  return { kind: 'ok', additionalContext: null };
+  return { kind: 'ok', additionalContext: null, authMode: 'bearer_other' };
 }
 
 /**
@@ -433,7 +481,7 @@ export function formatAgentstackStatusCard({
   const jwtType = auth?.jwtType || '';
   const transport =
     transportRecommended ||
-    (jwtType === 'user_api_key' ? 'device_code' : 'connect');
+    (auth?.apiKeyPresent ? 'api_key' : jwtType === 'user_api_key' ? 'device_code' : 'connect');
   const expWarn = bearerExpWarn(auth);
   const lines = [
     `AgentStack: ${who}${role}`,
@@ -500,6 +548,9 @@ export async function switchProjectViaRest(
  */
 export function describeMcpWriteCapGap(cfg) {
   const headers = agentstackAuthHeaders(cfg);
+  if (headers?.['X-API-Key']) {
+    return { missing: false, reason: null };
+  }
   if (!headers?.Authorization) {
     return { missing: false, reason: null };
   }

@@ -207,6 +207,25 @@ assert.equal(AUTHORIZE_SLASH, '/agentstack-authorize');
 assert.equal(describeAgentstackAuthGate(null).kind, 'unsigned');
 assert.match(describeAgentstackAuthGate(null).additionalContext, /agentstack-authorize/);
 assert.equal(describeAgentstackAuthGate({ mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}` } } } }).kind, 'null_caps');
+const apiKeyWins = describeAgentstackAuthGate({
+  mcpServers: {
+    agentstack: {
+      headers: { Authorization: `Bearer ${fakeJwt}`, 'X-API-Key': 'ask_admin_fixture', 'X-Project-ID': '1444' },
+    },
+  },
+});
+assert.equal(apiKeyWins.kind, 'ok');
+assert.equal(apiKeyWins.authMode, 'api_key');
+assert.equal(
+  agentstackAuthHeaders({
+    mcpServers: {
+      agentstack: {
+        headers: { Authorization: `Bearer ${fakeJwt}`, 'X-API-Key': 'ask_admin_fixture' },
+      },
+    },
+  })['X-API-Key'],
+  'ask_admin_fixture',
+);
 assert.equal(
   describeAgentstackAuthGate({
     mcpServers: { agentstack: { headers: { Authorization: 'Bearer ${AGENTSTACK_ACCESS_TOKEN}' } } },

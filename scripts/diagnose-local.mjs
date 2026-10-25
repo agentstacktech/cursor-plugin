@@ -221,7 +221,8 @@ if (fs.existsSync(cacheRoot)) {
     if (!bad) ok(`cached plugin mcp.json (${cachedMcp.length}) shape OK`);
     if (
       userGate?.kind === 'ok' &&
-      userAuth &&
+      userGate?.authMode === 'bearer_pat' &&
+      userAuth?.Authorization &&
       oauthOnlyInCache > 0 &&
       (await pluginCacheBearerDrifted(userCfgForCacheProbe, { baseUrl: BASE_URL }))
     ) {
@@ -309,9 +310,12 @@ if (!fs.existsSync(MCP)) {
     if (gate.kind === 'unsigned') fail(`no Bearer and no X-API-Key — run ${AUTHORIZE_SLASH}`);
     else if (gate.kind === 'placeholder') {
       fail('user mcp.json Authorization is a placeholder — run /agentstack-authorize');
-    } else if (auth?.Authorization && gate.kind === 'ok') ok('auth=Bearer (Device Code PAT)');
-    else if (auth?.Authorization) fail(`auth=Bearer but gate=${gate.kind} — run ${AUTHORIZE_SLASH}`);
-    else ok(`auth=X-API-Key (legacy/CI path; prefer ${AUTHORIZE_SLASH} for Device Code)`);
+    }     else if (gate.authMode === 'api_key' && auth?.['X-API-Key']) {
+      ok('auth=X-API-Key (integration / admin key — hooks & mcp-execute; plugin MCP → Connect)');
+      if (gate.additionalContext) warn(gate.additionalContext);
+    } else if (auth?.Authorization && gate.kind === 'ok') ok('auth=Bearer (integration PAT)');
+    else if (auth?.Authorization) fail(`auth=Bearer but gate=${gate.kind} — run ${AUTHORIZE_SLASH} or X-API-Key`);
+    else ok(`auth=X-API-Key — run ${AUTHORIZE_SLASH} if you need Device Code instead`);
     const claims = describeAgentstackMcpAuth(cfg);
     if (claims.jwtType) {
       ok(
