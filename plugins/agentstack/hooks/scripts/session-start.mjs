@@ -19,6 +19,7 @@ import {
   decodeJwtPayload,
   describeAgentstackAuthGate,
   describeAgentstackMcpAuth,
+  isCursorMirrorBearer,
   shouldAutoDeviceLogin,
   readPinnedTenantProjectId,
   formatAgentstackStatusCard,
@@ -279,7 +280,14 @@ async function main() {
       /* best effort */
     }
   }
-  if (gateFinal.kind === 'ok' && gateFinal.authMode !== 'api_key' && agentstackAuthHeaders(cfg)) {
+  const mirrorBearer = (() => {
+    const auth = cfg?.mcpServers?.agentstack?.headers?.Authorization;
+    return typeof auth === 'string' && auth.startsWith('Bearer ')
+      ? auth.slice('Bearer '.length).trim()
+      : '';
+  })();
+  // X-API-Key selects hook auth, but a usable Bearer must still be mirrored.
+  if (gateFinal.kind === 'ok' && isCursorMirrorBearer(mirrorBearer)) {
     try {
       const drifted = await pluginCacheBearerDrifted(cfg, { baseUrl: BASE_URL });
       const sync = drifted

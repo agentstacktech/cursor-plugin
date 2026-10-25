@@ -370,7 +370,7 @@ assert.equal(
     baseUrl: 'https://agentstack.tech',
     projectId: 1444,
   }).cfg.mcpServers.agentstack.headers['X-Project-ID'],
-  '1444',
+  '1',
 );
 assert.equal(
   agentstackAuthHeaders({

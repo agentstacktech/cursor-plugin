@@ -130,7 +130,12 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
  */
 export function resolveAgentstackProjectPin(prevHeaders = {}, projectId) {
   const prevPin = prevHeaders['X-Project-ID'] || prevHeaders['x-project-id'];
-  const raw = projectId ?? prevPin ?? process.env.AGENTSTACK_PROJECT_ID;
+  const prevN = Number(String(prevPin ?? '').trim());
+  // Header 1 is the credential's project. A pin file must not replace it.
+  if (prevN === ECOSYSTEM_PROJECT_ID) return String(ECOSYSTEM_PROJECT_ID);
+  const fallback =
+    Number.isInteger(prevN) && prevN >= 1 ? prevPin : process.env.AGENTSTACK_PROJECT_ID;
+  const raw = projectId ?? fallback;
   const n = Number(String(raw ?? '').trim());
   return Number.isInteger(n) && n >= 1 ? String(n) : null;
 }
