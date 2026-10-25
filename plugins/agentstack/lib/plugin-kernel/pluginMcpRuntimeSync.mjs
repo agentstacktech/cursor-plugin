@@ -10,6 +10,7 @@ import path from 'node:path';
 import os from 'node:os';
 import {
   agentstackAuthHeaders,
+  isCursorMirrorBearer,
   isDeviceCodeMcpBearer,
   leanAgentstackServer,
   resolveAgentstackProjectPin,
@@ -49,8 +50,8 @@ export function buildPluginRuntimeMcpConfig(userCfg, { baseUrl } = {}) {
     typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
       ? rawAuth.slice('Bearer '.length).trim()
       : '';
-  if (!isDeviceCodeMcpBearer(bearer)) {
-    throw new Error('buildPluginRuntimeMcpConfig requires Device Code PAT Bearer (not X-API-Key)');
+  if (!isCursorMirrorBearer(bearer)) {
+    throw new Error('buildPluginRuntimeMcpConfig requires a mirrorable JWT (session, Connect, or Device Code PAT)');
   }
   const url = baseUrl || baseUrlFromCfg(root);
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` };
@@ -77,8 +78,8 @@ export function pluginMcpRuntimeCacheError(cfg) {
     return 'plugin cache missing Bearer (run Device Code or refresh-cursor-runtime --fix)';
   }
   const token = auth.slice('Bearer '.length).trim();
-  if (!isDeviceCodeMcpBearer(token)) {
-    return 'plugin cache Bearer is not a Device Code PAT (user_api_key + service_caps) — run /agentstack-authorize';
+  if (!isCursorMirrorBearer(token)) {
+    return 'plugin cache Bearer is not a usable MCP JWT (session, Connect, or Device Code PAT with service_caps)';
   }
   if (!String(entry.url || '').endsWith('/mcp')) return 'url must be AgentStack /mcp endpoint';
   return null;
@@ -178,7 +179,7 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
       ? rawAuth.slice('Bearer '.length).trim()
       : '';
   if (!bearer) return { updated, skipped, errors };
-  if (!isDeviceCodeMcpBearer(bearer)) {
+  if (!isCursorMirrorBearer(bearer)) {
     const cleared = await resetPluginCacheMcpToOAuthOnly({
       baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
     });
@@ -231,7 +232,7 @@ export async function pluginCacheBearerDrifted(userCfg, opts = {}) {
     typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
       ? rawAuth.slice('Bearer '.length).trim()
       : '';
-  if (!bearer || !isDeviceCodeMcpBearer(bearer)) {
+  if (!bearer || !isCursorMirrorBearer(bearer)) {
     _driftMemo = false;
     _driftAt = Date.now();
     return false;

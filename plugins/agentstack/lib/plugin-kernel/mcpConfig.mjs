@@ -214,6 +214,21 @@ export function isDeviceCodeMcpBearer(accessToken) {
   return Array.isArray(sc) && sc.length > 0;
 }
 
+/**
+ * Bearer Cursor may send on plugin-agentstack-* so tools/list is not stuck at 0.
+ * Session ``user_token`` is valid on Core (probe: tools/list + auth.get_profile).
+ * ``user_api_key`` with null/empty ``service_caps`` is not — prod rejects writes.
+ * @param {string} accessToken
+ */
+export function isCursorMirrorBearer(accessToken) {
+  const raw = String(accessToken || '').trim();
+  if (!raw.startsWith('eyJ') || raw.includes('${')) return false;
+  const p = decodeJwtPayload(raw);
+  if (!p || typeof p !== 'object') return false;
+  if (p.type === 'user_token' || p.type === 'oauth_access_token') return true;
+  return isDeviceCodeMcpBearer(raw);
+}
+
 export function applyAgentstackMcpBearer(cfg, { accessToken, baseUrl, projectId } = {}) {
   if (!isDeviceCodeMcpBearer(accessToken)) {
     throw new Error(
@@ -364,19 +379,23 @@ export function describeAgentstackAuthGate(cfg) {
     return { kind: 'ok', additionalContext, authMode: 'api_key' };
   }
   if (rawBearer) {
+    if (desc.jwtType === 'user_token' || desc.jwtType === 'oauth_access_token') {
+      return {
+        kind: 'ok',
+        additionalContext:
+          desc.jwtType === 'user_token'
+            ? 'Session JWT (user_token) is valid for MCP. Plugin cache must mirror this Bearer or Cursor shows 0 tools.'
+            : null,
+        authMode: 'session_jwt',
+      };
+    }
     if (!isDeviceCodeMcpBearer(rawBearer)) {
-      let additionalContext =
-        'AgentStack mcp.json Bearer is not an integration PAT (user_api_key with service_caps[]). ' +
-        `Run ${AUTHORIZE_SLASH}, or use X-API-Key from apikeys.create (agent_runner / admin scopes).`;
-      if (desc.jwtType === 'user_token') {
-        additionalContext =
-          'AgentStack mcp.json has a browser session JWT (user_token), not an integration PAT. ' +
-          `Run ${AUTHORIZE_SLASH}, or set X-API-Key for hooks/mcp-execute.`;
-      } else if (desc.serviceCaps === 'null') {
-        additionalContext =
-          'AgentStack MCP JWT has service_caps=null. tools/list can look connected while tools/call ' +
-          `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} or apikeys.create with mcp_write.`;
-      }
+      const additionalContext =
+        desc.serviceCaps === 'null'
+          ? 'AgentStack MCP JWT has service_caps=null. tools/list can look connected while tools/call ' +
+            `fails with service_caps_required_in_prod. Run ${AUTHORIZE_SLASH} or apikeys.create with mcp_write.`
+          : 'AgentStack mcp.json Bearer is not an integration PAT (user_api_key with service_caps[]). ' +
+            `Run ${AUTHORIZE_SLASH}, or use X-API-Key from apikeys.create.`;
       return { kind: 'null_caps', additionalContext };
     }
     return { kind: 'ok', additionalContext: null, authMode: 'bearer_pat' };

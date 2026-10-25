@@ -221,6 +221,15 @@ assert.equal(AUTHORIZE_SLASH, '/agentstack-authorize');
 assert.equal(describeAgentstackAuthGate(null).kind, 'unsigned');
 assert.match(describeAgentstackAuthGate(null).additionalContext, /agentstack-authorize/);
 assert.equal(describeAgentstackAuthGate({ mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}` } } } }).kind, 'null_caps');
+const sessionPayload = Buffer.from(
+  JSON.stringify({ type: 'user_token', user_id: 1, service_caps: null, exp: 9999999999 }),
+).toString('base64url');
+const sessionJwt = `${header}.${sessionPayload}.sig`;
+const sessionGate = describeAgentstackAuthGate({
+  mcpServers: { agentstack: { headers: { Authorization: `Bearer ${sessionJwt}`, 'X-Project-ID': '1444' } } },
+});
+assert.equal(sessionGate.kind, 'ok');
+assert.equal(sessionGate.authMode, 'session_jwt');
 const apiKeyWins = describeAgentstackAuthGate({
   mcpServers: {
     agentstack: {
@@ -294,7 +303,7 @@ assert.throws(
     buildPluginRuntimeMcpConfig({
       mcpServers: { agentstack: { headers: { Authorization: `Bearer ${fakeJwt}`, 'X-Project-ID': '1444' } } },
     }),
-  /PAT|X-API-Key/,
+  /mirrorable|PAT|service_caps/,
 );
 assert.match(
   pluginMcpRuntimeCacheError({
