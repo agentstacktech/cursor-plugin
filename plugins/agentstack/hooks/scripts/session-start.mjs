@@ -315,40 +315,11 @@ async function main() {
       const jwtPid =
         payload?.project_id != null ? Number(payload.project_id) : null;
       if (jwtPid != null && Number(pin) !== jwtPid) {
-        const accessToken = await switchProjectViaRest(authHeaders, pin, {
-          baseUrl: BASE_URL,
-        });
-        if (accessToken) {
-          const { isDeviceCodeMcpBearer } = await import('../../lib/plugin-kernel/mcpConfig.mjs');
-          if (!isDeviceCodeMcpBearer(accessToken)) {
-            log('switch-project returned non-PAT token — skipping mcp.json write');
-            extras.push(
-              `AgentStack: switch-project returned session JWT, not Device Code PAT. Run ${AUTHORIZE_SLASH}.`,
-            );
-          } else {
-          applyAgentstackMcpBearer(cfg, {
-            accessToken,
-            baseUrl: BASE_URL,
-            projectId: pin,
-          });
-          await writeMcpFile(cfg);
-          log(`session-start auto switch-project ${jwtPid} -> ${pin}`);
-          try {
-            const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
-            if (sync.updated?.length) {
-              log(`plugin cache MCP synced (${sync.updated.length}) — Reload Window`);
-            }
-          } catch {
-            /* best effort */
-          }
-          }
-        } else if (jwtPid != null) {
-          log(`session-start switch-project ${jwtPid} -> ${pin} failed (REST)`);
-          extras.push(
-            `AgentStack: could not align JWT project ${jwtPid} to pin ${pin}. ` +
-              'Set context.project_id or run auth.switch_project.',
-          );
-        }
+        log(`pin ${pin} differs from credential project ${jwtPid} — not rewriting the token`);
+        extras.push(
+          `AgentStack credential is project ${jwtPid}. Pin file says ${pin}. ` +
+            'The token is left on its own project. Pass context.project_id when a call must use another workspace.',
+        );
       }
     }
   }

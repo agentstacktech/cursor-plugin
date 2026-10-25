@@ -11,7 +11,9 @@ Use when editing the public `/showcase` gallery, ecosystem catalog DNA on **proj
 
 - `showcase.catalog.get` — merged catalog + settings + `catalog_revision`
 - `showcase.catalog.diff_vs_fixture` / `export_fixture` — drift vs git fixture
-- `showcase.catalog.upsert_entry` / `reorder` / `showcase.settings.patch`
+- `showcase.catalog.patch_entry` — partial edit (title, `hosting_bucket`, status) without deploy
+- `showcase.catalog.upsert_entry` / `delete_entry` / `reorder` / `showcase.settings.patch`
+- `showcase.catalog.sync_fixture` — `mode`: `missing` | `align` | `align_and_prune` (+ `dry_run`)
 - `showcase.health.probe` — stamp `data.showcase.health`
 - Prompt: `agentstack_showcase_ops` · Recipe: `mcp_showcase_catalog_safe` · Flow: `UF_SHOWCASE_CATALOG`
 

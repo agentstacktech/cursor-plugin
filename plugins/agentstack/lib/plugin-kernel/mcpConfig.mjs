@@ -122,23 +122,25 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
 }
 
 /**
- * Tenant pin for mcp.json: keep existing tenant header, ignore ecosystem `1`.
+ * Project stamped on mcp.json. Explicit `1` is kept — it is a real credential scope,
+ * not a signal to substitute `~/.cursor/agentstack-project`.
  * @param {Record<string, string>} [prevHeaders]
  * @param {string|number} [projectId]
  * @returns {string|null}
  */
 export function resolveAgentstackProjectPin(prevHeaders = {}, projectId) {
   const prevPin = prevHeaders['X-Project-ID'] || prevHeaders['x-project-id'];
-  let pin = projectId ?? process.env.AGENTSTACK_PROJECT_ID;
-  if (!isTenantProjectId(pin) && isTenantProjectId(prevPin)) pin = prevPin;
-  return isTenantProjectId(pin) ? String(Number(pin)) : null;
+  const raw = projectId ?? prevPin ?? process.env.AGENTSTACK_PROJECT_ID;
+  const n = Number(String(raw ?? '').trim());
+  return Number.isInteger(n) && n >= 1 ? String(n) : null;
 }
 
-/** Mutates headers: tenant `X-Project-ID` or drop ecosystem/junk. */
+/** Mutates headers: keep project id ≥ 1, including ecosystem `1`. */
 export function stampAgentstackProjectHeader(headers, pin) {
   if (!headers || typeof headers !== 'object') return headers;
   delete headers['x-project-id'];
-  if (pin) headers['X-Project-ID'] = String(pin);
+  const n = Number(String(pin ?? '').trim());
+  if (Number.isInteger(n) && n >= 1) headers['X-Project-ID'] = String(n);
   else delete headers['X-Project-ID'];
   return headers;
 }
@@ -261,7 +263,8 @@ export function agentstackAuthHeaders(cfg) {
   if (!h) return null;
   const pid = h['X-Project-ID'] || h['x-project-id'];
   const stampPid = (out) => {
-    if (isTenantProjectId(pid)) out['X-Project-ID'] = String(Number(pid));
+    const n = Number(String(pid ?? '').trim());
+    if (Number.isInteger(n) && n >= 1) out['X-Project-ID'] = String(n);
     return out;
   };
   const auth = typeof h.Authorization === 'string' ? h.Authorization : '';

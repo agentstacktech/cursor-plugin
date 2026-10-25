@@ -16,10 +16,14 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 5. Cheap batch on one sync `agentstack.execute`: `agents.work_next`, `agents.plan_get`, `agents.plan_claim`.
 6. One per sync execute: `agents.plan_propose`, `agents.plan_apply_proposal`, `agents.plan_recovery_scan`, `context.get`, plus heavy LLM (`bots.simulate`, `agents.run` with `wait=true`).
 
+## Open community hubs
+
+When `config.membership.join_policy` is `open`, call `projects.join` (or REST `POST /projects/{id}/join`) before the loop, then use `home=project_self` on plan actions. Recipe: `mcp_community_hub_v1`.
+
 ## Example
 
 ```json
-{"action": "agents.work_next", "params": {"project_id": 1}}
+{"action": "agents.work_next", "params": {"project_id": 1, "home": "project_self"}}
 ```
 
 Follow `next_action`. The compact packet is enough to claim or execute.

@@ -125,23 +125,52 @@ const DRIFT_TTL_MS = 30_000;
 let _driftAt = 0;
 let _driftMemo = false;
 
+function isGitPluginSource(filePath) {
+  try {
+    const real = fsSync.realpathSync(filePath).replace(/\\/g, '/').toLowerCase();
+    return real.includes('/provided_plugins/') && real.endsWith('/plugins/agentstack/mcp.json');
+  } catch {
+    return false;
+  }
+}
+
 /**
+ * Cache + marketplace runtime copies. Never the git SoT (local symlink).
  * @returns {string[]}
  */
 function listPluginCacheMcpPaths() {
   if (_cachePathsMemo.length && Date.now() - _cachePathsAt < CACHE_PATHS_TTL_MS) {
     return _cachePathsMemo;
   }
-  const cacheRoot = path.join(os.homedir(), '.cursor', 'plugins', 'cache', 'agentstack');
+  const pluginsRoot = path.join(os.homedir(), '.cursor', 'plugins');
+  const roots = [
+    path.join(pluginsRoot, 'cache', 'agentstack'),
+    path.join(pluginsRoot, 'marketplaces'),
+  ];
   const out = [];
-  if (!fsSync.existsSync(cacheRoot)) return out;
-  const stack = [cacheRoot];
+  const stack = roots.filter((root) => fsSync.existsSync(root)).map((root) => [root, 0]);
   while (stack.length) {
-    const dir = stack.pop();
-    for (const entry of fsSync.readdirSync(dir, { withFileTypes: true })) {
+    const [dir, depth] = stack.pop();
+    if (depth > 12) continue;
+    let entries;
+    try {
+      entries = fsSync.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name === 'node_modules' || entry.name === '.git') continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) stack.push(full);
-      else if (entry.name === 'mcp.json') out.push(full);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) {
+        stack.push([full, depth + 1]);
+        continue;
+      }
+      if (entry.name !== 'mcp.json') continue;
+      const norm = full.replace(/\\/g, '/').toLowerCase();
+      if (!norm.includes('agentstack')) continue;
+      if (isGitPluginSource(full)) continue;
+      out.push(full);
     }
   }
   _cachePathsMemo = out;

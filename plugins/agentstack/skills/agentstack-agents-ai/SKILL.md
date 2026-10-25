@@ -124,6 +124,8 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 **`agents.work_next` when_blocked:**
 | Signal | Route |
 |--------|-------|
+| `membership_required` | Open community hub: call projects.join on context.project_id, then agents.work_next with home=project_self (recipe mcp_community_hub_v1). |
+| `join_not_allowed` | Project is not open-join — request invite or projects.add_user from an owner. |
 | `provision_required` | ensure_agent create=false (H5) then create=true then plan_claim |
 | `no_compatible_agent` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
 | `planning_required` | agents.plan_propose mode=create_plan or decompose_node — strategic/decomposition node, not execution |

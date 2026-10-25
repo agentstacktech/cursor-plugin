@@ -344,13 +344,13 @@ const keptPin = applyAgentstackMcpBearer(
   },
   { accessToken: fixturePatJwt, baseUrl: 'https://agentstack.tech', projectId: 1 },
 );
-assert.equal(keptPin.mcpServers.agentstack.headers['X-Project-ID'], '1444');
+assert.equal(keptPin.mcpServers.agentstack.headers['X-Project-ID'], '1');
 
 const droppedEco = applyAgentstackMcpBearer(
   { mcpServers: { agentstack: { headers: { 'X-Project-ID': '1' } } } },
   { accessToken: fixturePatJwt, baseUrl: 'https://agentstack.tech', projectId: 1 },
 );
-assert.equal(droppedEco.mcpServers.agentstack.headers['X-Project-ID'], undefined);
+assert.equal(droppedEco.mcpServers.agentstack.headers['X-Project-ID'], '1');
 
 const scrubbed = normalizeAgentstackMcpConfig(
   {
@@ -364,8 +364,7 @@ const scrubbed = normalizeAgentstackMcpConfig(
   },
   { baseUrl: 'https://agentstack.tech' },
 );
-assert.equal(scrubbed.cfg.mcpServers.agentstack.headers['X-Project-ID'], undefined);
-assert.equal(scrubbed.changed, true);
+assert.equal(scrubbed.cfg.mcpServers.agentstack.headers['X-Project-ID'], '1');
 assert.equal(
   normalizeAgentstackMcpConfig(scrubbed.cfg, {
     baseUrl: 'https://agentstack.tech',
@@ -377,7 +376,7 @@ assert.equal(
   agentstackAuthHeaders({
     mcpServers: { agentstack: { headers: { Authorization: 'Bearer x', 'X-Project-ID': '1' } } },
   })['X-Project-ID'],
-  undefined,
+  '1',
 );
 
 assert.equal(

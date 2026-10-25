@@ -132,6 +132,18 @@ Examples below with `pro_monthly` are **tenant-app** SKU slugs — not AgentStac
 
 **Paid checkout** (buyers): prompt `agentstack_tenant_subscription_monetization` — webhook/C24 auto-grants; do not chain `payments.create` → `apply_buff`.
 
+## Hosted game IAP (`shop.*` + PAY-01)
+
+Track for `/s/{pid}/` games (TailRush, thermo tenants) — **not** marketplace `commerce.sell.activate`.
+
+1. Owner: `shop.products.upsert` → `shop.enablement.status` (blockers + `sandbox_ok`).
+2. Visitor checkout: `shop.checkout.create` (server-priced SKU, `idempotency_key`, same-origin `return_url`).
+3. **PAY-01:** `payments.get` may show `project_id=1` (profile slice) — bind tenant via `metadata.order_id` + `metadata.recipient_project_id`.
+4. Resume card checkout: `GET /api/commerce/iap/checkout/resume?iap_payment_id=…` (not raw `payments.get` for hosted visitors).
+5. Poll: `shop.orders.get` or entitlements; SDK: `@agentstack/sdk/commerce/iap`.
+
+Pre-deploy gate: `python scripts/verify_wave0_substrate.py` + `python agentstack-core/scripts/deploy_gate_log21_hot_batch.py`.
+
 ## Tier gates in the app
 
 ```ts
