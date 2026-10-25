@@ -66,6 +66,8 @@ const wantSyncRuntime =
   process.argv.includes('--sync-runtime') || wantFix;
 
 let fails = 0;
+/** @type {string[]} */
+const zeroToolsHints = [];
 function ok(msg) {
   console.log(`OK   ${msg}`);
 }
@@ -233,6 +235,17 @@ if (fs.existsSync(cacheRoot)) {
       );
     } else if (!bad && oauthOnlyInCache === 0) {
       ok('cached plugin mcp.json bearer-mirrored');
+    }
+    if (oauthOnlyInCache > 0 && userGate?.kind !== 'ok') {
+      zeroToolsHints.push(
+        'plugin-agentstack-* shows 0 tools: plugin cache mcp.json is OAuth-only (unsigned). ' +
+          'VPS/core deploy does not sign plugin MCP — Connect (G-A174) or Device Code PAT + refresh-cursor-runtime --fix.',
+      );
+    }
+    if (oauthOnlyInCache > 0 && userGate?.authMode === 'bearer_pat') {
+      zeroToolsHints.push(
+        'PAT in ~/.cursor/mcp.json but plugin cache OAuth-only — run refresh-cursor-runtime.mjs --fix + Reload Window.',
+      );
     }
     if (wantFix) {
       const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
@@ -511,6 +524,15 @@ if ((runtimeScan.status ?? 1) !== 0) {
   ok('Cursor runtime cache synced (manifests + package mirror)');
 } else {
   ok('Cursor runtime cache check (read-only; use --sync-runtime to apply --fix)');
+}
+
+if (zeroToolsHints.length) {
+  console.log('\n--- plugin MCP: 0 tools (root cause) ---');
+  for (const line of zeroToolsHints) {
+    console.log(`RCA  ${line}`);
+  }
+  console.log('RCA  user-agentstack / mcp-execute can work while plugin-agentstack-* shows 0 until Connect or PAT mirror.');
+  console.log('RCA  See docs/plans/CURSOR_PLUGIN_ZERO_TOOLS_DECOMPOSITION_2026-10-25.md § Phase 0');
 }
 
 console.log(`\nsummary: failed=${fails}`);
