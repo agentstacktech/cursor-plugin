@@ -9,6 +9,11 @@
 
 ## 30-second install
 
+**Marketplace (recommended):** Cursor → Settings → Plugins → **Add marketplace** →  
+`https://github.com/agentstacktech/cursor-plugin` → install **AgentStack** → Reload Window.
+
+Do **not** point a Private marketplace at `file:///D:/...` unless Git is on **system** PATH and the folder is a git clone — otherwise Cursor shows `spawn git ENOENT` / `Failed to resolve git ref "HEAD"`. Maintainers: [`LOCAL_INSTALL.md`](LOCAL_INSTALL.md) (`install-local.mjs`).
+
 ```bash
 # In Cursor chat:
 /agentstack-init

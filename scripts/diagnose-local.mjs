@@ -49,6 +49,11 @@ import {
 } from '../plugins/agentstack/lib/plugin-kernel/mcpActionsCatalog.mjs';
 import { readDeviceLoginLock } from '../plugins/agentstack/lib/plugin-kernel/deviceCodeClient.mjs';
 import { scanCatalogEffectParityMismatches } from './lib/mcpEffectParity.mjs';
+import {
+  gitAvailableOnPath,
+  gitHeadResolvable,
+  printGitEnoentRemediation,
+} from './lib/cursorGitPrereq.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN = path.join(ROOT, 'plugins', 'agentstack');
@@ -124,6 +129,16 @@ function resolveLink(p) {
 }
 
 console.log('AgentStack Cursor plugin — local diagnose\n');
+
+if (!gitAvailableOnPath()) {
+  fail('git not on PATH — Cursor Private/file marketplace fails with spawn git ENOENT');
+  console.error(printGitEnoentRemediation());
+} else {
+  ok('git on PATH (required for GitHub / file marketplace installs)');
+  const head = gitHeadResolvable(ROOT);
+  if (head) ok(`plugin repo git HEAD ${head.slice(0, 7)}`);
+  else warn('this folder is not a git checkout — use GitHub marketplace or install-local.mjs, not raw file:// copy');
+}
 
 // Layout
 if (!fs.existsSync(path.join(ROOT, '.cursor-plugin/marketplace.json'))) {
