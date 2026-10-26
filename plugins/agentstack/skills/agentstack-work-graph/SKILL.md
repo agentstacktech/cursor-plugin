@@ -12,13 +12,15 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 1. No `project_id`: `agentstack_session_setup` only. Do not call `discovery.search`.
 2. Bound project: `agents.work_next`. Default `detail=compact` returns **values** (`state`, numeric `revision`, `next_action`, `reason`) — not type-sketch (`revision: "int"`). Use `detail=skeleton` only on non–Work Graph reads when you need field names/types.
 3. If `next_action` is set, call that action. Do not `discovery.search`.
-4. Pass `detail=full` only when you need `instruction_packet` or `blocked_work`.
+4. Prefer `detail=compact` with `expand: ["instruction_packet"]` (and `blocked_work` when blocked) — smaller than `detail=full`.
 5. Cheap batch on one sync `agentstack.execute`: `agents.work_next`, `agents.plan_get`, `agents.plan_claim`.
 6. One per sync execute: `agents.plan_propose`, `agents.plan_apply_proposal`, `agents.plan_recovery_scan`, `context.get`, plus heavy LLM (`bots.simulate`, `agents.run` with `wait=true`).
 
 ## Open community hubs
 
-When `config.membership.join_policy` is `open`, call `projects.join` (or REST `POST /projects/{id}/join`) before the loop, then use `home=project_self` on plan actions. Recipe: `mcp_community_hub_v1`.
+When `config.membership.join_policy` is `open`, call `projects.join` (or REST `POST /projects/{id}/join`) before the loop, then `auth.switch_project`, **`agents.graph_health`** (`home=project_self`), then `agents.work_next` with `expand: ["instruction_packet"]`. Recipe: `mcp_community_hub_v1`.
+
+Join errors: `join_not_allowed` (invite/add_user), `member_cap_reached` → `buffs.get_effective_limits`, `rbac_assign_failed` → `projects.membership.repair`, `rate_limited` → Retry-After. Heavy hub graphs: follow **Leaf overflow** ladder after `graph_health`.
 
 ## Example
 
@@ -47,6 +49,16 @@ After deploy, use **per-action** `discovery.describe` (`{"action":"agents.work_n
 Errors: `plan_ops_unknown` includes `allowed_ops`; `plan_completion_gates` includes `example_ops` (waive → completed). `archive_ids` only is valid with `if_match_revision`.
 
 Perf: compact responses may include `diagnostics.timings_ms` (`work_next`) or `shape.timings_ms` (`plan_get`). Avoid `expand=` panels listed in `loop_compact.heavy_expand` unless you need instruction/blocked_work.
+
+## Leaf overflow (`graph_limits`)
+
+When `graph_limits.spill_incomplete`, advisories `plan_graph_bytes_high`, or errors `plan_graph_too_large`:
+
+1. `agents.graph_health` or `agents.plan_compaction_preview` (read-only preview)
+2. `agents.plan_heal_leaf` with `dry_run: true`, then apply without dry_run
+3. `agents.plan_patch` archive ops / `agents.graph_file_put` if still over cap
+
+Copilot UI exposes the same ladder; do not raw `projects.patch_data` on full `task_list` blobs.
 
 ## Execute envelope (workflow spine)
 

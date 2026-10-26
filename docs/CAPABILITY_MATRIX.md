@@ -987,7 +987,7 @@
 | `storage.admin_reconcile` | `storage.read` | Ecosystem admin (platform hub): fix disk↔8DNA drift for any row. Tenants: use storage.reconcile with scope. |
 | `storage.admin_scan` | `storage.read` | Ecosystem admin (platform hub): compare on-disk files with 8DNA storage registry for (project_id, dna_user_id). Tenants: use storage.scan. |
 | `storage.bind_entity` | `storage.read` | Attach entity_ref to a storage file card. |
-| `storage.delete_file` | `storage.write` | Deletes a file from ecosystem storage (JSON registry + blob). Requires write access for user scope; owner/admin for project scope. |
+| `storage.delete_file` | `storage.upload` | Deletes a file from ecosystem storage (JSON registry + blob). Requires write access for user scope; owner/admin for project scope. |
 | `storage.get_hub_summary` | `storage.read` | Hub v4 aggregate: permanent/temp totals, hosting bytes, pool cap, sites count. |
 | `storage.get_project_usage_summary` | `storage.read` | Owner/admin: total permanent/temp bytes across all members and project slice, plus project_pool_limit_bytes from the project billing tier. |
 | `storage.get_quota` | `storage.read` | Returns storage quota for the current user or project slice: used/limit bytes, tier_basis (project_owner vs fallback), owner_user_id. Pass project_id or rely on API key / session project. scope=user ( |

@@ -23,6 +23,21 @@ When the user asks where a feature lives in the app, use `docs/plugins/UI_SURFAC
 | "create an API key for my CI job / Cursor agent" | `apikeys.create` **or** `user.apikeys.create` with `actor_kind=agent`, `preset=agent_runner`, and `context.project_id` |
 | "rotate / revoke an API key"                       | `user.apikeys.revoke` / `user.apikeys.rotate` (alias: `apikeys.delete`) |
 | "give AI agent a limited key"                      | agent PAT — **not** a project `ask_` key. Outbound OpenAI/Stripe secrets are `service_keys`, not PATs. |
+| "join open community hub / member workspace"        | `projects.join` → `auth.switch_project` → `agents.graph_health` → `agents.work_next` `home=project_self` (recipe `mcp_community_hub_v1`) |
+| "leave community hub"                             | `projects.leave` (owners must transfer first — `owner_cannot_leave`) |
+
+## Open community join (`projects.join`)
+
+When `config.membership.join_policy` is `open`, call **`projects.join`** with `project_id`, then **`auth.switch_project`**, then work graph on **`home=project_self`**. Recipe **`mcp_community_hub_v1`**; closed loop continues via **`mcp_work_loop_v1`** (`next_recipes`).
+
+| Error | Next step |
+|-------|-----------|
+| `join_not_allowed` | Invite / `projects.add_user` — policy is not open |
+| `member_cap_reached` | `buffs.get_effective_limits` on project |
+| `rbac_assign_failed` | `projects.membership.repair` then retry join |
+| `rate_limited` | Honor `Retry-After` |
+
+Heavy graphs: after join, **`agents.graph_health`** then leaf heal ladder (`plan_compaction_preview` → `plan_heal_leaf`) — see **`agentstack-work-graph`** skill § Leaf overflow.
 
 ## Working project under OAuth
 
