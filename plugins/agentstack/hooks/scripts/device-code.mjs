@@ -212,11 +212,11 @@ async function main() {
     console.log(`  Expires: PAT (user_api_key) — long-lived; no OAuth refresh pair (G-A166 rotates prior plugin PAT).`);
     console.log(`  Config:  ${MCP_PATH}\n`);
     if (sync.updated.length) {
-      console.log(`  Plugin cache MCP synced (${sync.updated.length} file(s)) — plugin-agentstack-* can use Device Code Bearer.`);
+      console.log(`  Plugin mcp.json kept OAuth-only (${sync.updated.length} file(s)).`);
     }
     console.log(
       '  Next: Developer: Reload Window (required). ' +
-        'Plugin MCP uses synced Bearer, or click Connect (G-A174). /agentstack-status\n',
+        'user-agentstack uses this PAT. plugin-agentstack-* uses Connect (G-A174 OAuth). /agentstack-status\n',
     );
   } finally {
     await endDeviceLoginLock(CURSOR_DIR);

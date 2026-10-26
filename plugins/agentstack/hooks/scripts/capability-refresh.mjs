@@ -73,7 +73,7 @@ async function main() {
   try {
     const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
     if (sync.updated.length) {
-      log(`plugin cache MCP bearer-sync (${sync.updated.length} file)`);
+      log(`plugin mcp.json reset to OAuth URL-only (${sync.updated.length} file)`);
     }
   } catch (e) {
     log(`plugin bearer-sync skipped (${e.message})`);

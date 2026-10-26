@@ -1,6 +1,9 @@
 /**
- * Dual-surface MCP: user ~/.cursor/mcp.json (Device Code Bearer) vs plugin cache mcp.json.
- * Shipped plugin mcp.json stays OAuth URL-only (G-A174); cache copies Bearer so plugin-agentstack-* works.
+ * Dual-surface MCP auth (do not collapse them):
+ * - plugin mcp.json (plugin-agentstack-*): OAuth URL-only. Cursor Connect (G-A174) owns the token.
+ * - ~/.cursor/mcp.json (user-agentstack, hooks, mcp-execute): Device Code PAT and/or X-API-Key.
+ * A static Authorization on the plugin file makes Cursor run oauthFlow and that header together;
+ * tools/list then hangs and the tool list drops to 0. GPT directory mcp.json stays URL-only too.
  * Gene: repo.plugins.oauth_device_code.gen1 · repo.plugins.hooks.contract.gen1
  */
 
@@ -179,9 +182,18 @@ function listPluginCacheMcpPaths() {
   return out;
 }
 
+function pluginFileHasStaticBearer(cfg) {
+  const auth =
+    cfg?.mcpServers?.agentstack?.headers?.Authorization ||
+    cfg?.mcpServers?.agentstack?.headers?.authorization;
+  return typeof auth === 'string' && auth.startsWith('Bearer ') && !auth.includes('${');
+}
+
 /**
- * Mirror user Bearer into every agentstack marketplace cache mcp.json.
- * @param {{ baseUrl?: string, userMcpPath?: string }} [opts]
+ * Keep every plugin mcp.json on OAuth URL-only.
+ * The name is historical: callers still run this after Device Code, but the PAT
+ * stays in ~/.cursor/mcp.json and is not copied onto the plugin server.
+ * @param {{ baseUrl?: string, userMcpPath?: string, force?: boolean }} [opts]
  * @returns {Promise<{ updated: string[], skipped: string[], errors: string[] }>}
  */
 export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
@@ -193,44 +205,26 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
   ) {
     return { updated: [], skipped: ['debounced'], errors: [] };
   }
-  const userPath = opts.userMcpPath || path.join(os.homedir(), '.cursor', 'mcp.json');
+  const runtime = oauthOnlyPluginRuntimeMcpConfig({
+    baseUrl: opts.baseUrl || DEFAULT_BASE_URL,
+  });
+  const payload = `${JSON.stringify(runtime, null, 2)}\n`;
   const updated = [];
   const skipped = [];
   const errors = [];
-  let userCfg;
-  try {
-    userCfg = JSON.parse(await fs.readFile(userPath, 'utf8'));
-  } catch {
-    return { updated, skipped, errors };
-  }
-  const rawAuth = userCfg?.mcpServers?.agentstack?.headers?.Authorization;
-  const bearer =
-    typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
-      ? rawAuth.slice('Bearer '.length).trim()
-      : '';
-  if (!bearer) return { updated, skipped, errors };
-  if (!isCursorMirrorBearer(bearer)) {
-    const cleared = await resetPluginCacheMcpToOAuthOnly({
-      baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
-    });
-    if (cleared.length) {
-      errors.push(
-        'cleared invalid Bearer from plugin cache (session JWT / null caps) — Connect (G-A174) or /agentstack-authorize',
-      );
-    }
-    return { updated: cleared, skipped, errors };
-  }
-
-  const runtime = buildPluginRuntimeMcpConfig(userCfg, {
-    baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
-  });
-  if (pluginMcpRuntimeCacheError(runtime)) return { updated, skipped, errors };
-
-  const payload = `${JSON.stringify(runtime, null, 2)}\n`;
   for (const p of listPluginCacheMcpPaths()) {
     try {
-      const cur = JSON.parse(await fs.readFile(p, 'utf8'));
-      if (JSON.stringify(cur) === JSON.stringify(runtime)) {
+      let cur = null;
+      try {
+        cur = JSON.parse(await fs.readFile(p, 'utf8'));
+      } catch {
+        cur = null;
+      }
+      if (cur && !pluginFileHasStaticBearer(cur) && JSON.stringify(cur) === JSON.stringify(runtime)) {
+        skipped.push(p);
+        continue;
+      }
+      if (cur && !pluginFileHasStaticBearer(cur)) {
         skipped.push(p);
         continue;
       }
@@ -248,55 +242,29 @@ export async function syncPluginRuntimeMcpBearerFromUser(opts = {}) {
 }
 
 /**
- * True when marketplace plugin cache mcp.json does not match user Bearer mirror (DUAL_SURFACE).
- * @param {object|null} userCfg
- * @param {{ baseUrl?: string }} [opts]
+ * True when a plugin mcp.json still carries a static Bearer.
+ * That header blocks Cursor OAuth Connect on plugin-agentstack-*.
+ * @param {object|null} [_userCfg]
+ * @param {{ force?: boolean }} [opts]
  * @returns {Promise<boolean>}
  */
-export async function pluginCacheBearerDrifted(userCfg, opts = {}) {
+export async function pluginCacheBearerDrifted(_userCfg, opts = {}) {
   if (!opts.force && Date.now() - _driftAt < DRIFT_TTL_MS) {
     return _driftMemo;
   }
-  const rawAuth = userCfg?.mcpServers?.agentstack?.headers?.Authorization;
-  const bearer =
-    typeof rawAuth === 'string' && rawAuth.startsWith('Bearer ')
-      ? rawAuth.slice('Bearer '.length).trim()
-      : '';
-  if (!bearer || !isCursorMirrorBearer(bearer)) {
-    _driftMemo = false;
-    _driftAt = Date.now();
-    return false;
-  }
-  const runtime = buildPluginRuntimeMcpConfig(userCfg, {
-    baseUrl: opts.baseUrl || baseUrlFromCfg(userCfg),
-  });
-  if (pluginMcpRuntimeCacheError(runtime)) {
-    _driftMemo = false;
-    _driftAt = Date.now();
-    return false;
-  }
-  const target = JSON.stringify(runtime);
-  const paths = listPluginCacheMcpPaths();
-  if (!paths.length) {
-    _driftMemo = true;
-    _driftAt = Date.now();
-    return true;
-  }
-  for (const p of paths) {
+  let drifted = false;
+  for (const p of listPluginCacheMcpPaths()) {
     try {
-      const cur = JSON.parse(await fs.readFile(p, 'utf8'));
-      if (JSON.stringify(cur) !== target) {
-        _driftMemo = true;
-        _driftAt = Date.now();
-        return true;
+      const cur = JSON.parse(fsSync.readFileSync(p, 'utf8'));
+      if (pluginFileHasStaticBearer(cur)) {
+        drifted = true;
+        break;
       }
     } catch {
-      _driftMemo = true;
-      _driftAt = Date.now();
-      return true;
+      /* unreadable file is not a static bearer */
     }
   }
-  _driftMemo = false;
+  _driftMemo = drifted;
   _driftAt = Date.now();
-  return false;
+  return drifted;
 }

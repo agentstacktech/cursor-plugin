@@ -392,7 +392,7 @@ export function describeAgentstackAuthGate(cfg) {
         kind: 'ok',
         additionalContext:
           desc.jwtType === 'user_token'
-            ? 'Session JWT (user_token) is valid for MCP. Plugin cache must mirror this Bearer or Cursor shows 0 tools.'
+            ? 'Session JWT (user_token) signs user-agentstack. plugin-agentstack-* uses Connect (OAuth), not a copied Bearer.'
             : null,
         authMode: 'session_jwt',
       };
@@ -513,8 +513,8 @@ export function formatAgentstackStatusCard({
   const authModeLine = auth?.apiKeyPresent ? 'auth_mode=api_key' : auth?.jwtType ? `auth_mode=${auth.jwtType}` : '';
   const namespaceLine =
     auth?.apiKeyPresent
-      ? 'active_namespace=user-agentstack (hooks); plugin-agentstack-* → Connect'
-      : 'active_namespace=user-agentstack + plugin-agentstack-* (after Connect or PAT mirror)';
+      ? 'active_namespace=user-agentstack (hooks, X-API-Key); plugin-agentstack-* → Connect OAuth'
+      : 'active_namespace=user-agentstack (Device Code); plugin-agentstack-* → Connect OAuth';
   const lines = [
     `AgentStack: ${who}${role}`,
     `project ${pid} · ${caps} · ${exp}`,
@@ -522,7 +522,7 @@ export function formatAgentstackStatusCard({
     ...(namespaceLine ? [namespaceLine] : []),
     `transport_recommended=${transport}`,
     namespaceHint ||
-      'plugin-agentstack-* → Connect; user-agentstack / mcp-execute → Device Code Bearer.',
+      'plugin-agentstack-* → Connect (OAuth). user-agentstack / mcp-execute → Device Code or X-API-Key.',
   ];
   if (expWarn?.message) lines.push(expWarn.message);
   else if (transport === 'connect') {

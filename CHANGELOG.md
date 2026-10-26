@@ -19,6 +19,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Fixed
 
 - **Local install:** Cursor drops a junction to the git tree (`symlink target is outside plugins/local`), so the plugin never loaded and its MCP server was not registered. `install-local.mjs` now copies the repo under `plugins/local/.agentstack-tree` and junctions `agentstack` inside that folder.
+- **Cursor auth split:** plugin `mcp.json` stays OAuth URL-only (Connect, G-A174). Device Code PAT and `X-API-Key` stay in `~/.cursor/mcp.json` for user-agentstack and hooks. Copying that Bearer into the plugin file made Cursor run OAuth and a static header together, so tools/list hung and the tool list dropped to 0. GPT OAuth and API-key templates are unchanged.
 - **Prose leaks:** plugin bundle docs avoid monorepo-only paths (`audit-plugin-prose-leaks`).
 - **LOCAL_INSTALL / MCP_QUICKSTART:** empty cache + Connect (G-A174) troubleshooting.
 

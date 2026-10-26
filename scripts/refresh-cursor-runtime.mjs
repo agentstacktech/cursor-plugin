@@ -307,7 +307,7 @@ async function scanAndFix() {
       !n.includes('provided_plugins') &&
       (n.includes('/cache/') || n.includes('/marketplaces/') || n.includes('/local/'));
     if (isRuntimeCache) {
-      ok(`plugin cache mcp.json (Device Code bearer-sync target) @ ${path.basename(path.dirname(file))}`);
+      ok(`plugin cache mcp.json (OAuth URL-only) @ ${path.basename(path.dirname(file))}`);
       continue;
     }
     const cfg = loadJson(file);
@@ -330,7 +330,7 @@ async function scanAndFix() {
     try {
       const sync = await syncPluginRuntimeMcpBearerFromUser();
       for (const f of sync.updated) {
-        ok(`plugin cache bearer-sync: ${f}`);
+        ok(`plugin mcp.json OAuth URL-only: ${f}`);
         fixed += 1;
       }
       for (const e of sync.errors) {
@@ -338,7 +338,7 @@ async function scanAndFix() {
         else fail(e);
       }
     } catch (e) {
-      fail(`plugin bearer-sync: ${e.message}`);
+      fail(`plugin oauth reset: ${e.message}`);
     }
   }
 }

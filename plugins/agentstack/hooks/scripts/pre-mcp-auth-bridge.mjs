@@ -68,9 +68,9 @@ async function main() {
 
   const retryCli = buildMcpExecuteRetryCommand(event);
   process.stderr.write(
-    '[agentstack] DUAL_SURFACE: ~/.cursor/mcp.json has Bearer but plugin cache MCP is not bearer-synced — ' +
-      'run refresh-cursor-runtime.mjs --fix + Reload Window, or use CLI bridge / Connect (G-A174). ' +
-      'Do not call mcp_auth from agents.\n',
+    '[agentstack] DUAL_SURFACE: plugin mcp.json has a static Bearer, which blocks OAuth Connect. ' +
+      'It will be reset to URL-only. Click Connect (G-A174). ' +
+      'Device Code and X-API-Key stay in ~/.cursor/mcp.json. Do not call mcp_auth from agents.\n',
   );
   if (retryCli) {
     process.stderr.write(`[agentstack] ${retryCli}\n`);

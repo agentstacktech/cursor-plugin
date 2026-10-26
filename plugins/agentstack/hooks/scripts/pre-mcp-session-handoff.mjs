@@ -123,7 +123,7 @@ async function main() {
     const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL });
     if (sync.updated?.length) {
       process.stderr.write(
-        `[agentstack] plugin cache MCP synced (${sync.updated.length}) — Reload Window.\n`,
+        `[agentstack] plugin mcp.json kept OAuth-only (${sync.updated.length}) — Connect (G-A174), then Reload Window.\n`,
       );
     }
   } catch {

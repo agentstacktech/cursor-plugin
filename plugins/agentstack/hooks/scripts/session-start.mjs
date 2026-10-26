@@ -19,7 +19,6 @@ import {
   decodeJwtPayload,
   describeAgentstackAuthGate,
   describeAgentstackMcpAuth,
-  isCursorMirrorBearer,
   shouldAutoDeviceLogin,
   readPinnedTenantProjectId,
   formatAgentstackStatusCard,
@@ -280,29 +279,21 @@ async function main() {
       /* best effort */
     }
   }
-  const mirrorBearer = (() => {
-    const auth = cfg?.mcpServers?.agentstack?.headers?.Authorization;
-    return typeof auth === 'string' && auth.startsWith('Bearer ')
-      ? auth.slice('Bearer '.length).trim()
-      : '';
-  })();
-  // X-API-Key selects hook auth, but a usable Bearer must still be mirrored.
-  if (gateFinal.kind === 'ok' && isCursorMirrorBearer(mirrorBearer)) {
-    try {
-      const drifted = await pluginCacheBearerDrifted(cfg, { baseUrl: BASE_URL });
-      const sync = drifted
-        ? await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL })
-        : { updated: [] };
-      if (sync.updated?.length) {
-        log(`plugin cache MCP bearer-sync (${sync.updated.length}) — Reload Window for plugin-agentstack-*`);
-        extras.push(
-          'AgentStack: mirrored Device Code Bearer into plugin cache mcp.json. ' +
-            'Developer: Reload Window so plugin-agentstack-* shows agentstack.execute.',
-        );
-      }
-    } catch {
-      /* best effort */
+  // Plugin server stays OAuth URL-only. A copied Bearer fights Connect and drops tools.
+  try {
+    const drifted = await pluginCacheBearerDrifted(cfg, { baseUrl: BASE_URL });
+    const sync = drifted
+      ? await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL })
+      : { updated: [] };
+    if (sync.updated?.length) {
+      log(`plugin mcp.json reset to OAuth URL-only (${sync.updated.length})`);
+      extras.push(
+        'AgentStack: plugin MCP is OAuth-only. Click Connect on plugin-agentstack-*. ' +
+          'Device Code and X-API-Key stay in ~/.cursor/mcp.json for user-agentstack.',
+      );
     }
+  } catch {
+    /* best effort */
   }
 
   if (authHeaders && gateFinal.kind === 'ok') {

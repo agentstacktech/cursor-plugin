@@ -34,6 +34,7 @@ import {
 } from '../plugins/agentstack/lib/plugin-kernel/mcpConfig.mjs';
 import {
   buildPluginRuntimeMcpConfig,
+  oauthOnlyPluginRuntimeMcpConfig,
   pluginMcpRuntimeCacheError,
 } from '../plugins/agentstack/lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import {
@@ -176,7 +177,7 @@ assert.equal(
     toolCount: 1,
     surface: evaluateSingleToolSurface([minimalExecuteToolFixture()]),
   }).cursorLikelyZeroTools,
-  true,
+  false,
 );
 assert.equal(evaluateSingleToolSurface([{ name: 'a' }, { name: 'b' }]).ok, false);
 assert.match(
@@ -319,6 +320,9 @@ assert.match(
 );
 assert.equal(pluginMcpRuntimeCacheError(runtimeCfg), null);
 assert.match(pluginMcpOAuthError(runtimeCfg), /Authorization/);
+const oauthOnly = oauthOnlyPluginRuntimeMcpConfig({ baseUrl: 'https://agentstack.tech' });
+assert.equal(oauthOnly.mcpServers.agentstack.headers.Authorization, undefined);
+assert.equal(pluginMcpOAuthError(oauthOnly), null);
 assert.match(
   pluginMcpOAuthError({
     mcpServers: {

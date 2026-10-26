@@ -32,7 +32,6 @@ import {
 import {
   pluginMcpRuntimeCacheError,
   syncPluginRuntimeMcpBearerFromUser,
-  pluginCacheBearerDrifted,
   resetPluginCacheMcpToOAuthOnly,
 } from '../plugins/agentstack/lib/plugin-kernel/pluginMcpRuntimeSync.mjs';
 import {
@@ -217,7 +216,6 @@ if (fs.existsSync(cacheRoot)) {
     }
   }
   const userGate = userCfgForCacheProbe ? describeAgentstackAuthGate(userCfgForCacheProbe) : null;
-  const userAuth = userCfgForCacheProbe ? agentstackAuthHeaders(userCfgForCacheProbe) : null;
   if (cachedMcp.length) {
     let bad = 0;
     let oauthOnlyInCache = 0;
@@ -239,30 +237,15 @@ if (fs.existsSync(cacheRoot)) {
       }
     }
     if (!bad) ok(`cached plugin mcp.json (${cachedMcp.length}) shape OK`);
-    if (
-      userGate?.kind === 'ok' &&
-      userGate?.authMode === 'bearer_pat' &&
-      userAuth?.Authorization &&
-      oauthOnlyInCache > 0 &&
-      (await pluginCacheBearerDrifted(userCfgForCacheProbe, { baseUrl: BASE_URL }))
-    ) {
-      fail(
-        `plugin cache mcp.json unsigned (OAuth-only) while ~/.cursor/mcp.json has Device Code Bearer — ` +
-          'plugin-agentstack-* may show 0 tools. Run: node scripts/refresh-cursor-runtime.mjs --fix ' +
-          'or open a new chat (sessionStart bearer-sync), then Reload Window; or Connect (G-A174).',
-      );
+    if (!bad && oauthOnlyInCache > 0) {
+      ok('cached plugin mcp.json OAuth URL-only (Connect)');
     } else if (!bad && oauthOnlyInCache === 0) {
-      ok('cached plugin mcp.json bearer-mirrored');
+      ok('cached plugin mcp.json has no OAuth-only copy (static headers elsewhere)');
     }
     if (oauthOnlyInCache > 0 && userGate?.kind !== 'ok') {
       zeroToolsHints.push(
-        'plugin-agentstack-* shows 0 tools: plugin cache mcp.json is OAuth-only (unsigned). ' +
-          'VPS/core deploy does not sign plugin MCP — Connect (G-A174) or Device Code PAT + refresh-cursor-runtime --fix.',
-      );
-    }
-    if (oauthOnlyInCache > 0 && userGate?.authMode === 'bearer_pat') {
-      zeroToolsHints.push(
-        'PAT in ~/.cursor/mcp.json but plugin cache OAuth-only — run refresh-cursor-runtime.mjs --fix + Reload Window.',
+        'plugin-agentstack-* stays at 0 tools until Connect (G-A174). ' +
+          'Device Code and X-API-Key sign user-agentstack in ~/.cursor/mcp.json, not the plugin file.',
       );
     }
     if (!wantQuick && cachedMcp.length) {
@@ -274,7 +257,11 @@ if (fs.existsSync(cacheRoot)) {
           fail(`plugin cache tools/list @ ${tag}: ${probe.cursorReason}`);
           if (!zeroToolsHints.includes(probe.cursorReason)) zeroToolsHints.push(probe.cursorReason);
         } else if (probe.surface.ok) {
-          ok(`plugin cache tools/list @ ${tag}: 1 tool (signed mirror)`);
+          ok(
+            probe.signed
+              ? `plugin cache tools/list @ ${tag}: 1 tool`
+              : `plugin cache tools/list @ ${tag}: 1 tool (OAuth URL-only; Connect signs the plugin)`,
+          );
         } else {
           warn(`plugin cache tools/list @ ${tag}: ${probe.surface.reason}`);
         }
@@ -283,7 +270,7 @@ if (fs.existsSync(cacheRoot)) {
     if (wantFix) {
       const sync = await syncPluginRuntimeMcpBearerFromUser({ baseUrl: BASE_URL, force: true });
       if (sync.updated.length) {
-        ok(`plugin cache bearer-sync (${sync.updated.length}) — Reload Window for plugin-agentstack-*`);
+        ok(`plugin mcp.json reset to OAuth URL-only (${sync.updated.length}) — Connect (G-A174), then Reload Window`);
       }
     }
   } else {
@@ -411,7 +398,7 @@ if (!fs.existsSync(MCP)) {
     }
     if (gate.kind === 'unsigned') {
       warn(
-        'Plugin MCP (plugin-agentstack-*) shows 0 tools until Connect (G-A174) or Device Code + cache bearer-sync.',
+        'Plugin MCP (plugin-agentstack-*) shows 0 tools until Connect (G-A174). Device Code and X-API-Key sign user-agentstack only.',
       );
     }
     if (String(claims.projectHeader || '') === '1') {
@@ -564,7 +551,7 @@ if (zeroToolsHints.length) {
   for (const line of zeroToolsHints) {
     console.log(`RCA  ${line}`);
   }
-  console.log('RCA  user-agentstack / mcp-execute can work while plugin-agentstack-* shows 0 until Connect or PAT mirror.');
+  console.log('RCA  user-agentstack / mcp-execute can work while plugin-agentstack-* shows 0 until Connect (OAuth).');
   console.log(
     'RCA  Plan: AgentStack monorepo docs/plans/CURSOR_PLUGIN_ZERO_TOOLS_DECOMPOSITION_2026-10-25.md § Phase 0',
   );
