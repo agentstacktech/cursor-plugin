@@ -139,10 +139,10 @@ Track for `/s/{pid}/` games (TailRush, thermo tenants) — **not** marketplace `
 1. Owner: `shop.products.upsert` → `shop.enablement.status` (blockers + `sandbox_ok`).
 2. Visitor checkout: `shop.checkout.create` (server-priced SKU, `idempotency_key`, same-origin `return_url`).
 3. **PAY-01:** `payments.get` may show `project_id=1` (profile slice) — bind tenant via `metadata.order_id` + `metadata.recipient_project_id`.
-4. Resume card checkout: `GET /api/commerce/iap/checkout/resume?iap_payment_id=…` (not raw `payments.get` for hosted visitors).
+4. Resume card checkout: `GET /api/commerce/iap/checkout/resume?project_id={pid}&payment_id=…` (return URL query uses `iap_payment_id`; map to `payment_id` on BFF — not raw `payments.get` for hosted visitors).
 5. Poll: `shop.orders.get` or entitlements; SDK: `@agentstack/sdk/commerce/iap`.
 
-Pre-deploy gate: `python scripts/verify_wave0_substrate.py` + `python agentstack-core/scripts/deploy_gate_log21_hot_batch.py`.
+Pre-deploy gate: substrate verify + deploy hot-batch probes on the platform host before tenant IAP go-live (operator tooling — not in this plugin bundle).
 
 ## Tier gates in the app
 
