@@ -35,6 +35,7 @@ export function printGitEnoentRemediation() {
     'Fix A (recommended): remove the Private file:// marketplace entry in Cursor → Settings → Plugins.',
     '  Then add marketplace: https://github.com/agentstacktech/cursor-plugin',
     '  Or from this repo: node scripts/install-local.mjs --force → Developer: Reload Window',
+    '  (copies the repo under ~/.cursor/plugins/local/.agentstack-tree and junctions agentstack inside that folder)',
     '',
     'Fix B: install Git for Windows, add `C:\\Program Files\\Git\\cmd` to **System** Environment PATH,',
     '  fully quit Cursor (tray exit), reopen. Ensure the plugin folder is a git clone (`git init` is not enough for some builds — prefer GitHub or install-local).',

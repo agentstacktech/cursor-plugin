@@ -305,7 +305,7 @@ async function scanAndFix() {
     const isRuntimeCache =
       n.includes('.cursor/plugins/') &&
       !n.includes('provided_plugins') &&
-      (n.includes('/cache/') || n.includes('/marketplaces/'));
+      (n.includes('/cache/') || n.includes('/marketplaces/') || n.includes('/local/'));
     if (isRuntimeCache) {
       ok(`plugin cache mcp.json (Device Code bearer-sync target) @ ${path.basename(path.dirname(file))}`);
       continue;

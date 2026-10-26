@@ -135,7 +135,7 @@ function isGitPluginSource(filePath) {
 }
 
 /**
- * Cache + marketplace runtime copies. Never the git SoT (local symlink).
+ * Cache, marketplace, and the local directory copy. Never the git SoT.
  * @returns {string[]}
  */
 function listPluginCacheMcpPaths() {
@@ -146,6 +146,7 @@ function listPluginCacheMcpPaths() {
   const roots = [
     path.join(pluginsRoot, 'cache', 'agentstack'),
     path.join(pluginsRoot, 'marketplaces'),
+    path.join(pluginsRoot, 'local', 'agentstack'),
   ];
   const out = [];
   const stack = roots.filter((root) => fsSync.existsSync(root)).map((root) => [root, 0]);

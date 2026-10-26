@@ -18,6 +18,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 ### Fixed
 
+- **Local install:** Cursor drops a junction to the git tree (`symlink target is outside plugins/local`), so the plugin never loaded and its MCP server was not registered. `install-local.mjs` now copies the repo under `plugins/local/.agentstack-tree` and junctions `agentstack` inside that folder.
 - **Prose leaks:** plugin bundle docs avoid monorepo-only paths (`audit-plugin-prose-leaks`).
 - **LOCAL_INSTALL / MCP_QUICKSTART:** empty cache + Connect (G-A174) troubleshooting.
 

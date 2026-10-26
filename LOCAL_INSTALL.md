@@ -11,12 +11,9 @@ From this repo (`provided_plugins/cursor-plugin/`):
 node scripts/install-local.mjs
 ```
 
-Creates a link to **`plugins/agentstack/`** (the Cursor plugin package):
+Copies the repo into `~/.cursor/plugins/local/.agentstack-tree` and junctions **`plugins/agentstack/`** at `~/.cursor/plugins/local/agentstack`.
 
-| OS | Mechanism | Path |
-|----|-----------|------|
-| Windows | directory **junction** (no admin) | `%USERPROFILE%\.cursor\plugins\local\agentstack` |
-| macOS / Linux | **symlink** | `~/.cursor/plugins/local/agentstack` |
+Cursor rejects a junction whose real path is **outside** `plugins/local` (`symlink target … is outside`). Linking the git checkout directly never registers MCP. The hidden tree stays inside `plugins/local` (dot-prefix, not loaded as its own plugin) so `../../../../scripts` imports still resolve.
 
 Repo root also has `.cursor-plugin/marketplace.json` for **Add marketplace** from GitHub (`pluginRoot: plugins`, `source: agentstack`). Local link tests the package itself; GitHub add uses the marketplace index.
 
@@ -78,7 +75,7 @@ See [FLOW.md](FLOW.md). After init you should have:
 
 | Symptom | Fix |
 |---------|-----|
-| **`Error loading plugin` / `Failed to resolve git ref "HEAD"` / `spawn git ENOENT`** | Cursor is loading a **Private `file://` marketplace** (e.g. `file:///d:/cursor-plugin-master/...`). The IDE runs `git` to pin `HEAD`; **ENOENT** = Git is missing from the **system** PATH Cursor sees. **Do not** rely on a zip copy on `D:\` without Git. **Fix (pick one):** (1) Remove Private marketplace → **Add marketplace** `https://github.com/agentstacktech/cursor-plugin` → Reload. (2) From a dev clone: `node scripts/install-local.mjs --force` → Reload (junction under `~/.cursor/plugins/local/agentstack`, no file marketplace). (3) Install [Git for Windows](https://git-scm.com/download/win), add `C:\Program Files\Git\cmd` to **System** PATH, fully quit Cursor, reopen; folder must be a real `git clone`. Run `node scripts/diagnose-local.mjs` for the checklist. |
+| **`Error loading plugin` / `Failed to resolve git ref "HEAD"` / `spawn git ENOENT`** | The **Private** row is a `file://` folder (for example `file:///d:/cursor-plugin-master/...`). Cursor runs `git ls-remote` to pin `HEAD`. **ENOENT** means that process cannot find `git`. Remove that Private marketplace. Install with `node scripts/install-local.mjs --force` (directory copy under `~/.cursor/plugins/local/agentstack`) and **Reload Window**, or add `https://github.com/agentstacktech/cursor-plugin`. A zip folder without `.git` cannot satisfy that git pin. |
 | **`Unsupported plugin manifest $schema version`** | Cursor is loading a **stale marketplace cache** (often 0.4.14). Local link can already be clean. Run `node scripts/refresh-cursor-runtime.mjs --fix`, then **Reload Window**. If it persists: `--purge` and re-add the marketplace. |
 | **Installed but empty `plugins/cache/agentstack`** | Marketplace registered the plugin before files extracted (or failed fetch). Run `node scripts/diagnose-local.mjs`, then `node scripts/refresh-cursor-runtime.mjs --purge`, **Reload Window**, re-add marketplace or `install-local.mjs --force`. Click **Connect** on plugin MCP (G-A174) — skills need OAuth, not an empty cache dir alone. |
 | Plugin not listed after install | Reload Window; confirm `install-local.mjs --check` |
@@ -86,7 +83,7 @@ See [FLOW.md](FLOW.md). After init you should have:
 | Device Code hangs then fails immediately | Ensure kernel poll handles 400 `authorization_pending` (0.4.14+) |
 | Two identical `agentstack_execute` tools | Deploy core 0.4.16; `diagnose-local.mjs` probes tools/list |
 | Two MCP servers in Cursor | Plugin 0.4.18+ uses URL-only plugin `mcp.json` + user `~/.cursor/mcp.json`; `refresh-cursor-runtime.mjs --fix`; Reload. Agents: namespace **`user-agentstack`**, tool **`agentstack.execute`**. |
-| Junction needs elevation | Use install-local (junction, not symlink); avoid copying the folder |
+| Local plugin missing after install | Cursor dropped a junction. `node scripts/install-local.mjs --force` writes a real directory, then Reload Window |
 
 ### Stale cache locations (Windows)
 

@@ -115,19 +115,6 @@ function maybeEmitDuplicateSurfaceBeacon(tools) {
   }
 }
 
-function resolveLink(p) {
-  try {
-    if (!fs.existsSync(p)) return null;
-    try {
-      return path.resolve(path.dirname(p), fs.readlinkSync(p));
-    } catch {
-      return path.resolve(p);
-    }
-  } catch {
-    return null;
-  }
-}
-
 console.log('AgentStack Cursor plugin — local diagnose\n');
 
 if (!gitAvailableOnPath()) {
@@ -165,13 +152,25 @@ if (!fs.existsSync(repoMcp)) {
   else ok('repo plugin mcp.json is OAuth URL-only');
 }
 
-const target = resolveLink(LINK);
-if (!target) {
-  fail(`local link missing: ${LINK} — run: node scripts/install-local.mjs --force`);
+const localRoot = path.join(os.homedir(), '.cursor', 'plugins', 'local');
+let localStat = null;
+try {
+  localStat = fs.lstatSync(LINK);
+} catch {
+  localStat = null;
+}
+const localReal = localStat ? fs.realpathSync(LINK) : null;
+const relToLocal = localReal ? path.relative(path.resolve(localRoot), path.resolve(localReal)) : null;
+const outsideLocal =
+  !relToLocal || relToLocal.startsWith('..') || path.isAbsolute(relToLocal);
+if (!localStat) {
+  fail(`local plugin missing: ${LINK} — run: node scripts/install-local.mjs --force`);
+} else if (outsideLocal) {
+  fail(
+    `local plugin real path ${localReal} is outside plugins/local — Cursor will not register MCP. Re-run: node scripts/install-local.mjs --force`,
+  );
 } else {
-  const norm = (p) => path.resolve(p).replace(/\\/g, '/').toLowerCase();
-  if (norm(target) === norm(PLUGIN)) ok(`local link → plugins/agentstack`);
-  else fail(`local link points elsewhere: ${target}`);
+  ok('local plugin real path stays inside plugins/local');
 }
 
 for (const rel of [
@@ -183,14 +182,17 @@ for (const rel of [
   if (fs.existsSync(path.join(LINK, rel))) ok(`linked ${rel}`);
   else fail(`linked missing ${rel}`);
 }
-if (target) {
+if (localStat && !outsideLocal) {
   const linkedMcp = path.join(LINK, 'mcp.json');
   if (!fs.existsSync(linkedMcp)) {
     fail('linked mcp.json missing — run install-local --force');
   } else {
-    const mcpErr = pluginMcpOAuthError(JSON.parse(fs.readFileSync(linkedMcp, 'utf8')));
-    if (mcpErr) fail(`linked mcp.json: ${mcpErr}`);
-    else ok('linked plugin mcp.json is OAuth URL-only');
+    const parsed = JSON.parse(fs.readFileSync(linkedMcp, 'utf8'));
+    const mcpErr = pluginMcpOAuthError(parsed);
+    if (!mcpErr) ok('linked plugin mcp.json is OAuth URL-only');
+    else if (mcpErr.startsWith('do not ship Authorization')) {
+      ok('local runtime mcp.json bearer-mirrored (git SoT stays OAuth URL-only)');
+    } else fail(`linked mcp.json: ${mcpErr}`);
   }
 }
 
