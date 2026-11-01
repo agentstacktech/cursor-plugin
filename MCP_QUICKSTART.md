@@ -43,7 +43,7 @@ OAuth 2.1 Device Code via `/agentstack-authorize` (or `/agentstack-init`) → Be
 
 Requires **Node.js** on PATH. Fallback: API key header `X-API-Key: ask_…` from [Profile → API keys](https://agentstack.tech/user/profile?tab=api).
 
-Plugin **0.4.18** ships URL-only `plugins/agentstack/mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). After **Reload Window**, AgentStack MCP appears in the plugin panel — click **Connect** (G-A174). Do **not** put `${AGENTSTACK_ACCESS_TOKEN}` in that file (G-A162). Device Code (`/agentstack-authorize`) still writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks.
+Plugin **0.4.18** ships URL-only `plugins/agentstack/mcp.json` (`plugin.json` `mcpServers: "./mcp.json"`). The server entry keeps `type: streamable-http` and `url: https://agentstack.tech/mcp`. A URL without `type` is treated as a local stdio server by several hosts and then skipped. After **Reload Window**, AgentStack MCP appears in the plugin panel — click **Connect** (G-A174). Do **not** put `${AGENTSTACK_ACCESS_TOKEN}` in that file (G-A162). Device Code (`/agentstack-authorize`) still writes `~/.cursor/mcp.json` (`user-agentstack`) for hooks.
 
 **Agent bridge (unsigned `plugin-agentstack-*`):** run MCP with the same Bearer as hooks:
 
