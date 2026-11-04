@@ -2,6 +2,17 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.26] - 2026-11-04
+
+### Added
+
+- **AgentGit ops copy:** hosting git `push dev` → preview → explicit `hosting.site.build target=prod`; `platform_shell_seed` before first journal push; backend-only deploy default on substrate.
+- **AgentBus:** `agentstack_bot_message_bus` playbook + hosting/git disambiguation in fleet prompts.
+
+### Changed
+
+- **Marketplace / plugin.json** at **0.4.26** (align with Core; MCP describe payloads for hosting build/git ladders).
+
 ## [0.4.24] - 2026-10-23
 
 ### Added
