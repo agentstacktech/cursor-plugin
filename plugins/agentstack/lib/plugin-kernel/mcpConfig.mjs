@@ -114,11 +114,25 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
   const headers = headerOverrides
     ? { ...headerOverrides, 'Content-Type': 'application/json' }
     : { ...(prev.headers || {}), 'Content-Type': 'application/json' };
-  return {
+  const server = {
     type: 'streamable-http',
     url: `${String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '')}/mcp`,
     headers,
   };
+  const auth = prev.auth;
+  if (
+    auth &&
+    typeof auth === 'object' &&
+    typeof auth.CLIENT_ID === 'string' &&
+    auth.CLIENT_ID.trim() &&
+    !auth.CLIENT_SECRET
+  ) {
+    server.auth = {
+      CLIENT_ID: auth.CLIENT_ID.trim(),
+      ...(Array.isArray(auth.scopes) && auth.scopes.length ? { scopes: [...auth.scopes] } : {}),
+    };
+  }
+  return server;
 }
 
 /**
@@ -293,6 +307,12 @@ export function agentstackAuthHeaders(cfg) {
 /** Slash command that is the plugin Device Code auth control. */
 export const AUTHORIZE_SLASH = '/agentstack-authorize';
 
+/** Cursor Connect static OAuth (G-A174) — avoids no_auth_link when DCR is flaky. */
+export const CURSOR_PLUGIN_MCP_AUTH = {
+  CLIENT_ID: 'cursor-plugin',
+  scopes: ['openid', 'tools:read', 'tools:invoke'],
+};
+
 /** Figma-style pointer in plugin.json — Cursor Connect, not an inline servers object. */
 export const PLUGIN_MCP_POINTER = './mcp.json';
 
@@ -340,6 +360,13 @@ export function pluginMcpOAuthError(cfg) {
     return 'do not ship Authorization; Cursor OAuth Connect (G-A174)';
   }
   if (entry.auth?.CLIENT_SECRET) return 'do not ship CLIENT_SECRET';
+  const staticAuth = entry.auth;
+  if (staticAuth != null) {
+    if (typeof staticAuth !== 'object') return 'auth must be an object';
+    const cid = staticAuth.CLIENT_ID;
+    if (typeof cid !== 'string' || !cid.trim()) return 'auth.CLIENT_ID required for plugin Connect';
+    if (cid.trim() !== 'cursor-plugin') return 'auth.CLIENT_ID must be cursor-plugin';
+  }
   return null;
 }
 
@@ -497,7 +524,13 @@ export function formatAgentstackStatusCard({
     (profile && (profile.displayName || profile.email || profile.username)) ||
     (auth && auth.userId != null ? `user ${auth.userId}` : 'signed in');
   const role = profile?.role ? ` · ${profile.role}` : '';
-  const pid = pin || auth?.projectHeader || 'unpinned';
+  const headerPid =
+    auth?.projectHeader != null ? String(auth.projectHeader) : null;
+  const pinPid = pin != null && pin !== '' ? String(pin) : null;
+  const projectLine =
+    headerPid && pinPid && headerPid !== pinPid
+      ? `credential project_id=${headerPid} · pin=${pinPid} · batch context.project_id for tenant`
+      : `project ${pinPid || headerPid || 'unpinned'}`;
   const caps = auth?.serviceCaps || 'caps?';
   let exp = 'exp unknown';
   if (typeof auth?.expInSec === 'number') {
@@ -517,7 +550,7 @@ export function formatAgentstackStatusCard({
       : 'active_namespace=user-agentstack (Device Code); plugin-agentstack-* → Connect OAuth';
   const lines = [
     `AgentStack: ${who}${role}`,
-    `project ${pid} · ${caps} · ${exp}`,
+    `${projectLine} · ${caps} · ${exp}`,
     ...(authModeLine ? [authModeLine] : []),
     ...(namespaceLine ? [namespaceLine] : []),
     `transport_recommended=${transport}`,

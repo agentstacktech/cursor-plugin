@@ -88,6 +88,45 @@ function localCopyReady() {
   return fs.existsSync(hook);
 }
 
+/** Cursor resolves local marketplace plugins via `git rev-parse HEAD` — copy omits .git by design. */
+function ensureGitHeadInTree() {
+  const head = spawnSync('git', ['-C', TREE_PATH, 'rev-parse', 'HEAD'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if (head.status === 0) return;
+  const init = spawnSync('git', ['-C', TREE_PATH, 'init', '-b', 'main'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  if ((init.status ?? 1) !== 0) {
+    console.warn('WARN git init in local tree failed — Private file:// marketplace may still error');
+    return;
+  }
+  spawnSync('git', ['-C', TREE_PATH, 'config', 'user.email', 'agentstack-local@agentstack.tech'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  spawnSync('git', ['-C', TREE_PATH, 'config', 'user.name', 'AgentStack Local Install'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  spawnSync('git', ['-C', TREE_PATH, 'add', '-A'], {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  });
+  const commit = spawnSync(
+    'git',
+    ['-C', TREE_PATH, 'commit', '-m', 'AgentStack cursor-plugin local install', '--no-gpg-sign'],
+    { encoding: 'utf8', shell: process.platform === 'win32' },
+  );
+  if ((commit.status ?? 1) === 0) {
+    console.log('OK   git HEAD in local tree (Cursor marketplace HEAD resolve)');
+  } else {
+    console.warn('WARN git commit in local tree failed:', (commit.stderr || commit.stdout || '').trim());
+  }
+}
+
 function printStatus() {
   console.log('Plugin SoT:  ', PLUGIN_ROOT);
   console.log('Local tree:  ', TREE_PATH);
@@ -134,6 +173,7 @@ if (!fs.existsSync(LINK_PATH)) {
       return base !== '.git' && base !== 'node_modules';
     },
   });
+  ensureGitHeadInTree();
   const type = process.platform === 'win32' ? 'junction' : 'dir';
   fs.symlinkSync(PLUGIN_IN_TREE, LINK_PATH, type);
   console.log('Installed (copy + in-folder junction — Cursor accepts this path)');

@@ -15,6 +15,7 @@ import {
   agentstackAuthHeaders,
   isCursorMirrorBearer,
   isDeviceCodeMcpBearer,
+  CURSOR_PLUGIN_MCP_AUTH,
   leanAgentstackServer,
   resolveAgentstackProjectPin,
   stampAgentstackProjectHeader,
@@ -93,10 +94,13 @@ export function oauthOnlyPluginRuntimeMcpConfig({ baseUrl } = {}) {
   const url = baseUrl || DEFAULT_BASE_URL;
   return {
     mcpServers: {
-      agentstack: leanAgentstackServer({}, {
-        baseUrl: url,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      agentstack: leanAgentstackServer(
+        { auth: CURSOR_PLUGIN_MCP_AUTH },
+        {
+          baseUrl: url,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ),
     },
   };
 }

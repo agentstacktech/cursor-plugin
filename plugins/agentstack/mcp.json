@@ -2,7 +2,11 @@
   "mcpServers": {
     "agentstack": {
       "type": "streamable-http",
-      "url": "https://agentstack.tech/mcp"
+      "url": "https://agentstack.tech/mcp",
+      "auth": {
+        "CLIENT_ID": "cursor-plugin",
+        "scopes": ["openid", "tools:read", "tools:invoke"]
+      }
     }
   }
 }

@@ -2,6 +2,15 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.27] - 2026-11-11
+
+### Changed
+
+- **Cursor Connect:** plugin `mcp.json` ships static `auth.CLIENT_ID=cursor-plugin` (fixes IDE `no_auth_link` when OAuth DCR is silent); `install-local.mjs` seeds git HEAD in the local tree copy (Private marketplace / `spawn git ENOENT`).
+- **Work Graph / MCP execute:** tools/list description ratchet; `work_next_hydrate_failed` guidance parity; Flow Spine batch timings documented in execute tool copy.
+- **Commerce discovery:** tenant IAP ladder pins facade `actions` order for shop checkout probes.
+- **Marketplace / plugin.json** at **0.4.27** (align with Core 0.4.27 — Order Manager + Flow Spine).
+
 ## [0.4.26] - 2026-11-04
 
 ### Added
@@ -56,7 +65,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 ### Fixed
 
 - **Prose leak gate:** SKILL examples use MCP action names only — no internal repo script paths in publish bundle.
-- **agents-ai SKILL:** closed-loop dev gate text passes `audit-plugin-prose-leaks` (no `agentstack-core/` path); `agents.run` recovery rows in when_blocked table.
+- **agents-ai SKILL:** closed-loop dev gate text passes `audit-plugin-prose-leaks` (no monorepo path literals); `agents.run` recovery rows in when_blocked table.
 - **Runtime refresh:** `refresh-cursor-runtime.mjs --fix` mirrors full package when skill count/hooks drift; syncs marketplace.json version; `hooks.json` ships only `version` + `hooks` (no `_comment_layout`).
 - **Diagnose / install-local:** auto-run `refresh --fix` so marketplace cache cannot stay on 0.4.15 while local link is 0.4.22.
 
@@ -68,7 +77,7 @@ All notable changes to the AgentStack Cursor plugin are documented here. Format:
 
 ### Changed
 
-- **Plan graph routing:** MCP prompt `agentstack_plan_graph` + `UF_PLAN_GRAPH_ROUTINE` — no internal `docs/operations/` prose in publish bundle.
+- **Plan graph routing:** MCP prompt `agentstack_plan_graph` + `UF_PLAN_GRAPH_ROUTINE` — no internal ops runbook prose in publish bundle.
 
 ### Fixed
 

@@ -109,7 +109,7 @@ const REQUIRED_PLUGIN_DIRS = [
 
 const KEBAB_REGEX = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/;
 const SEMVER_REGEX = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$/;
-const TARGET_VERSION = '0.4.26';
+const TARGET_VERSION = '0.4.27';
 const PNG_MIN_BYTES = 200; // 1×1 placeholders are ~70 B; real/mock 1920×1200 are larger
 const MIN_TRIGGER_KEYWORDS = 3;
 
@@ -402,6 +402,12 @@ if (!fs.existsSync(shippedMcp)) {
   const mcpErr = mcpCfg ? pluginMcpOAuthError(mcpCfg) : 'invalid JSON';
   if (mcpErr) fail(`plugins/agentstack/mcp.json: ${mcpErr}`);
   else ok('plugins/agentstack/mcp.json OAuth URL-only (no Authorization placeholder)');
+  const auth = mcpCfg?.mcpServers?.agentstack?.auth;
+  if (!auth?.CLIENT_ID || auth.CLIENT_ID !== 'cursor-plugin') {
+    fail('plugins/agentstack/mcp.json: auth.CLIENT_ID must be cursor-plugin (Cursor Connect static OAuth)');
+  } else {
+    ok('plugins/agentstack/mcp.json: static auth.CLIENT_ID for Connect');
+  }
 }
 const exampleMcpPath = path.join(ROOT, 'mcp.example.json');
 if (!fs.existsSync(exampleMcpPath)) {
