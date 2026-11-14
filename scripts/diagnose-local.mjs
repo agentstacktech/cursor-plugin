@@ -188,7 +188,14 @@ if (localStat && !outsideLocal) {
   } else {
     const parsed = JSON.parse(fs.readFileSync(linkedMcp, 'utf8'));
     const mcpErr = pluginMcpOAuthError(parsed);
-    if (!mcpErr) ok('linked plugin mcp.json is OAuth URL-only');
+    if (!mcpErr) {
+      const hasAuth = parsed?.mcpServers?.agentstack?.auth?.CLIENT_ID === 'cursor-plugin';
+      ok(
+        hasAuth
+          ? 'linked plugin mcp.json OAuth + static CLIENT_ID (Connect)'
+          : 'linked plugin mcp.json is OAuth URL-only — run refresh-cursor-runtime --fix',
+      );
+    }
     else if (mcpErr.startsWith('do not ship Authorization')) {
       ok('local runtime mcp.json bearer-mirrored (git SoT stays OAuth URL-only)');
     } else fail(`linked mcp.json: ${mcpErr}`);

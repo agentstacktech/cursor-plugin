@@ -34,8 +34,9 @@ const AUTH_SLICE = [
   'lib/plugin-kernel/mcpConfig.mjs',
   'lib/plugin-kernel/pluginMcpRuntimeSync.mjs',
   'lib/plugin-kernel/deviceCodeClient.mjs',
-  // mcp.json: SoT is OAuth URL-only; plugin cache is Bearer mirror (pluginMcpRuntimeSync) — not byte-synced.
+  // mcp.json: plugin cache URL-only for OAuth Connect (--fix clears stale Bearer mirrors); PAT stays in ~/.cursor/mcp.json.
   '.cursor-plugin/plugin.json',
+  'mcp.json',
   'assets/icon.png',
   'assets/logo.png',
   'commands/agentstack-authorize.md',
