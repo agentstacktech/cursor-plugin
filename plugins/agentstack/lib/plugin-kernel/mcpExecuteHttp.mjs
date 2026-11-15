@@ -4,6 +4,11 @@
  */
 
 import { MCP_EXECUTE_TOOL_ALIAS, toolsCallErrorDetail } from './mcpSurfaceProbe.mjs';
+import {
+  isRetryableMcpHttpStatus,
+  retryDelayMs,
+  sleep,
+} from './mcpTransportPolicy.mjs';
 
 /**
  * @param {string} baseUrl
@@ -13,16 +18,24 @@ import { MCP_EXECUTE_TOOL_ALIAS, toolsCallErrorDetail } from './mcpSurfaceProbe.
  */
 export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
   const root = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
-  const res = await fetch(`${root}/mcp`, {
-    method: 'POST',
-    headers: { ...authHeaders, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'tools/call',
-      params: { name: MCP_EXECUTE_TOOL_ALIAS, arguments: payload },
-      id: 2,
-    }),
-  });
+  const maxAttempts = 4;
+  let res;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    res = await fetch(`${root}/mcp`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: { name: MCP_EXECUTE_TOOL_ALIAS, arguments: payload },
+        id: 2,
+      }),
+    });
+    if (res.ok || !isRetryableMcpHttpStatus(res.status) || attempt >= maxAttempts - 1) {
+      break;
+    }
+    await sleep(retryDelayMs(res, attempt));
+  }
   if (!res.ok) {
     throw new Error(`tools/call HTTP ${res.status}`);
   }

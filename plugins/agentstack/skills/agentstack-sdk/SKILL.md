@@ -24,6 +24,18 @@ description: Use when the user wants TypeScript SDK setup, sdk.protocol, getCapa
 
 - MCP actions with dots may expose `safe_action` alias when a client forbids dots — check discovery.
 - Never mix Bearer and `X-API-Key` on one request.
+- Multi-step MCP / REST: hoist `workflow_run_id` and `options.observed` from each `agentstack.execute` response into the next batch (`sdk.protocol` batches or `@agentstack/sdk/mcp` `mcpExecute`).
+
+```typescript
+let observed: Record<string, unknown> | undefined;
+let workflowRunId: string | undefined;
+const run = await sdk.mcp.execute({
+  steps: [...],
+  options: { observed, workflow_run_id: workflowRunId },
+});
+workflowRunId = run.workflow_run_id ?? workflowRunId;
+observed = run.observed ?? observed;
+```
 
 ## References
 

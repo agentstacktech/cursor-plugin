@@ -162,7 +162,7 @@
 
   expect_skill: agentstack-project-wallet
 
-  forbid: ["wallets.get_balance personal"]
+  forbid: ["payments.get_balance personal scope confusion"]
 
 - prompt: "bots fleet orchestrator for telegram"
 

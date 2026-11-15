@@ -5,6 +5,19 @@ alwaysApply: true
 
 # AgentStack: Prefer MCP over custom backend
 
+MCP is required for platform work. If a call returns `not_authenticated` or `unauthorized`, pick **one** method you can finish. Any one is enough.
+
+| Method | When it is the comfortable one |
+|--------|--------------------------------|
+| `existing_bearer` | `~/.cursor/mcp.json` already has Device Code or a PAT. Run `node provided_plugins/cursor-plugin/scripts/mcp-execute.mjs --project-id <pid> auth.get_profile`. |
+| `plugin_connect` | The human is in Cursor and the call must stay on `plugin-agentstack-*`. Ask them to click **Connect**, then Reload Window. |
+| `device_code` | No Bearer yet. Run `/agentstack-authorize`, then the `mcp-execute` probe. |
+| `api_key` | A user PAT with `mcp_read` or `user_full` already exists. Put `X-API-Key` on `mcpServers.agentstack`. `service_cap_denied` means widen with `apikeys.create` preset `user_full`. |
+
+Do not call `mcp_auth`. Do not retry `auth.get_profile` on the same unsigned plugin channel. After `session_ready`, retry the original `agentstack.execute`.
+
+Access posture is separate from the sign-in method. Default is **open** (`user_full` / Device Code `--scope-preset=full`). Pick a narrower preset only when the task must be locked down: `agents_autonomous_loop`, `mcp_read_only`, `agent_runner`, `commerce_bot`.
+
 Ongoing work: `skills/agentstack-work-graph/SKILL.md` (`agents.work_next`). One-shot domains: `skills/agentstack-backend/SKILL.md`.
 
 This workspace has AgentStack MCP available (`agentstack.execute`). **Before writing any backend code** for auth, storage, RBAC, payments, subscriptions, rules / automations, webhooks, scheduled tasks, RAG / vector search, A/B tests, or analytics — check if it can be done via MCP first.
@@ -35,6 +48,7 @@ Run `/agentstack-product-flow` or read `docs/plugins/PRODUCT_BUILD_FLOW.md`. Mac
 
 - Plugin auth (`/agentstack-authorize`, Connect G-A174) ≠ app auth (`auth.login`).
 - `generation.*` (8DNA sandbox) ≠ media/AI generation in `agents.*` / `ai_builder.*`.
+- **Promote / push** has three planes. Hosting git: remote name `agentstack`, default branch `dev` (`hosting.git.promote_branch` uses `bucket_id`; `target=prod` is the live site). 8DNA: `generation.promote` (config, fleet, knowledge) — pass `env_uuid` on the write params; one heavy step per sync execute. Platform `agentstack-core` / `shared`: often no remote — VPS deploy, not `git push origin`. Do not delete `dev` or `main`.
 - `docs_nav.*` ≠ `discover/by_intent` ≠ Compass `guidance.*`.
 - Stripe **callback** webhook → `integrations.*`; Stripe **Checkout SDK** → never — use AgentPay.
 
@@ -80,10 +94,13 @@ Run `/agentstack-product-flow` or read `docs/plugins/PRODUCT_BUILD_FLOW.md`. Mac
 10. **"cron" / "scheduled task" / "delayed job" / "every hour" / "webhook"?**
     → MCP `scheduler.create_task` + `integrations.install_recipe` + `notifications.send_push`. Do **NOT** add Celery, BullMQ, node-cron, Temporal for these basic cases.
 
-11. **"change tenant config" / "project data" / "sandbox" / "safe cycle" / "promote" / any tenant DNA edit?**
-    → Master prompt **`agentstack_safe_project_cycle`** · recipe **`mcp_universal_safe_change`** · `/agentstack-safe-cycle`. Flow: session → preflight → domain MCP mutate (leaf paths) → verify sandbox → `generation.diff_vs_prod` → `generation.gates` → `generation.promote`. Do **NOT** write custom backend or prod DB scripts when MCP is connected.
+11. **"git" / "push" / "branch" / "dev" / "hosting journal" / "delete branches" / "promote the site"?**
+    → Skill **`agentstack-hosting`** · prompt **`agentstack_hosting_git_journal`**. Remote name **`agentstack`**, default push **`dev`**. `hosting.git.promote_branch` takes **`bucket_id`** (not `bucket`); `target=dev` is preview, `target=prod` is live. This is not `generation.promote`. Do not `git push origin` when origin is empty. Do not delete `dev` or `main`. Platform `agentstack-core` and `shared` usually have no hosting remote — those ship by VPS deploy. Run git inside the package that owns the files.
 
-12. **"heal tenant bot" / "fix menu" / "TG MAX parity" / mentor fleet?**
+12. **"change tenant config" / "project data" / "sandbox" / "safe cycle" / "promote DNA" / any tenant DNA edit?**
+    → Master prompt **`agentstack_safe_project_cycle`** · recipe **`mcp_universal_safe_change`** · `/agentstack-safe-cycle`. Flow: session → preflight → domain MCP mutate (leaf paths) → verify sandbox → `generation.diff_vs_prod` → `generation.gates` → `generation.promote`. One of those per sync execute. Pass `env_uuid` on the write params. Do **NOT** write custom backend or prod DB scripts when MCP is connected. Do **NOT** use this ladder for site git.
+
+13. **"heal tenant bot" / "fix menu" / "TG MAX parity" / mentor fleet?**
     → Specialized: **`bots.ensure_mentor_commands`** → verify → promote. Prompt: `agentstack_tenant_ops_mcp_first` · flow `UF_BOTS_HEAL` · `/agentstack-tenant-ops`. Ops scripts are fallback only.
 
 ## If you're unsure

@@ -23,6 +23,7 @@ import {
   postAgentstackExecute,
   resolveMcpBaseUrl,
 } from '../plugins/agentstack/lib/plugin-kernel/mcpExecuteHttp.mjs';
+import { ensureDirectExecutionIntent } from '../plugins/agentstack/lib/plugin-kernel/batchSemanticAnchor.mjs';
 
 const MCP_PATH = join(homedir(), '.cursor', 'mcp.json');
 
@@ -193,8 +194,25 @@ async function main() {
   if (projectId && Number.isFinite(projectId) && !batch.context) {
     batch.context = { project_id: projectId };
   }
+  const anchored = ensureDirectExecutionIntent(batch);
+  const ctxPid = Number(anchored?.context?.project_id || projectId || 0);
+  const forceScope = process.argv.includes('--force-scope');
+  if (ctxPid > 0 && Array.isArray(anchored?.steps)) {
+    for (const step of anchored.steps) {
+      if (!step || typeof step !== 'object') continue;
+      const sp = Number(step.params?.project_id || 0);
+      if (sp > 0 && sp !== ctxPid) {
+        const msg = `workflow_scope_leak: step.params.project_id=${sp} != context project_id=${ctxPid} (use auth.switch_project or --force-scope)`;
+        if (!forceScope) {
+          console.error(msg);
+          process.exit(2);
+        }
+        console.warn(msg);
+      }
+    }
+  }
   const baseUrl = resolveMcpBaseUrl(cfg);
-  const out = await postAgentstackExecute(baseUrl, authHeaders, batch);
+  const out = await postAgentstackExecute(baseUrl, authHeaders, anchored);
   console.log(JSON.stringify(out, null, 2));
 }
 

@@ -41,10 +41,18 @@ export const ping = defineCommand({
 - `script.get`, `script.list`, `script.versions`
 - `script.test` — sandbox smoke
 - `script.dry_run` — no persisted side effects; returns `fuel_used` and `cost.usd_est`
+  - **Ephemeral probe:** pass `files[]` (+ `entry` when multi-file) without `script.put` — response includes `ephemeral_compile: true`
+  - **Self-desc errors:** `compile_timeout`, `payload_too_large`, `entry_path_required` → check MCP `when_blocked` / `next_actions` (split sources or `validate_only` smaller batch)
 - `script.run` — live with quotas and idempotency_key
 - `script.publish` / `script.rollback` — aliases; caps approval via `approve_caps` or project `config.agent_can_approve_caps`
 - `script.docs` — topics `syntax` (TypeScript shapes), `overview`, `fuel`, `migration`
 - `script.profile` — aggregates / hot lines
+
+## Persistent script.put in agentstack.execute
+
+Set batch `options.execution_intent` to `"direct"` for authorized persistent CRUD (does not bypass RBAC/caps/preflight). Compile-only: `validate_only: true` on `script.put` — no anchor required.
+
+Preflight: `preflight.check` with `simulate_batch_actions: ["script.put"]` and `execution_intent: "direct"`.
 
 ## Agent ladder
 

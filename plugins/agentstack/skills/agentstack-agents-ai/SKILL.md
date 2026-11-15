@@ -15,6 +15,13 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 | "run this agent" / "stop it" | `agents.run`, `agents.stop`, `agents.traces` |
 | "project plan" / "goals tree" / "task list" | `agents.plan_get`, `agents.work_next`, `agents.plan_patch`, `agents.plan_refresh_affinities`, `agents.plan_claim`, `agents.plan_execute`, `agents.ensure_agent`, `agents.orchestrate` — MCP prompt `agentstack_plan_graph`; closed loop § below; flow `UF_PLAN_GRAPH_ROUTINE` |
 
+### MCP batch hygiene
+
+- **Backticks = catalog ids only** — use `` `domain.action` `` for `agentstack.execute` steps. Response/envelope fields (e.g. `packet.next_action`, `options.goal`) are not actions — cite as plain text or `field:packet.next_action` without implying a callable MCP id.
+- **One `context.project_id` per execute** — mismatch → `workflow_scope_leak`; use `auth.switch_project` between tenants (CLI: `mcp-execute` warns by default).
+- **`discovery.describe`** requires `action=<canonical id>` — not route strings; no `bots.bus.claim` (use `agents.plan_claim` + `bots.bus.ack`).
+- Goal-anchored batches: `options.execution_intent=direct` for spine reads (`auth.get_profile`) to avoid `orchestration_step_violation`.
+
 ### Plan graph quick rules
 
 - Merge by stable node `id`; use `if_match_revision` on conflict.
@@ -28,6 +35,7 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 | "build vite" / "compile app" / PT `compilar aplicativo` | `mcp_app_studio_build_v1` → `ai_builder.build.enqueue` → `ai_builder.build.status` (omit build_uuid) |
 | "publish react app" | `mcp_app_studio_publish_v1` only when user asks |
 | "generate image/media/content" | `generation.*` or `media.*` from the live capability catalog |
+| "Free.ai" / platform_supply / connect API key / llm_free_calls | `ai.providers.list` → `ai.providers.connect` → `ai.providers.probe` → `energy.get_balance` → `agents.run`; recipe `mcp_ai_providers_connect` |
 
 ### App Studio agent loop (gene: `core.app_studio.pipeline.gen1`)
 
@@ -107,6 +115,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 **Execution spine:** `agents.plan_get` → **`agents.work_next`** → **`agents.ensure_agent`** (when `provision_required` + `fully_provisionable`) → **`agents.plan_claim`** → **`agents.plan_execute`**. Decompose on the same `env_uuid`: `agents.plan_propose` → `agents.plan_apply_proposal`.
 
 1. **`agents.work_next`** — read `dependency_ready` (structural) vs `execution_ready` (fleet) separately; `dependency_ready=false` → wait on deps; `execution_ready=false` with deps ok → provision before claim.
+   - **Transport vs domain:** batch `partial_success` or step `result_kind` `work_graph_blocked` / `work_graph_waiting` → not executable; verify `action_readiness.can_claim` before claim/execute (SDK `parseWorkNextFromMcpExecute`, `batchEnvelopeHasWorkGraphBlock`).
 2. **Blocked** → `blocked_work[].blocked_reason` + `recovery.next_actions` / packet `next_actions` — canonical (`WG_BLOCKED_REASON`; not legacy `missing_roles`).
 3. **`agents.ensure_agent`** — preview `template_id` must match `work_next` top `compatible_templates[0]` (**H5** / `resolver_parity_v1`); saga **H7**: `create=false` then `create=true`; rollback on `created_agent_not_eligible`.
 4. **`agents.plan_claim`** (CAS `if_match_revision`; mismatch → `work_next handoff=true`) → **`agents.plan_execute`** — claim before execute (`WG_CLAIM_BEFORE_EXECUTE`).
@@ -128,6 +137,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `join_not_allowed` | Project is not open-join — request invite or projects.add_user from an owner. |
 | `provision_required` | ensure_agent create=false (H5) then create=true then plan_claim |
 | `no_compatible_agent` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
+| `operator_closure` | Platform ops leaf — no required_role: close with agents.plan_patch (set_meta gates_passed + gate_evidence, FSM in_progress→verifying→completed). discovery.describe agents.plan_patch for ops_compact. |
 | `planning_required` | agents.plan_propose mode=create_plan or decompose_node — strategic/decomposition node, not execution |
 | `planning_blocked` | agents.plan_propose mode=decompose_node or plan_process_backlog — finish planner plane first |
 | `dependency_blocked` | agents.plan_get to inspect upstream deps; do not ensure_agent; do not claim |
@@ -142,6 +152,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `verification_failed` | agents.plan_recovery_scan → plan_propose mode=repair_plan |
 | `fully_provisionable` | ensure_agent create=false (H5) then create=true (preferred over create_from_template) |
 | `generation_fork_required` | auto_generation_mode on — call generation.fork (or omit env_uuid for MCP auto-fork), then retry with env_uuid from receipt on home=project |
+| `work_next_hydrate_failed` | Work-graph hydrate failed — run agents.work_next with repair=true and detail=compact; on preflight failures narrow batch targets; on discovery failures narrow scope or defer hydrate. |
 | `supersede_in_progress` | agents.plan_get then wait/retry — in-progress node cannot be superseded without options.force_supersede_in_progress (retryable) |
 | `unknown_skill_id` | Fix node skill_ids to ecosystem catalog (agents.skills_list); use rag.retrieval / rag.ingest_acceptance — not MCP action names; re-run plan_propose after enrich |
 | `missing_required_dependency` | agents.plan_propose mode=decompose_node or repair_plan — facet DAG edge missing (storage→knowledge, logic→scheduler); inspect dependencies_to_add |
@@ -163,7 +174,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `session_user_required` | Personal or session-scoped home needs a signed-in operator user_id in MCP context (or principal_user_id on the tool). |
 | `permission_denied` | Project RBAC denied — rbac.check_permission, confirm membership, or dev-operator persona for platform substrate tools. |
 | `plan_graph_private` | Orchestrator graph is private — sign in (user_id in MCP context) or set orchestrator public_read; project API keys must include created_by user. |
-| `not_authenticated` | No MCP operator session — auth.get_profile first. Cursor plugin: Connect (G-A174) or Device Code /agentstack-authorize; do not call mcp_auth from the agent. |
+| `not_authenticated` | MCP is required. This channel has no operator session — authorize first (Connect on plugin AgentStack MCP or /agentstack-authorize). Confirm with mcp-execute.mjs auth.get_profile. Do not retry the unsigned plugin call and do not call mcp_auth. |
 | `relogin_required` | Session invalidated (deploy, eviction, or X-Session-Action: relogin_required) — re-authenticate: auth.get_profile or hosted remint; do not retry the same Bearer in a loop. |
 | `unauthorized` | Same as auth_required — OAuth Connect, Device Code, or Bearer from profile API key; then agentstack_session_setup and context.project_id. |
 | `auth_required` | Authenticate before work-graph spine — auth.get_profile → context.project_id → agents.work_next (not discovery.search). |
@@ -218,6 +229,8 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `run_mismatch` | run_id does not belong to the supplied agent_id — omit agent_id or fix the pair. |
 | `agent_not_found` | agent_id not in project fleet — use agents.team or plan_get before run_get. |
 | `waiting_for_approval` | Run status waiting_for_approval — agents.approve_run with approval_artifact_hash from run_detail. |
+| `energy_denied` | Insufficient builder_energy before agents.run — energy.get_balance then payments.create intent=energy_pack; follow packet.next_action. |
+| `agent_daily_cap` | Agent per_day_cap hit — patch AgentSpec.energy or wait for UTC day rollover. |
 | `batch_project_scope_leak` | A failed MCP batch step with params.project_id does not retarget later steps — only auth.switch_project may promote batch context.project_id. Re-bind context.project_id before mutations if a step used a probe pid. |
 | `workflow_batch_bind_failed` | agents.reconcile_binding repair=true — guidance bind failed; check member row / session |
 | `workflow_batch_context_bind_failed` | agents.reconcile_binding repair=true — batch context bind failed |
@@ -226,14 +239,19 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `workflow_batch_receipt_failed` | Step succeeded but receipt stamp failed — agents.reconcile_binding repair=true; retry read-only agents.plan_get before mutating |
 | `workflow_receipt_context_missing` | Active workflow receipt missing workflow_run_id or step_id — agents.reconcile_binding repair=true; agents.work_next handoff=true detail=compact |
 | `workflow_receipt_unbound` | Workflow receipt not bound to session — agents.reconcile_binding repair=true |
-| `orchestration_step_violation` | Action outside current workflow step — follow packet next_action / inverse_resume; do not mutate graph until step advances. For notifications.deliver inside a playbook: run preflight.check first or use packet.next_action — not a raw deliver outside the step allow-list. |
-| `discovery_search_recursion` | Run one discovery.search with a concrete q=, then discovery.describe on canonical action ids. Do not chain or batch many discovery.search steps. |
+| `orchestration_step_violation` | Action outside current workflow step — follow packet next_action / inverse_resume; do not mutate graph until step advances. For ad-hoc reads (auth.get_profile) or plan writes outside the spine, rerun the batch with options.execution_mode=plain or options.execution_intent=direct on a single allowed action. For notifications.deliver inside a playbook: run preflight.check first or use packet.next_action — not a raw deliver outside the step allow-list. |
+| `discovery_search_recursion` | Prefer discovery.list (optional domain=) to copy exact action ids, then discovery.describe. If you use discovery.search: one concrete q= per execute, then describe — do not chain many search steps; in goal-anchored batches run search in a separate execute (batch_semantic_anchor_conflict). |
 | `workflow_batch_bind_skipped` | Binding skipped (read-only batch or missing workflow_run_id) — agents.work_next handoff=true if follow-up work is expected |
 | `work_next_enrich_failed` | agents.work_next handoff=true detail=compact |
 | `work_next_repeat_reconcile_failed` | agents.reconcile_binding repair=true |
 | `guidance_user_row_not_found` | auth.get_profile then agents.work_next handoff=true |
+| `orchestrator_agent_stale` | Bound agent_uuid no longer matches fleet — agents.reconcile_binding repair=true; agents.ensure_agent when the template row is missing; then agents.work_next handoff=true. |
+| `plan_archive_no_effect` | Archive patch matched no nodes — agents.plan_get detail=compact; confirm archive_ids / node_id scope; use agents.plan_patch with if_match_revision, not empty ops. |
 | `dependency_failed` | Prerequisite batch step did not succeed — fix or remove dependsOn; poll verification_action before retrying dependent step |
-| `graph_storage_empty` | Prod task_list leaf is empty at revision 0 — restore via generation supply and agents.plan_patch; do not empty-overwrite revision 0. |
+| `graph_storage_empty` | Prod task_list leaf is empty at revision 0 with storage hash — restore via generation supply and agents.plan_patch; do not empty-overwrite revision 0. |
+| `idle` | Orchestrator graph has no tasks yet (revision 0) — valid idle; seed with agents.plan_propose or agents.plan_patch before claim/execute. |
+| `needs_seed` | Graph revision > 0 but task list is empty — propose or patch a plan; do not run plan_recovery_scan against an intentionally empty graph. |
+| `fleet_skipped` | Fleet was not loaded for this work_next call (compact/rank-only path) — not the same as no_compatible_agent; load fleet or use full work_next when matching agents to tasks. |
 - **env_uuid:** Thread the same env_uuid across plan_get, plan_propose, plan_apply_proposal, plan_process_backlog, plan_recovery_scan, and work_next on sandbox forks.
 - **handoff:** role_mismatch / specialization_mismatch after claim → work_next handoff=true node_id=… — follow recovery.next_actions, do not retry same agent. capability_mismatch is missing required_capabilities: repair_plan or ensure_agent, not handoff.
 

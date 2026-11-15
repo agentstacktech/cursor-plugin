@@ -2,6 +2,7 @@
   "version": 1,
   "actions": [
     "agents.fleet_diagnostics",
+    "agents.graph_health",
     "agents.list",
     "agents.plan_get",
     "agents.plan_process_backlog",

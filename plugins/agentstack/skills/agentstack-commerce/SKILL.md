@@ -12,6 +12,7 @@ Four organs, one decision: which ledger do you need?
 | User says                                    | Use                       | Example MCP actions                                      |
 |----------------------------------------------|---------------------------|----------------------------------------------------------|
 | "accept credit card / checkout"              | `payments.*`              | `payments.create`, `payments.get`, `payments.refund`     |
+| "in-game purchase / hosted /s/ shop"         | `shop.*` (tenant IAP)     | `shop.checkout.create` + `shop.orders.get` + `payments.get` — not client `payments.create` |
 | "internal balance / game currency"           | `wallets.*`               | `payments.get_balance`, `wallets.transfer`, `wallets.deposit` |
 | "inventory item / digital good / NFT"        | `assets.*`                | `assets.create`, `wallets.transfer`, `assets.list`          |
 | "7-day trial" / free trial                   | `buffs.*`                 | `buffs.apply_temporary_effect` or `buffs.apply_buff` (trial template) — not grant rails |
@@ -22,6 +23,13 @@ Four organs, one decision: which ledger do you need?
 | "grant AgentStack platform tier"             | platform operator         | `buffs.grant_subscription` (PID=1) · prompt `agentstack_platform_subscription_grant` |
 | "upgrade to Pro" (tenant SKU)                | three-rail monetization   | Paid: `commerce.sell.activate` → `payments.create` → webhook/C24 · Manual: `buffs.grant_tenant_subscription` |
 | "activate selling" / "first sale" / seed shop | `commerce.sell.activate` | One-shot: earnings wallet, product seed, storefront index, optional hosted vitrine |
+| "global marketplace / auction browse" (TG 1810) | REST browse + bids | Guest: `GET /api/commerce/storefront/listings?scope=global&project_id=` · bids: `GET /api/marketplace/listings/{uuid}/bids` · auth bid: `POST .../bids` + `Idempotency-Key` · preflight `payments.get_balance` |
+
+## Financial MCP scope (tenant reads)
+
+`payments.get_balance` and `payments.list_transactions` return **`effective_project_id`**, **`scope_source`**, and **`jwt_project_aligned`**. Execute **`context.project_id`** wins over JWT home / API-key pin for user-scoped sessions when the operator has membership on the execute pid. On mismatch errors, bind `context.project_id` to the tenant shop pid before retry — do not assume JWT home is the wallet scope.
+
+See `docs/AGENT_PROTOCOL.md` (session + `context.project_id`) and `discovery.describe` on `payments.get_balance` / `commerce.sell.activate` (scope fields on the wire).
 
 ## `commerce.sell.activate` — seller onboarding
 
@@ -136,7 +144,7 @@ Examples below with `pro_monthly` are **tenant-app** SKU slugs — not AgentStac
 
 Track for `/s/{pid}/` games (TailRush, thermo tenants) — **not** marketplace `commerce.sell.activate`.
 
-1. Owner: `shop.products.upsert` → `shop.enablement.status` (blockers + `sandbox_ok`).
+1. Owner: `shop.products.upsert` → `shop.enablement.status` (blockers + `sandbox_ok` + **`live_checkout_allowed` / `psp_live_ready`**) → `payments.list_methods` before live checkout.
 2. Visitor checkout: `shop.checkout.create` (server-priced SKU, `idempotency_key`, same-origin `return_url`).
 3. **PAY-01:** `payments.get` may show `project_id=1` (profile slice) — bind tenant via `metadata.order_id` + `metadata.recipient_project_id`.
 4. Resume card checkout: `GET /api/commerce/iap/checkout/resume?project_id={pid}&payment_id=…` (return URL query uses `iap_payment_id`; map to `payment_id` on BFF — not raw `payments.get` for hosted visitors).

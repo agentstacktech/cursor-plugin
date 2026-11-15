@@ -3,6 +3,7 @@ import {
   AUDIT_BATCH_ACTIONS,
   batchNeedsSemanticAnchor,
   ensureBatchSemanticAnchor,
+  ensureDirectExecutionIntent,
 } from '../plugins/agentstack/lib/plugin-kernel/batchSemanticAnchor.mjs';
 import { verifyCanonicalCases } from '../plugins/agentstack/lib/plugin-kernel/batchParamAnchorEval.mjs';
 
@@ -25,6 +26,10 @@ const out = ensureBatchSemanticAnchor(
   'QA goal',
 );
 assert.equal(out.options.goal, 'QA goal');
+const direct = ensureDirectExecutionIntent({
+  steps: [{ action: 'script.put', params: { script_id: 'x', files: [] } }],
+});
+assert.equal(direct.options.execution_intent, 'direct');
 
 for (const row of verifyCanonicalCases(AUDIT_BATCH_ACTIONS)) {
   assert.equal(row.ok, true, `canonical case ${row.id}`);

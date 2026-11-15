@@ -23,7 +23,8 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 | Compass playbook / what next / start_path | `agentstack-guidance` | `guidance.*` — never static route guessing |
 | where in UI / PAGES_MAP / Discover hub | `agentstack-discovery` | UI manifest — never `guidance.start_path` |
 | store, data, config, 8DNA leaves | `agentstack-data` | `projects.patch_data`, `data_access.*` |
-| sandbox / canary / generation fork / X-AgentStack-Env | `agentstack-data` | `generation.*` |
+| sandbox / canary / generation fork / X-AgentStack-Env | `agentstack-data` | `generation.*` — 8DNA only, not git |
+| git push / push to dev / delete branches / promote a site | `agentstack-hosting` | remote `agentstack`, branch `dev`. Not `generation.promote`. Not `git push origin` |
 | publish site, /s/ URL, ZIP deploy | `agentstack-hosting` | `hosting.*` |
 | edit one file on live /s/ site (CSS/HTML/JS) | `agentstack-hosting` | `hosting.bucket.file.patch` (`search_replace`) — **not** `storage.upload` or `projects.patch_data` |
 | EDITFLOW / hosted vertical / workspace SaaS / `/s/*/editflow/` | `agentstack-hosted-vertical` | `@agentstack/hosted-wire` + `tenantApi` — not custom backend |
@@ -115,7 +116,7 @@ Pick the **primary** bucket first; consult others by reference for multi-step fl
 0. **Session probe:** `/mcp/prompts/get?name=agentstack_session_setup` (GET)
 1. **Work Graph default (bound project):** `agents.work_next` (MCP)
 2. **Registry status:** `discovery.status` (MCP)
-3. **Schema lookup only — prefer packet.next_action:** `discovery.search` (MCP)
+3. **Schema lookup — max one discovery.search per execute; use q=:** `discovery.search` (MCP)
 4. **Describe chosen action:** `discovery.describe` (MCP)
 5. **Preflight then execute:** `preflight.check` (MCP)
 <!-- END:AUTOGEN-DISCOVERY-LADDER -->

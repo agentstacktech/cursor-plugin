@@ -9,7 +9,8 @@ description: Use when the user mentions AGNT, agUSD, AgentNet economy, vault, br
 
 | User says | Prefer | Notes |
 |-----------|--------|-------|
-| "AGNT balance" / credits | `agentnet.balance`, `agentnet.compute_credits.*` | L0 ledger |
+| "AGNT balance" / credits | `agentnet.balance`, `agentnet.compute_credits.*` | L0 ledger — not JSON `wallets.*` / Finance Hub |
+| "wallet balance" / multi-wallet | `wallets.*`, project wallet / finance hub | 8DNA JSON wallets; stays primary when `ECONOMY_CRYPTO_MODE=off` |
 | "stable unit" / vault | agUSD narrative + vault REST | Not a second platform ticker |
 | "post batch" / ledger write | `agentnet.post_batch` | Idempotent key required |
 | "Solana proof" / PTR | `agentnet.solana.*`, grants demo | Grant-scoped |

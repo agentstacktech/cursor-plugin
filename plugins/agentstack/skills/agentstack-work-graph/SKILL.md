@@ -12,9 +12,13 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 1. No `project_id`: `agentstack_session_setup` only. Do not call `discovery.search`.
 2. Bound project: `agents.work_next`. Default `detail=compact` returns **values** (`state`, numeric `revision`, `next_action`, `reason`) — not type-sketch (`revision: "int"`). Use `detail=skeleton` only on non–Work Graph reads when you need field names/types.
 3. If `next_action` is set, call that action. Do not `discovery.search`.
-4. Prefer `detail=compact` with `expand: ["instruction_packet"]` (and `blocked_work` when blocked) — smaller than `detail=full`.
+4. Default `detail=compact` **without** expand. Add `expand: ["instruction_packet", "blocked_work"]` only when `state=blocked` or `detail=full` — see `discovery.describe` → `agents.work_next` → `loop_compact.recommended_expand`.
 5. Cheap batch on one sync `agentstack.execute`: `agents.work_next`, `agents.plan_get`, `agents.plan_claim`.
 6. One per sync execute: `agents.plan_propose`, `agents.plan_apply_proposal`, `agents.plan_recovery_scan`, `context.get`, plus heavy LLM (`bots.simulate`, `agents.run` with `wait=true`).
+
+## `result_kind` before claim
+
+After `agents.work_next`, read **`result_kind`** (or `state` + `blocked_work`). Do **not** call `agents.plan_claim` when `result_kind` is `work_graph_blocked` or `work_graph_waiting` — follow `next_action` / recovery (`agents.ensure_agent`, `agents.plan_recovery_scan`) first. Compact packets may omit fat `execution`; use `expand: ["instruction_packet"]` when blocked.
 
 ## Open community hubs
 

@@ -56,7 +56,7 @@ Interactive checklist: **what are you building?** → archetype → recipe → s
 - `project_setup` → `/agentstack-capability-matrix` · recipe `mcp_read_bootstrap`
 - `static_site` → `/agentstack-host-site`
 - `hosted_site_edit` → prompt `agentstack_hosting_edit_site` · recipe `mcp_hosting_edit_site_safe`
-- `bot_channel` → recipe `mcp_bots_simulate` · Bot Studio
+- `bot_channel` → recipe `mcp_bots_simulate` · Bot Studio · agent bus: `agentstack_bot_message_bus`
 - `migrate_legacy` → `agentstack-migrator` agent
 - `hosted_vertical_saas` → `agentstack-hosted-vertical` skill · `hosted-vertical/AGENTS.md` · `vertical_workspace.bootstrap` · `publish_editflow_hosted.py`
 <!-- END:AUTOGEN-ARCHETYPE-DEEP-LINKS -->

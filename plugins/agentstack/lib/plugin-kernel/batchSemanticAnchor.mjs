@@ -64,3 +64,21 @@ export function ensureBatchSemanticAnchor(body, goalText) {
   if (!goal) return body;
   return { ...body, options: { ...options, goal: goal.slice(0, 2000) } };
 }
+
+/**
+ * Prefer execution_intent=direct when batch needs anchor (CRUD lane).
+ * @param {object} body agentstack.execute payload
+ * @returns {object}
+ */
+export function ensureDirectExecutionIntent(body) {
+  if (!body || typeof body !== 'object') return body;
+  const steps = Array.isArray(body.steps) ? body.steps : [];
+  const options =
+    body.options && typeof body.options === 'object' ? { ...body.options } : {};
+  if (!batchNeedsSemanticAnchor(steps, options)) return body;
+  if (optionsSatisfyAnchor(options)) return body;
+  return {
+    ...body,
+    options: { ...options, execution_intent: 'direct' },
+  };
+}

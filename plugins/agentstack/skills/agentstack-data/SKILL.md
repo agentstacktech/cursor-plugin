@@ -20,10 +20,13 @@ One skill covers three organs because they share the same guiding principle: **d
 | "store API key for 3rd party"              | `protected.keys.<service>` — backend-only; never returned in `projects.get_project`                |
 | "upload avatar / document"                 | `POST /api/storage/upload` (multipart) + `storage.list_files` to browse, `storage.delete_file` to remove |
 | "hide email from non-admins"               | `data_access.set_policy` with field path + role mask (FAP)                                        |
-| "A/B test homepage copy"                   | Full safe cycle: `generation.settings.patch` (mode on) → mutation auto-fork → `generation.diff_vs_prod` → `generation.gates` → `generation.promote` — see `agentstack_tenant_8dna_supply` prompt |
+| "A/B test homepage copy"                   | Full safe cycle: `generation.settings.patch` (mode on) → mutation auto-fork → `generation.diff_vs_prod` → `generation.gates` → `generation.promote` — see `agentstack_tenant_8dna_supply` prompt. One of those per sync execute. Pass `env_uuid` on the write params. |
+| "promote" / "push to dev" / "delete branches" | **Site git is `agentstack-hosting`.** Remote name `agentstack`, default branch `dev`. `generation.promote` moves 8DNA only and does not publish `/s/` bytes. Platform `agentstack-core` / `shared` often have no remote (VPS deploy). Do not delete `dev` or `main`. |
+| **tenant git genome / philosophy map**     | **Read:** `genetic.snapshot.get` · **search:** `genetic.search` · **rebuild:** `genetic.reindex` (`journal_root` from `hosting.git.status`). Auto-index on hosting push. **Not** `projects.patch_data` on `ecosystem.genetic.*` — derived cache only. Gene: `core.genetic.project_genome.gen1`. |
 
 ## Prefer-over
 
+- **DO NOT** patch `ecosystem.genetic` leaves via `projects.patch_data` — **use `genetic.reindex`** or hosting git push hook.
 - **DO NOT** add Prisma + PostgreSQL / Drizzle / Mongoose / TypeORM for user/project data — **use 8DNA**.
 - **DO NOT** add S3, Cloudinary, Firebase Storage — **use Storage**; quotas are enforced via `buffs.get_effective_limits`.
 - **DO NOT** hand-roll row-level security in app code — **use FAP** (`data_access.set_policy`) declaratively.
@@ -110,6 +113,10 @@ Echo hoisted response fields on the next batch: `workflow_completion`, top-level
 For variant rollouts, promotion gates, and canary traffic use **`generation.*`** MCP. Scoped reads/writes send header **`X-AgentStack-Env`**.
 
 **Do not duplicate the action matrix here** — fetch MCP prompt **`agentstack_generation`** via `prompts/list` · `prompts/get` (same pattern as `agentstack_commerce_flows`). Public guide: `docs/SANDBOX_PLAYGROUND_GUIDE.md` (canary + promotion sections).
+
+## Manager DM × generation (Gate A)
+
+Before fleet/bus DNA on a manager home chat: **`generation.fork`** → keep **`env_uuid`** on the batch → **`generation.env_snapshot`** (lighter than default **`generation.list`**). Plan manager steps: **`bots.order_manager_bootstrap`** with **`dry_run=true`** · recipe **`mcp_bot_order_manager_bootstrap_v1`** · detail in **`agentstack-bots`** skill. When **`projection.state=stale`**, follow **`verification_action`** once (usually **`generation.env_snapshot`**), then **`generation.diff_vs_prod`** → **`generation.gates`** — do not loop full list projection. Master flow: MCP prompt **`agentstack_safe_project_cycle`**.
 
 ## MCP guidance
 

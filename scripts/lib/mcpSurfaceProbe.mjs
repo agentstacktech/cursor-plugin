@@ -235,10 +235,10 @@ export function pluginCacheMcpPostContext(cacheMcpJson) {
 export function interpretPluginCacheProbe({ signed, toolCount, surface }) {
   if (!signed) {
     return {
-      cursorLikelyZeroTools: false,
+      cursorLikelyZeroTools: true,
       cursorReason:
-        'cache mcp.json is OAuth URL-only. plugin-agentstack-* signs in with Connect (G-A174). ' +
-        'Device Code and X-API-Key stay in ~/.cursor/mcp.json.',
+        'cache mcp.json OAuth-only (no Bearer) — plugin-agentstack-* needs Connect (G-A174) or PAT mirror; ' +
+        'HTTP tools/list may still return 1 tool anonymously',
     };
   }
   if (!surface.ok) {

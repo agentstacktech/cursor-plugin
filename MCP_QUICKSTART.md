@@ -133,8 +133,9 @@ Cursor command: `/agentstack-tenant-ops`. Prompt: `agentstack_tenant_ops_mcp_fir
 
 | Symptom | Fix |
 |---------|-----|
+| Connector shows connected but every call returns `not_authenticated` | Reconnect: Cursor Settings, MCP, AgentStack, Reconnect. Or set `X-API-Key`. `system.ping` does not need a key. |
 | Agent uses `plugin-agentstack-*` but you only ran Device Code | **Connect** on plugin MCP (G-A174) + Reload Window, or route agents to `user-agentstack` / `mcp-execute.mjs` |
-| `diagnose-local` shows **DUAL_SURFACE** | Expected when PAT is in `mcp.json` but plugin namespace unsigned — see [CURSOR_MCP_OPERATOR_AUTH_RUNBOOK.md](../../docs/operations/CURSOR_MCP_OPERATOR_AUTH_RUNBOOK.md) |
+| `diagnose-local` shows **DUAL_SURFACE** | Expected when PAT is in `mcp.json` but plugin namespace unsigned — use **Connect** on plugin MCP or Device Code via `/agentstack-authorize` (see plugin auth section above). |
 | Hooks say unsigned while Connect works | Normal for Connect-only; optional `/agentstack-authorize` for hooks/catalog |
 | `beforeMCPExecution` should hard-fail unsigned bridge | Set `AGENTSTACK_PLUGIN_AUTH_BRIDGE_STRICT=1` (opt-in; default stays best-effort) |
 
