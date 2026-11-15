@@ -12,8 +12,8 @@ description: Use when the user wants to publish a static site, deploy HTML or ZI
 | "publish site" / "host HTML" / "/host-site" | `hosting.site.quick_start`, `hosting.deploy_files` | Vercel / Netlify one-off |
 | "single HTML landing" | recipe `mcp_hosting_static_landing_v1` | deploy_files without recipe |
 | "edit one CSS/HTML file on /s/" | `hosting.bucket.file.patch` (`search_replace`); recipe `mcp_hosting_edit_text_file_v1` — no prior GET; response `gzip_sibling: refreshed` + optional `cache_bust` — **never** manual gzip or `bulk_delete` `.gz` | `storage.upload` or full `hosting.deploy_files` |
-| "React/Vite dist upload" | recipe `mcp_hosting_react_dist_v1`, `hosting.storage.import_folder` | MCP npm build (use local/AI Builder) |
-| "deploy ZIP" / "static site" | `hosting.deploy_files` | Custom S3 + CloudFront |
+| "React/Vite dist upload" | `hosting.site.import_archive`, `hosting.site.upload_grant` + HTTP POST, recipe `mcp_hosting_react_dist_v1` | `hosting.deploy_files`, `hosting.storage.import_folder`, MCP npm build |
+| "deploy ZIP" / "static site" | `hosting.site.import_archive` or `hosting.site.upload_grant`; CLI `agentstack hosting deploy --zip` | `hosting.deploy_files` (no unzip), Custom S3 |
 | "rollback" / "promote release" | `hosting.release.promote`, `hosting.release.list` | Manual bucket swap |
 | "import folder to site" | `hosting.storage.import_folder` | Re-upload all files |
 | "project hosting status" / "host sell scale ladder" | `hosting.project.status` | Multiple REST calls |
