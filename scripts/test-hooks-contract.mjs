@@ -136,14 +136,4 @@ if (sessionFromHook.status !== 0) {
 JSON.parse((sessionFromHook.stdout || '').trim().split(/\r?\n/).pop() || '{}');
 console.log('OK   session-start.mjs --from-hook + DISABLE_AUTO_LOGIN');
 
-const kernelTest = spawnSync(process.execPath, ['scripts/test-kernel-catalog.mjs'], {
-  cwd: ROOT,
-  encoding: 'utf8',
-});
-if (kernelTest.status !== 0) {
-  console.error(kernelTest.stderr || kernelTest.stdout);
-  process.exit(1);
-}
-console.log((kernelTest.stdout || '').trim());
-
 console.log('Hook contract tests passed.');

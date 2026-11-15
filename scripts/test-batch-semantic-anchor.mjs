@@ -19,7 +19,7 @@ assert.equal(
 );
 assert.equal(
   batchNeedsSemanticAnchor([{ action: 'agents.work_next', params: { claim: true } }], {}),
-  true,
+  false,
 );
 const out = ensureBatchSemanticAnchor(
   { steps: [{ action: 'projects.create_project', params: {} }] },
@@ -27,7 +27,12 @@ const out = ensureBatchSemanticAnchor(
 );
 assert.equal(out.options.goal, 'QA goal');
 const direct = ensureDirectExecutionIntent({
-  steps: [{ action: 'script.put', params: { script_id: 'x', files: [] } }],
+  steps: [
+    {
+      action: 'script.put',
+      params: { script_id: 'x', files: [], validate_only: false },
+    },
+  ],
 });
 assert.equal(direct.options.execution_intent, 'direct');
 

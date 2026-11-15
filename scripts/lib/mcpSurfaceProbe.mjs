@@ -233,14 +233,6 @@ export function pluginCacheMcpPostContext(cacheMcpJson) {
  * @param {{ signed: boolean, toolCount: number, surface: { ok: boolean, reason?: string } }}
  */
 export function interpretPluginCacheProbe({ signed, toolCount, surface }) {
-  if (!signed) {
-    return {
-      cursorLikelyZeroTools: true,
-      cursorReason:
-        'cache mcp.json OAuth-only (no Bearer) — plugin-agentstack-* needs Connect (G-A174) or PAT mirror; ' +
-        'HTTP tools/list may still return 1 tool anonymously',
-    };
-  }
   if (!surface.ok) {
     return {
       cursorLikelyZeroTools: true,
@@ -248,9 +240,18 @@ export function interpretPluginCacheProbe({ signed, toolCount, surface }) {
     };
   }
   if (toolCount === 0) {
+    const unsigned =
+      'cache mcp.json OAuth-only (no Bearer) — plugin-agentstack-* needs Connect (G-A174) or PAT mirror';
     return {
       cursorLikelyZeroTools: true,
-      cursorReason: 'tools/list returned 0 tools with cache Bearer',
+      cursorReason: signed ? 'tools/list returned 0 tools with cache Bearer' : unsigned,
+    };
+  }
+  if (!signed) {
+    return {
+      cursorLikelyZeroTools: false,
+      cursorReason:
+        'cache mcp.json OAuth-only (no Bearer) — Connect for Cursor UI; HTTP tools/list probe shows tools',
     };
   }
   return { cursorLikelyZeroTools: false, cursorReason: null };

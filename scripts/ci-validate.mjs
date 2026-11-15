@@ -43,6 +43,7 @@ const STEPS = [
   ['run-intent-eval', ['scripts/run-intent-eval.mjs']],
   ['device-code --help', ['plugins/agentstack/hooks/scripts/device-code.mjs', '--help']],
   ['test-kernel-catalog', ['scripts/test-kernel-catalog.mjs']],
+  ['test-batch-semantic-anchor', ['scripts/test-batch-semantic-anchor.mjs']],
 ];
 
 function run(label, args) {

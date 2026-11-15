@@ -114,25 +114,11 @@ export function leanAgentstackServer(existing = {}, { baseUrl, headers: headerOv
   const headers = headerOverrides
     ? { ...headerOverrides, 'Content-Type': 'application/json' }
     : { ...(prev.headers || {}), 'Content-Type': 'application/json' };
-  const server = {
+  return {
     type: 'streamable-http',
     url: `${String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '')}/mcp`,
     headers,
   };
-  const auth = prev.auth;
-  if (
-    auth &&
-    typeof auth === 'object' &&
-    typeof auth.CLIENT_ID === 'string' &&
-    auth.CLIENT_ID.trim() &&
-    !auth.CLIENT_SECRET
-  ) {
-    server.auth = {
-      CLIENT_ID: auth.CLIENT_ID.trim(),
-      ...(Array.isArray(auth.scopes) && auth.scopes.length ? { scopes: [...auth.scopes] } : {}),
-    };
-  }
-  return server;
 }
 
 /**
@@ -307,12 +293,6 @@ export function agentstackAuthHeaders(cfg) {
 /** Slash command that is the plugin Device Code auth control. */
 export const AUTHORIZE_SLASH = '/agentstack-authorize';
 
-/** Cursor Connect static OAuth (G-A174) — avoids no_auth_link when DCR is flaky. */
-export const CURSOR_PLUGIN_MCP_AUTH = {
-  CLIENT_ID: 'cursor-plugin',
-  scopes: ['openid', 'tools:read', 'tools:invoke'],
-};
-
 /** Figma-style pointer in plugin.json — Cursor Connect, not an inline servers object. */
 export const PLUGIN_MCP_POINTER = './mcp.json';
 
@@ -360,13 +340,6 @@ export function pluginMcpOAuthError(cfg) {
     return 'do not ship Authorization; Cursor OAuth Connect (G-A174)';
   }
   if (entry.auth?.CLIENT_SECRET) return 'do not ship CLIENT_SECRET';
-  const staticAuth = entry.auth;
-  if (staticAuth != null) {
-    if (typeof staticAuth !== 'object') return 'auth must be an object';
-    const cid = staticAuth.CLIENT_ID;
-    if (typeof cid !== 'string' || !cid.trim()) return 'auth.CLIENT_ID required for plugin Connect';
-    if (cid.trim() !== 'cursor-plugin') return 'auth.CLIENT_ID must be cursor-plugin';
-  }
   return null;
 }
 
