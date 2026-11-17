@@ -37,7 +37,7 @@ If Cursor shows the plugin installed but `plugins/cache/agentstack` is empty, se
 | **Plugin MCP** (`plugin-agentstack-*` in Cursor) | Marketplace install; click **Connect** (G-A174) | After OAuth Connect on plugin panel |
 | **User MCP** (`~/.cursor/mcp.json` → `agentstack`) | Device Code `/agentstack-authorize` or profile API key | Bearer / X-API-Key in headers |
 
-**Common trap:** Cursor agents call **plugin** MCP without Bearer. `/agentstack-authorize` writes `~/.cursor/mcp.json` only — run `node scripts/refresh-cursor-runtime.mjs --fix` (or re-authorize; device-code syncs cache) then **Reload Window** so plugin cache `mcp.json` gets the same Bearer. `mcp_auth` does **not** bridge Device Code. Fallback: Connect (G-A174) or `mcp-execute.mjs` below.
+**Common trap:** Cursor agents call **plugin** MCP without OAuth Connect. `/agentstack-authorize` writes Bearer in `~/.cursor/mcp.json` only — plugin runtime stays **URL-only** until Connect (G-A174). Use `mcp-execute.mjs` for Bearer-backed probes, or click **Connect** then Reload Window. `mcp_auth` does **not** bridge Device Code.
 
 OAuth 2.1 Device Code via `/agentstack-authorize` (or `/agentstack-init`) → Bearer in `~/.cursor/mcp.json`.
 
@@ -56,7 +56,7 @@ node scripts/mcp-execute.mjs --project-id 1 --execution-intent direct --focus-no
 
 Implementation: `scripts/mcp-execute.mjs` + `lib/plugin-kernel/mcpExecuteHttp.mjs`.
 
-**Tenant workspace (OAuth / password):** Connect or Device Code mints a **user-scoped** Bearer (JWT may show ecosystem `project_id=1`). Before tenant **mutations**, run recipe `mcp_session_setup` → set **`context.project_id`** → confirm **`auth.get_profile`** → **`mutation_allowed`** or **`session_ready`**. Call **`auth.switch_project`** only when **`required_client_action`** is **`apply_bearer`** (typical: project-pinned API key). Cursor hook **`pre-mcp-session-handoff.mjs`** runs REST switch only when a batch includes **`auth.switch_project`**. **ChatGPT-only OAuth:** if switch tokens are redacted, Disconnect → Connect after picking workspace, or Device Code.
+**Tenant workspace (OAuth / password):** One Bearer, many projects — set **`options.context.project_id`** per execute; **`jwt_project_aligned=false`** with **`mutation_allowed=true`** is normal (JWT often `project_id=1`). Do **not** `auth.switch_project` on every hop. SoT: monorepo `docs/architecture/MCP_UNIFIED_OPERATOR_SESSION.md` + recipe `mcp_session_setup` → **`auth.get_profile`** → **`preflight.check`**. **`auth.switch_project`** only when **`required_client_action=apply_bearer`** (project-pinned API key). Cursor hook **`pre-mcp-session-handoff.mjs`** runs REST switch only when a batch includes **`auth.switch_project`**. **ChatGPT-only OAuth:** if switch tokens are redacted, Disconnect → Connect after picking workspace, or Device Code.
 
 ## Lean `~/.cursor/mcp.json` shape
 

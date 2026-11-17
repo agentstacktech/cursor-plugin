@@ -268,3 +268,6 @@ export async function pluginCacheBearerDrifted(_userCfg, opts = {}) {
   _driftAt = Date.now();
   return drifted;
 }
+
+/** OAuth-only plugin runtime (clearer name for docs/agents). */
+export { syncPluginRuntimeMcpBearerFromUser as ensurePluginMcpOAuthOnly };

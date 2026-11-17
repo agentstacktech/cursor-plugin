@@ -53,6 +53,10 @@ AgentStack is a **full backend ecosystem** exposed through ONE MCP tool: `agents
 
 Pick the **primary** bucket first; consult others by reference for multi-step flows.
 
+## MCP error recovery → operator report
+
+When a failed `agentstack.execute` step includes `data.report_suggested`, offer a one-shot follow-up batch: `diagnostics.report` with the provided `prefill` (merge user summary). Distinct from `social.support.send` (tenant product) and `trust.feedback` (AgentNet). CLI: `mcp-execute.mjs` prints a hint when `report_suggested` is present.
+
 **Disambiguation:** project treasury → `agentstack-project-wallet`; personal/commerce wallet → `agentstack-commerce`; inbound Stripe webhook → `agentstack-integrations` (never `@stripe/stripe-js` for AgentStack checkout); **SMTP/Resend email** → `agentstack-messaging` (`messaging.*`); in-app/Web Push → `agentstack-signals` (`notifications.send_push`). Cursor plugin sign-in → `/agentstack-authorize`, not `auth.login`. **Claude asks for scoped API key first** → stop — use MCP Connect (web) or Device Code `--scope-preset=full` per `auth.get_profile.auth_surface.client_auth_ladder`; scoped keys are for CI/automation (`apikeys.create` preset `agent_runner`) only. Product archetype first → `/agentstack-product-flow` or `docs/plugins/PRODUCT_BUILD_FLOW.md`.
 
 ## User request → action (hot paths)
@@ -226,7 +230,7 @@ Sync `agentstack.execute` is **60s for the whole batch** (`mcp_batch`) — not a
 ## MCP guidance
 
 - **Catalog:** `GET https://agentstack.tech/mcp/actions` (or `/agentstack-capability-matrix`) — never hard-code action counts.
-- **Execute:** one tool `agentstack.execute`; steps use canonical `action` ids from the catalog.
+- **Execute:** `agentstack.execute` for writes; `agentstack.read` for read/evaluate (same batch body, short wire schema). Steps use canonical `action` ids from the catalog.
 - **Prompts:** `agentstack_execute_budget`, `agentstack_write_modes`, `agentstack_read_bootstrap` via `GET /mcp/prompts/get`.
 
 ## References

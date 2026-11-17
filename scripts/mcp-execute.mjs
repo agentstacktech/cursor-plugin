@@ -213,6 +213,18 @@ async function main() {
   }
   const baseUrl = resolveMcpBaseUrl(cfg);
   const out = await postAgentstackExecute(baseUrl, authHeaders, anchored);
+  const steps = out?.data?.steps ?? out?.steps;
+  if (Array.isArray(steps)) {
+    for (const step of steps) {
+      const sug = step?.data?.report_suggested ?? step?.report_suggested;
+      if (sug?.next_action?.action === 'diagnostics.report') {
+        console.error(
+          'Hint: MCP returned report_suggested — run diagnostics.report with the prefill payload.',
+        );
+        break;
+      }
+    }
+  }
   console.log(JSON.stringify(out, null, 2));
 }
 

@@ -12,7 +12,9 @@ description: Use when the user wants to publish a static site, deploy HTML or ZI
 | "publish site" / "host HTML" / "/host-site" | `hosting.site.quick_start`, `hosting.deploy_files` | Vercel / Netlify one-off |
 | "single HTML landing" | recipe `mcp_hosting_static_landing_v1` | deploy_files without recipe |
 | "edit one CSS/HTML file on /s/" | `hosting.bucket.file.patch` (`search_replace`); recipe `mcp_hosting_edit_text_file_v1` — no prior GET; response `gzip_sibling: refreshed` + optional `cache_bust` — **never** manual gzip or `bulk_delete` `.gz` | `storage.upload` or full `hosting.deploy_files` |
-| "React/Vite dist upload" | `hosting.site.import_archive`, `hosting.site.upload_grant` + HTTP POST, recipe `mcp_hosting_react_dist_v1` | `hosting.deploy_files`, `hosting.storage.import_folder`, MCP npm build |
+| "React/Vite dist upload" | `hosting.site.import_archive`, `hosting.site.upload_grant` + grant POST; recipe `mcp_hosting_react_dist_v1` for ready `dist/` ZIP | `hosting.deploy_files`, `hosting.storage.import_folder` |
+| "App Studio game / WebGL after Vite build" | `ai_builder.build.enqueue` → `build.status` completed → `hosting.project.status` → **`ai_builder.publish`** — live URL = **`public_url_absolute`** (`https://agentstack.tech/s/{pid}/{slug}/`) | `hosting.site.quick_start` HTML stub for full SPA |
+| "React/Vite sources / GitHub URL" | Same `hosting.site.import_archive` (source ZIP or git `source_url`) → poll `hosting.site.build_status` when response has `job_id`; recipe `mcp_hosting_workspace_build_v1` | Client-side `npm run build`; separate `pull_upstream` without import |
 | "deploy ZIP" / "static site" | `hosting.site.import_archive` or `hosting.site.upload_grant`; CLI `agentstack hosting deploy --zip` | `hosting.deploy_files` (no unzip), Custom S3 |
 | "rollback" / "promote release" | `hosting.release.promote`, `hosting.release.list` | Manual bucket swap |
 | "import folder to site" | `hosting.storage.import_folder` | Re-upload all files |
@@ -68,7 +70,8 @@ import { GuidanceClient } from '@agentstack/sdk/guidance';
 - **Ladder first:** recipe `mcp_site_growth_v1` → read `hosting.project.status` → follow `next_actions[0]` and `hosting_plane_chooser` (visitor auth, gzip, bucket_id omission rules).
 - **No `releases` MCP domain** — publish = `hosting.deploy_files` / `hosting.site.quick_start`; history/rollback = `hosting.release.list` / `hosting.release.promote` (aliases: `hosting.publish`, `releases.list`).
 - **Control panel:** `/dev/projects/{id}/storage/sites` (or `/user/...` for user shell) — not legacy `/hosting`.
-- **Canonical URL:** `/s/{project_id}/{bucket_name}/` — wait for `edge_ready` before telling the user the site is live.
+- **Canonical URL:** `https://agentstack.tech/s/{project_id}/{bucket_name}/` (`public_path` = `/s/{project_id}/{bucket_name}/`) — same as `hosting.project.status` → `sites.primary_public_url`. Wait for `edge_ready` before telling the user the site is live.
+- **App Studio publish:** static landing only → `hosting.site.quick_start`; built Vite/game → `ai_builder.publish` after `build.status` = `completed` (omit `bucket_id` when primary site exists).
 - **Quota triage:** `hosting.project.status` → `quota.artifact_bytes_used_gate` vs limit; then `hosting.quota.breakdown` (alias `hosting.bucket.usage`); if over limit → `hosting.gc.orphans` dry_run → `hosting.quota.recount` dry_run. Never bulk_delete `assets/` manually — use `hosting.site.prune` when available.
 - **Deploy honesty:** if `publish_failed` or `success: false`, read `live_changed` and `next_action`; do not treat step as ✅.
 - Site bytes count toward the owner storage pool — `storage.get_quota` + hosting gate fields on storage hub summary.
