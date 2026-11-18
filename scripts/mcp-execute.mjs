@@ -29,8 +29,8 @@ const MCP_PATH = join(homedir(), '.cursor', 'mcp.json');
 
 function usage() {
   console.error(`Usage:
-  node scripts/mcp-execute.mjs <action> [--params JSON]
-  node scripts/mcp-execute.mjs --project-id <pid> <action> [--params JSON]
+  node scripts/mcp-execute.mjs <action> [key=value ...] [--params JSON]
+  node scripts/mcp-execute.mjs --project-id <pid> <action> [key=value ...] [--params JSON | --params @file.json | --params-file path]
   node scripts/mcp-execute.mjs --project-id 1 --execution-intent direct --focus-node-id <id> agents.plan_claim --params '{...}'
   node scripts/mcp-execute.mjs --file batch.json
   cat batch.json | node scripts/mcp-execute.mjs
@@ -51,12 +51,74 @@ function printAuthHelpAndExit(cfg) {
   process.exit(gate.kind === 'ok' ? 0 : 1);
 }
 
+function coerceCliParamValue(raw) {
+  const v = String(raw ?? '').trim();
+  if (v === 'true' || v === '1') return true;
+  if (v === 'false' || v === '0') return false;
+  if (/^-?\d+$/.test(v)) {
+    const n = Number(v);
+    if (Number.isSafeInteger(n)) return n;
+  }
+  return v;
+}
+
+/** `agents.plan_get node_id=pl-abc detail=compact` — merges with --params JSON. */
+function parseKeyValueRestParams(rest, { paramsIdx = -1 } = {}) {
+  const out = {};
+  if (!Array.isArray(rest)) return out;
+  let i = 0;
+  while (i < rest.length) {
+    const t = rest[i];
+    if (t === '--params') {
+      i += 2;
+      continue;
+    }
+    if (typeof t !== 'string' || t.startsWith('--')) {
+      i += 1;
+      continue;
+    }
+    if (paramsIdx >= 0 && i === paramsIdx) {
+      i += 1;
+      continue;
+    }
+    const eq = t.indexOf('=');
+    if (eq <= 0) {
+      i += 1;
+      continue;
+    }
+    const key = t.slice(0, eq).trim();
+    if (key) out[key] = coerceCliParamValue(t.slice(eq + 1));
+    i += 1;
+  }
+  return out;
+}
+
+async function parseParamsArg(rest, paramsIdx) {
+  if (paramsIdx < 0 || !rest[paramsIdx + 1]) {
+    return {};
+  }
+  const token = rest[paramsIdx + 1];
+  if (token === '@-' || token === '-') {
+    const piped = await readHookStdinJson({ timeoutMs: 2000 });
+    if (piped && typeof piped === 'object') {
+      return piped;
+    }
+    throw new Error('Expected JSON on stdin for --params @-');
+  }
+  if (token.startsWith('@')) {
+    const p = token.slice(1);
+    return JSON.parse(await readFile(p, 'utf8'));
+  }
+  return JSON.parse(token);
+}
+
 function parseArgs(argv) {
   let projectId;
   let file;
   let executionIntent;
   let focusNodeId;
   let planExecuteMode;
+  let paramsFile;
   const rest = [];
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
@@ -80,10 +142,23 @@ function parseArgs(argv) {
       planExecuteMode = true;
       continue;
     }
+    if (a === '--params-file' && argv[i + 1]) {
+      paramsFile = argv[++i];
+      continue;
+    }
     if (a === '--help' || a === '-h') return { help: true };
     rest.push(a);
   }
-  return { projectId, file, executionIntent, focusNodeId, planExecuteMode, rest, help: false };
+  return {
+    projectId,
+    file,
+    executionIntent,
+    focusNodeId,
+    planExecuteMode,
+    paramsFile,
+    rest,
+    help: false,
+  };
 }
 
 async function loadBatch({
@@ -93,6 +168,7 @@ async function loadBatch({
   executionIntent,
   focusNodeId,
   planExecuteMode,
+  paramsFile,
 }) {
   if (file) {
     const batch = JSON.parse(await readFile(file, 'utf8'));
@@ -122,15 +198,24 @@ async function loadBatch({
   }
   let params = {};
   const paramsIdx = rest.indexOf('--params');
-  if (paramsIdx >= 0 && rest[paramsIdx + 1]) {
-    params = JSON.parse(rest[paramsIdx + 1]);
+  if (paramsFile) {
+    params = JSON.parse(await readFile(paramsFile, 'utf8'));
+  } else if (paramsIdx >= 0) {
+    params = await parseParamsArg(rest, paramsIdx);
   }
+  params = {
+    ...parseKeyValueRestParams(rest.slice(1), { paramsIdx }),
+    ...params,
+  };
   const options = { stopOnError: true };
   if (executionIntent) {
     options.execution_intent = executionIntent;
   }
   if (focusNodeId) {
     options.focus_node_id = focusNodeId;
+    if (!params.focus_node_id && !params.node_id) {
+      params.focus_node_id = focusNodeId;
+    }
   }
   if (planExecuteMode) {
     options.plan_execute_mode = true;
@@ -152,6 +237,7 @@ async function main() {
     executionIntent,
     focusNodeId,
     planExecuteMode,
+    paramsFile,
     rest,
     help,
   } = parseArgs(process.argv.slice(2));
@@ -190,6 +276,7 @@ async function main() {
     executionIntent,
     focusNodeId,
     planExecuteMode,
+    paramsFile,
   });
   if (projectId && Number.isFinite(projectId) && !batch.context) {
     batch.context = { project_id: projectId };

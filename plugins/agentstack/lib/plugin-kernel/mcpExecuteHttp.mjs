@@ -19,6 +19,10 @@ import {
 export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
   const root = String(baseUrl || 'https://agentstack.tech').replace(/\/$/, '');
   const maxAttempts = 4;
+  const timeoutMs = Math.max(
+    15_000,
+    Number(process.env.AGENTSTACK_MCP_FETCH_TIMEOUT_MS || 120_000),
+  );
   let res;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     res = await fetch(`${root}/mcp`, {
@@ -30,6 +34,7 @@ export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
         params: { name: MCP_EXECUTE_TOOL_ALIAS, arguments: payload },
         id: 2,
       }),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (res.ok || !isRetryableMcpHttpStatus(res.status) || attempt >= maxAttempts - 1) {
       break;
