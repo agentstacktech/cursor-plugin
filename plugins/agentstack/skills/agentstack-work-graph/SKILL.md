@@ -20,6 +20,14 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 
 After `agents.work_next`, read **`result_kind`** (or `state` + `blocked_work`). Do **not** call `agents.plan_claim` when `result_kind` is `work_graph_blocked` or `work_graph_waiting` — follow `next_action` / recovery (`agents.ensure_agent`, `agents.plan_recovery_scan`) first. Compact packets may omit fat `execution`; use `expand: ["instruction_packet"]` when blocked.
 
+## Rank-only discovery batch (REM-1118-C-02)
+
+When a sync batch ends with terminal `discovery.search` (rank_only / closed-loop spine) and **no** stamped `work_next_packet`, the next execute must **not** assume claim eligibility from search alone.
+
+1. `agents.work_next` with `detail=compact` and `include_execution_eligibility: true` (and `expand: ["instruction_packet"]` if `state=blocked`).
+2. Only then `agents.plan_claim` when `action_readiness.can_claim` is true and `blocked_reason` is absent.
+3. If `blocked_reason=no_compatible_agent` and `execution.compatible_agents` has scores — **`agents.ensure_agent`** before `agents.plan_propose` / `repair_plan` (recovery_engine SoT).
+
 ## Open community hubs
 
 When `config.membership.join_policy` is `open`, call `projects.join` (or REST `POST /projects/{id}/join`) before the loop, then `auth.switch_project`, **`agents.graph_health`** (`home=project_self`), then `agents.work_next` with `expand: ["instruction_packet"]`. Recipe: `mcp_community_hub_v1`.

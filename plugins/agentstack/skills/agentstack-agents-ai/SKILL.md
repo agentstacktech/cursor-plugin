@@ -232,6 +232,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `energy_denied` | Insufficient builder_energy before agents.run — energy.get_balance then payments.create intent=energy_pack; follow packet.next_action. |
 | `agent_daily_cap` | Agent per_day_cap hit — patch AgentSpec.energy or wait for UTC day rollover. |
 | `batch_project_scope_leak` | A failed MCP batch step with params.project_id does not retarget later steps — only auth.switch_project may promote batch context.project_id. Re-bind context.project_id before mutations if a step used a probe pid. |
+| `workflow_scope_leak` | Batch step params.project_id disagrees with MCP context.project_id — fix the batch, not the work graph: ecosystem bus uses project_id=1 on bots.bus.* while context may be a tenant pin; StackScript/generation steps carry the subject tenant in params; omit duplicate project_id on global reads or align context via auth.switch_project. Run preflight.check — do not plan_heal_leaf or repair_plan for this error. |
 | `workflow_batch_bind_failed` | agents.reconcile_binding repair=true — guidance bind failed; check member row / session |
 | `workflow_batch_context_bind_failed` | agents.reconcile_binding repair=true — batch context bind failed |
 | `workflow_state_key_stamp_failed` | agents.reconcile_binding repair=true — workflow_state_key stamp failed |

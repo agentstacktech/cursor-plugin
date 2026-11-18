@@ -53,6 +53,16 @@ function printAuthHelpAndExit(cfg) {
 
 function coerceCliParamValue(raw) {
   const v = String(raw ?? '').trim();
+  if (
+    (v.startsWith('{') && v.endsWith('}')) ||
+    (v.startsWith('[') && v.endsWith(']'))
+  ) {
+    try {
+      return JSON.parse(v);
+    } catch {
+      /* fall through */
+    }
+  }
   if (v === 'true' || v === '1') return true;
   if (v === 'false' || v === '0') return false;
   if (/^-?\d+$/.test(v)) {
