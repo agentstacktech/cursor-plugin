@@ -10,6 +10,7 @@
  *   echo '{"steps":[...]}' | node scripts/mcp-execute.mjs
  */
 import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import {
@@ -51,8 +52,25 @@ function printAuthHelpAndExit(cfg) {
   process.exit(gate.kind === 'ok' ? 0 : 1);
 }
 
-function coerceCliParamValue(raw) {
-  const v = String(raw ?? '').trim();
+/** File bodies and ids stay strings. `{` in content is JSON text, not an object param. */
+const STRING_CLI_PARAM_KEYS = new Set([
+  'content',
+  'unified_diff',
+  'find',
+  'replace',
+  'path',
+  'bucket_id',
+  'bucket_name',
+  'source_url',
+  'expected_sha256',
+  'message',
+  'why',
+]);
+
+function coerceCliParamValue(raw, key = '') {
+  const asString = String(raw ?? '');
+  if (STRING_CLI_PARAM_KEYS.has(String(key))) return asString;
+  const v = asString.trim();
   if (
     (v.startsWith('{') && v.endsWith('}')) ||
     (v.startsWith('[') && v.endsWith(']'))
@@ -97,7 +115,7 @@ function parseKeyValueRestParams(rest, { paramsIdx = -1 } = {}) {
       continue;
     }
     const key = t.slice(0, eq).trim();
-    if (key) out[key] = coerceCliParamValue(t.slice(eq + 1));
+    if (key) out[key] = coerceCliParamValue(t.slice(eq + 1), key);
     i += 1;
   }
   return out;
@@ -325,6 +343,12 @@ async function main() {
   console.log(JSON.stringify(out, null, 2));
 }
 
+export { STRING_CLI_PARAM_KEYS, coerceCliParamValue, parseKeyValueRestParams };
+
+const invokedDirectly =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (invokedDirectly) {
 main().catch((e) => {
   const msg = String(e?.message || e);
   if (/not_authenticated|unauthorized/i.test(msg)) {
@@ -336,3 +360,4 @@ main().catch((e) => {
   }
   process.exit(1);
 });
+}

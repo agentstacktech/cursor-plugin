@@ -32,12 +32,14 @@ Use this skill for autonomous agents and generated application surfaces. Keep th
 | "compose an app" / "validate UAM" | `ai_builder.manifest.get`, `ai_builder.manifest.validate`, `ai_builder.compose.preview` |
 | "create react app" / "app studio blueprint" / PT `criar aplicativo react` | `mcp_app_studio_create_v1` → `ai_builder.compose.apply` |
 | "edit react source" / "patch component" / PT `editar código fonte` | `mcp_app_studio_edit_v1` → `ai_builder.source.get` (view=skeleton or `symbol` on recovery) → `ai_builder.source.patch` (replacements or `symbol_name`+`symbol_body`) |
-| "build vite" / "compile app" / PT `compilar aplicativo` | `mcp_app_studio_build_v1` → `ai_builder.build.enqueue` → `ai_builder.build.status` (omit build_uuid) |
-| "publish react app" | `mcp_app_studio_publish_v1` only when user asks |
+| "build the game" / "compile" / "put code and ship" / PT `compilar aplicativo` | **AI Builder is off.** Prompt `agentstack_hosting_git_journal`: push `agentstack` `HEAD:dev`, poll `hosting.site.build_status`, prod `hosting.git.promote_branch` `ref=dev` `target=prod` |
+| "publish the game" / "to prod" | Same journal. `git push agentstack HEAD:main` or `hosting.git.promote_branch`. Not `ai_builder.publish` and not `generation.promote` |
 | "generate image/media/content" | `generation.*` or `media.*` from the live capability catalog |
 | "Free.ai" / platform_supply / connect API key / llm_free_calls | `ai.providers.list` → `ai.providers.connect` → `ai.providers.probe` → `energy.get_balance` → `agents.run`; recipe `mcp_ai_providers_connect` |
 
 ### App Studio agent loop (gene: `core.app_studio.pipeline.gen1`)
+
+AI Builder compile is off. To put game code, build, and open prod, use the hosting journal above. This loop does not publish `/s/{pid}/{bucket}/`.
 
 - Phase recipes only — `mcp_app_studio_v1` is a template (`executable: false`).
 - Page UI → `src/routes/Route0.tsx` `@slot:page` … `@endslot`; keep `App.tsx` thin.

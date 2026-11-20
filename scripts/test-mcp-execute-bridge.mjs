@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** @see mcpExecuteBridge.mjs */
 import assert from 'node:assert/strict';
+import { coerceCliParamValue, parseKeyValueRestParams } from './mcp-execute.mjs';
 import {
   buildMcpExecuteRetryCommand,
   extractExecuteBatchFromEvent,
@@ -85,5 +86,11 @@ const stderrCmd = buildMcpExecuteRetryCommand(stderrClaimEvent, {
 });
 assert.match(stderrCmd, /--execution-intent direct/);
 assert.match(stderrCmd, /--focus-node-id leaf-from-work-next/);
+
+const parsed = parseKeyValueRestParams(['content={"games":1}', 'replacements=[{"find":"a","replace":"b"}]']);
+assert.equal(typeof parsed.content, 'string');
+assert.equal(parsed.content, '{"games":1}');
+assert.ok(Array.isArray(parsed.replacements));
+assert.equal(coerceCliParamValue('12', 'path'), '12');
 
 console.log('test-mcp-execute-bridge: ok');
