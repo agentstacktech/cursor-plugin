@@ -21,7 +21,7 @@ export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
   const maxAttempts = 4;
   const timeoutMs = Math.max(
     15_000,
-    Number(process.env.AGENTSTACK_MCP_FETCH_TIMEOUT_MS || 120_000),
+    Number(process.env.AGENTSTACK_MCP_FETCH_TIMEOUT_MS || 130_000),
   );
   let res;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
