@@ -20,6 +20,17 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 
 After `agents.work_next`, read **`result_kind`** (or `state` + `blocked_work`). Do **not** call `agents.plan_claim` when `result_kind` is `work_graph_blocked` or `work_graph_waiting` — follow `next_action` / recovery (`agents.ensure_agent`, `agents.plan_recovery_scan`) first. Compact packets may omit fat `execution`; use `expand: ["instruction_packet"]` when blocked.
 
+## `operator_closure` (human gate)
+
+When `blocked_reason_code` or `reason` is **`operator_closure`** (or compact includes **`operator_gate`**):
+
+1. **Stop** — no `plan_claim`, no tenant code, no `generation.promote` until the operator answers in chat.
+2. **Speak up** — paste the short summary from `operator_gate.messages` (ru/en) and ask the project owner for an explicit yes/no on that leaf (`blocked_node_id` / `node_id`).
+3. After approval — `agents.plan_patch` with `set_meta` `gates_passed=true` and `gate_evidence` (who/when); then `agents.work_next` again.
+4. Optional read: `recovery_actions` / `recovery.next_actions` may include `agents.plan_get` for the blocked leaf.
+
+Do **not** treat `partial_success` on `work_next` as a hard failure; do treat silent idle as wrong when `operator_gate.required` is true.
+
 ## Rank-only discovery batch (REM-1118-C-02)
 
 When a sync batch ends with terminal `discovery.search` (rank_only / closed-loop spine) and **no** stamped `work_next_packet`, the next execute must **not** assume claim eligibility from search alone.

@@ -139,7 +139,7 @@ Multi-step project goals: prompt `agentstack_closed_loop_autonomy` · genes `cor
 | `join_not_allowed` | Project is not open-join — request invite or projects.add_user from an owner. |
 | `provision_required` | ensure_agent create=false (H5) then create=true then plan_claim |
 | `no_compatible_agent` | agents.ensure_agent create=false (H5) then create=true, or plan_propose mode=repair_plan |
-| `operator_closure` | Platform ops leaf — no required_role: close with agents.plan_patch (set_meta gates_passed + gate_evidence, FSM in_progress→verifying→completed). discovery.describe agents.plan_patch for ops_compact. |
+| `operator_closure` | operator_closure: tell the user in chat (operator_gate.messages) and ask yes/no. agents.plan_patch gates_passed only after an explicit yes. terminal means wait, not skip the leaf. |
 | `planning_required` | agents.plan_propose mode=create_plan or decompose_node — strategic/decomposition node, not execution |
 | `planning_blocked` | agents.plan_propose mode=decompose_node or plan_process_backlog — finish planner plane first |
 | `dependency_blocked` | agents.plan_get to inspect upstream deps; do not ensure_agent; do not claim |
