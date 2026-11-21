@@ -120,7 +120,7 @@ Hoist `workflow_run_id` and `observed` on the next `options` after every workflo
 
 ## Substrate gates (monorepo)
 
-When changing Core/shared/frontend MCP spine: `npm run audit:closed-loop-harness:fast`, `audit:deploy-tenant-boundary`, `audit:mcp-module-line-budget`, `audit:neurocache-adoption`. Playbook: `docs/operations/ECOSYSTEM_ULTRA_EXECUTION_PLAYBOOK.md`.
+When changing Core/shared/frontend MCP spine: `npm run audit:closed-loop-harness:fast`, `audit:deploy-tenant-boundary`, `audit:mcp-module-line-budget`, `audit:neurocache-adoption`. Platform playbook gene: `repo.ops.closed_loop.harness.gen1` (monorepo Compass — not in tenant bundle).
 
 ## References
 

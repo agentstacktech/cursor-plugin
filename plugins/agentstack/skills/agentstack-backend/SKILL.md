@@ -244,7 +244,7 @@ When editing AgentStack platform code (not tenant apps), run or expect CI for:
 - `npm run audit:protein-ops`
 - `npm run audit:server-cost`
 
-Runbook: `docs/operations/ECOSYSTEM_ULTRA_EXECUTION_PLAYBOOK.md`
+Platform substrate playbook: gene `repo.ops.closed_loop.harness.gen1` — in the AgentStack monorepo use Compass `guidance.list` / closed-loop harness doctor; not shipped in the tenant plugin bundle.
 
 ## References
 
