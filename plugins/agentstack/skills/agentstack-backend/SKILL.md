@@ -233,6 +233,19 @@ Sync `agentstack.execute` is **60s for the whole batch** (`mcp_batch`) — not a
 - **Execute:** `agentstack.execute` for writes; `agentstack.read` for read/evaluate (same batch body, short wire schema). Steps use canonical `action` ids from the catalog.
 - **Prompts:** `agentstack_execute_budget`, `agentstack_write_modes`, `agentstack_read_bootstrap` via `GET /mcp/prompts/get`.
 
+## Monorepo substrate gates (PLG-15)
+
+When editing AgentStack platform code (not tenant apps), run or expect CI for:
+
+- `npm run audit:closed-loop-harness:fast`
+- `npm run audit:deploy-tenant-boundary`
+- `npm run audit:neurocache-adoption`
+- `npm run audit:organ-descriptor`
+- `npm run audit:protein-ops`
+- `npm run audit:server-cost`
+
+Runbook: `docs/operations/ECOSYSTEM_ULTRA_EXECUTION_PLAYBOOK.md`
+
 ## References
 
 - Rules: `rules/agentstack-prefer.mdc`, `rules/agentstack-api-routing.mdc`

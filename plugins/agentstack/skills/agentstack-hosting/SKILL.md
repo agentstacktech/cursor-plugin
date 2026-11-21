@@ -83,3 +83,14 @@ import { GuidanceClient } from '@agentstack/sdk/guidance';
 
 - Live catalog: `GET https://agentstack.tech/mcp/actions` or `/agentstack-capability-matrix`.
 - Gene: `core.commerce.assets.presets.gen1` (related assets); hosting actions under `hosting.*`.
+
+<!-- sync-hosting-skill-from-atoms -->
+## Git journal ship ladder (atoms SoT)
+
+```text
+hosting.project.status → hosting.workspace.init profile=node_vite (avoid seed_from_live when live is dist-only) → hosting.workspace.file.put or hosting.bucket.file.patch patch_plane=workspace → hosting.git.init (bucket_name) → local git push agentstack HEAD:dev (remote agentstack, not origin/main) → poll hosting.site.build_status → open /s/{project_id}/{bucket_name}--dev/ → hosting.git.promote_branch ref=dev target=prod → live /s/{project_id}/{bucket_name}/. Not generation.promote, ai_builder.publish, or hosting.release.promote.
+```
+
+### Git vs generation vs platform deploy
+
+Three planes — do not mix. (1) Hosting git: remote name agentstack, URL https://agentstack.tech/api/git/{project_id}/{bucket}.git. Default push is branch dev (preview /s/{pid}/{bucket}--dev/). Live site is branch main, or hosting.git.promote_branch with bucket_id (not bucket), ref=dev, target=prod. Do not delete branches dev or main. (2) generation.promote moves 8DNA only (config, fleet, knowledge) — not site bytes. Pass env_uuid on the write params. Skip a sandbox whose diff rewinds showcase.health. One of fork, diff_vs_prod, gates, promote per sync execute. (3) Platform checkouts agentstack-core and shared often have no git remote — they ship by VPS deploy. Empty origin means do not git push origin. agentstack-frontend tracks agentstack/dev. 'push to dev' is plane 1, not generation.promote and not target=prod.

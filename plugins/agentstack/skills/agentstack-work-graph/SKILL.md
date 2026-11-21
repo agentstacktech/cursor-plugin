@@ -107,6 +107,10 @@ Step-level batch DAG: use `dependsOn` (or `depends_on`) on each step object — 
 
 Hoist `workflow_run_id` and `observed` on the next `options` after every workflow-bound execute.
 
+## Substrate gates (monorepo)
+
+When changing Core/shared/frontend MCP spine: `npm run audit:closed-loop-harness:fast`, `audit:deploy-tenant-boundary`, `audit:mcp-module-line-budget`, `audit:neurocache-adoption`. Playbook: `docs/operations/ECOSYSTEM_ULTRA_EXECUTION_PLAYBOOK.md`.
+
 ## References
 
 - Live catalog: `GET /mcp/actions` — filter `agents.*`; wire SoT per action via `discovery.describe`
