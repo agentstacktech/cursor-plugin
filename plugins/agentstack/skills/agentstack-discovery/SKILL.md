@@ -5,6 +5,17 @@ description: Use when the user asks where a feature lives in the UI, Discover hu
 
 # AgentStack Discovery & Compass
 
+## MCP describe hygiene
+
+| Mistake | Fix |
+|---------|-----|
+| `discovery.describe` without `action` | `action=agents.plan_get` (or any canonical id) — not `tool` alone |
+| Catalog prefix guess | `discovery.list` with `domain=hosting` then describe one row |
+| Goal batch + `discovery.search` | Split execute — `batch_semantic_anchor_conflict` |
+| Need 3–6 schemas | `discovery.describe_many` + `actions=[...]` |
+
+Prompt **`agentstack_mcp_execute_hygiene`** · recipe **`mcp_operator_execute_hygiene_v1`**.
+
 ## Decision matrix
 
 | User says | Prefer | Over |

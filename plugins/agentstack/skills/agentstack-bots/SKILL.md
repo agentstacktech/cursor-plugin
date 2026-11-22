@@ -41,7 +41,7 @@ Script fallback (MCP blocked): `unity_apply_mentor_copy_1444.py --force` — sti
 ## Prefer-over
 
 - **One envelope for media:** `InboundAttachment` on inbound/outbound — no second media bus, no bytes in 8DNA.
-- **Agent replies:** brain `output.attachments` + optional text; platform sends via `bots.outbound` — not `bots.staff_reply`.
+- **Agent replies:** brain `output.attachments` + optional text; platform sends via `bots.bus.send` — not `bots.staff_reply`.
 - **Staff send:** `bots.staff_reply` with optional `attachments` after `storage.upload` (`storage_file_id` + `url`); do not use `notifications.deliver` for chat files.
 - **One heavy step per sync batch:** `bots.simulate` / `knowledge.playground` — max one per `agentstack.execute`.
 - **Inbound callbacks** → `integrations.install_recipe`, not a second HTTP stack.

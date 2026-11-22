@@ -64,7 +64,7 @@ After deploy, use **per-action** `discovery.describe` (`{"action":"agents.work_n
 | `agents.work_next` | `loop_compact` | Hot loop: `detail=compact`, `home=project`, recipe `mcp_work_loop_v1` |
 | `agents.plan_get` | `slice_compact` | Read slice: `limit=20`, `max_depth=0` |
 | `agents.plan_patch` | `ops_compact` | Canonical ops + aliases (`add` → `add_child`); `archive_ids_only` batch |
-| `agents.plan_claim` | `claim_compact` | CAS: `if_match_revision` + `node_ids` |
+| `agents.plan_claim` | `claim_compact` | CAS: `if_match_revision` + `node_ids`; **`agent_id`** optional when execute `context.agent_id` is set (coercion) |
 | `agents.plan_propose` | `propose_compact` | Modes: `decompose_node`, `repair_plan`, … |
 | `agents.plan_apply_proposal` | `apply_compact` | CAS apply after propose; same `env_uuid` / `validation_mode` |
 | `agents.plan_recovery_scan` | `recovery_compact` | Read-only scan; follow with repair propose |

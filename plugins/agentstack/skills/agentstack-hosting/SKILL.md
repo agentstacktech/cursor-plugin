@@ -27,6 +27,11 @@ description: Use when the user wants to publish a static site, deploy HTML or ZI
 | `service_cap_denied` on hosting | `apikeys.create` preset `user_full` or Device Code `--scope-preset=full` | Retry without widening caps |
 | `batch_semantic_anchor_required` | `mcp-execute.mjs --execution-intent direct` or `preflight.check` before `hosting.site.build` / `hosting.git.init` | Same execute without anchor |
 | `submodule_link_missing` | `hosting.git.init` project 1 `sdk` + `shared-ui`; fix `.gitmodules` — worker symlinks `vendor/` | `import_tree` full SDK per app |
+| `module_not_resolved` prod only / dev green | Recipe **`mcp_hosting_build_fail_triage_v1`** · `workspace.files.list` **`prefix=src`** · journal vs stale `*-main` tree | Patch live `/s/` or blind `target=prod` |
+| `workspace.files.list` 422 `path` | Use **`prefix=`** (e.g. `src/adapters`) — `path` is legacy, coerced server-side | Repeat list with wrong param name |
+| `hosting.workspace.file.put` invalid `git_commit` | `git_commit=true` (default) · alias `git_auto_commit` | Omit commit when journal must update |
+
+Prompt **`agentstack_mcp_execute_hygiene`** · recipe **`mcp_operator_execute_hygiene_v1`** (describe / claim / batch guardrails).
 
 ## ArcaneStack proof (pid 1438)
 

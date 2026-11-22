@@ -10,8 +10,9 @@
  *   echo '{"steps":[...]}' | node scripts/mcp-execute.mjs
  */
 import { readFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import {
   agentstackAuthHeaders,
@@ -27,6 +28,25 @@ import {
 import { ensureDirectExecutionIntent } from '../plugins/agentstack/lib/plugin-kernel/batchSemanticAnchor.mjs';
 
 const MCP_PATH = join(homedir(), '.cursor', 'mcp.json');
+const _SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const _HUB_ACTIONS_JSON = join(
+  _SCRIPT_DIR,
+  '..',
+  '..',
+  '..',
+  'shared',
+  'fixtures',
+  'mcp_ecosystem_hub_actions.v1.json',
+);
+
+function loadEcosystemHubActions() {
+  try {
+    const raw = JSON.parse(readFileSync(_HUB_ACTIONS_JSON, 'utf8'));
+    return new Set(Array.isArray(raw.actions) ? raw.actions : []);
+  } catch {
+    return new Set(['bots.bus.deliver', 'bots.bus.send', 'bots.bus.whoami']);
+  }
+}
 
 function usage() {
   console.error(`Usage:
@@ -312,18 +332,74 @@ async function main() {
   const anchored = ensureDirectExecutionIntent(batch);
   const ctxPid = Number(anchored?.context?.project_id || projectId || 0);
   const forceScope = process.argv.includes('--force-scope');
+  const autoSplit = !process.argv.includes('--no-auto-split');
+  const HUB_ACTIONS = loadEcosystemHubActions();
+  const ECOSYSTEM_PID = 1;
+
+  function splitHubTenantBatch(batch, tenantPid) {
+    const hub = [];
+    const tenant = [];
+    for (const step of batch.steps || []) {
+      if (!step || typeof step !== 'object') continue;
+      const sp = Number(step.params?.project_id || tenantPid);
+      const act = String(step.action || '');
+      if (HUB_ACTIONS.has(act) && sp === ECOSYSTEM_PID) hub.push(step);
+      else tenant.push(step);
+    }
+    if (!hub.length || !tenant.length) return null;
+    return [
+      { ...batch, context: { ...(batch.context || {}), project_id: ECOSYSTEM_PID }, steps: hub },
+      { ...batch, context: { ...(batch.context || {}), project_id: tenantPid }, steps: tenant },
+    ];
+  }
+
   if (ctxPid > 0 && Array.isArray(anchored?.steps)) {
+    let scopeLeak = false;
     for (const step of anchored.steps) {
       if (!step || typeof step !== 'object') continue;
       const sp = Number(step.params?.project_id || 0);
       if (sp > 0 && sp !== ctxPid) {
-        const msg = `workflow_scope_leak: step.params.project_id=${sp} != context project_id=${ctxPid} (use auth.switch_project or --force-scope)`;
-        if (!forceScope) {
-          console.error(msg);
-          process.exit(2);
+        scopeLeak = true;
+        const allowedHub =
+          HUB_ACTIONS.has(String(step.action || '')) && sp === ECOSYSTEM_PID && ctxPid > 1;
+        if (!allowedHub) {
+          const msg = `workflow_scope_leak: step.params.project_id=${sp} != context project_id=${ctxPid}`;
+          if (forceScope) {
+            console.warn(msg);
+          } else if (autoSplit) {
+            const parts = splitHubTenantBatch(anchored, ctxPid);
+            if (parts) {
+              console.error(`${msg} — auto-split into ${parts.length} executes (use --no-auto-split to block)`);
+              const baseUrl = resolveMcpBaseUrl(cfg);
+              const merged = { data: { steps: [] } };
+              for (const part of parts) {
+                const partOut = await postAgentstackExecute(baseUrl, authHeaders, part);
+                const steps = partOut?.data?.steps ?? partOut?.steps ?? [];
+                if (Array.isArray(steps)) merged.data.steps.push(...steps);
+              }
+              for (const step of merged.data.steps) {
+                const sug = step?.data?.report_suggested ?? step?.report_suggested;
+                if (sug?.next_action?.action === 'diagnostics.report') {
+                  console.error(
+                    'Hint: MCP returned report_suggested — run diagnostics.report with the prefill payload.',
+                  );
+                  break;
+                }
+              }
+              console.log(JSON.stringify(merged, null, 2));
+              return;
+            }
+            console.error(msg);
+            process.exit(2);
+          } else {
+            console.error(msg);
+            process.exit(2);
+          }
         }
-        console.warn(msg);
       }
+    }
+    if (scopeLeak && forceScope) {
+      // hub+tenant tolerated with --force-scope
     }
   }
   const baseUrl = resolveMcpBaseUrl(cfg);

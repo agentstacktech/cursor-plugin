@@ -19,7 +19,7 @@ When `auto_generation_mode` is on: bind `generation_env_uuid` (fork) before `scr
 
 ## Fuel
 
-Monthly **StackScript fuel** is not AGNT compute credits. Quote/purchase: `stackscript.fuel.quote` → `finance.pay` intent `stackscript_fuel_pack` → `stackscript.fuel.purchase`.
+Monthly **StackScript fuel** is not AGNT compute credits. Quote/purchase: `stackscript.fuel.quote` → `finance.pay.quote` intent `stackscript_fuel_pack` → `stackscript.fuel.purchase`.
 
 ## Docs
 
