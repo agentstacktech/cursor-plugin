@@ -37,9 +37,9 @@ async function main() {
     steps: [
       { id: 'whoami', action: 'bots.bus.whoami', params: { project_id: pid } },
       {
-        id: 'conv',
-        action: 'bots.conversations',
-        params: { project_id: pid, channel: 'agentbus:cursor-ops', limit: 20 },
+        id: 'inbox',
+        action: 'bots.bus.inbox',
+        params: { project_id: pid, reply_for: 'cursor-deploy', limit: 15 },
       },
       { id: 'wg', action: 'agents.work_next', params: { project_id: pid } },
     ],
