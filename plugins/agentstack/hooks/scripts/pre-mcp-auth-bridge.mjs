@@ -60,8 +60,10 @@ async function main() {
   const hintOptOut =
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === '0' ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'false';
+  // Default hint on (O-10): surface DUAL_SURFACE unless explicitly opted out.
   const hint =
     strict ||
+    !hintOptOut ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === '1' ||
     process.env.AGENTSTACK_PLUGIN_AUTH_BRIDGE_HINT === 'true';
   if (!hint) process.exit(0);

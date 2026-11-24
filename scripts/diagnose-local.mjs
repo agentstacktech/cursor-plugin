@@ -330,10 +330,34 @@ if (!fs.existsSync(MCP)) {
   else {
     if (wantFix) {
       const { cfg: next, changed } = normalizeAgentstackMcpConfig(cfg, { baseUrl: BASE_URL });
-      if (changed) {
-        fs.writeFileSync(MCP, JSON.stringify(next, null, 2), 'utf8');
+      let pruned = next;
+      let prunedDup = false;
+      const dupKeys = Object.keys(pruned.mcpServers || {}).filter((k) => /^agentstack/i.test(k));
+      if (dupKeys.length > 1) {
+        const bearerOk = dupKeys.filter((k) => {
+          const h = pruned.mcpServers[k]?.headers || {};
+          const auth = String(h.Authorization || '');
+          return (
+            auth.startsWith('Bearer ') && !auth.includes('${') && !/placeholder/i.test(auth)
+          );
+        });
+        const keep =
+          bearerOk.length === 1
+            ? bearerOk[0]
+            : dupKeys.includes('agentstack')
+              ? 'agentstack'
+              : dupKeys[0];
+        for (const k of dupKeys) {
+          if (k === keep) continue;
+          delete pruned.mcpServers[k];
+          prunedDup = true;
+        }
+        warn(`--fix pruned duplicate agentstack* keys; kept mcpServers.${keep}`);
+      }
+      if (changed || prunedDup) {
+        fs.writeFileSync(MCP, JSON.stringify(pruned, null, 2), 'utf8');
         ok('wrote lean mcpServers.agentstack (--fix)');
-        cfg = next;
+        cfg = pruned;
       } else {
         ok('mcp already lean (--fix no-op)');
       }

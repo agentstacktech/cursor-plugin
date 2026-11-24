@@ -13,7 +13,7 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 2. Bound project: `agents.work_next`. Default `detail=compact` returns **values** (`state`, numeric `revision`, `next_action`, `reason`) — not type-sketch (`revision: "int"`). Use `detail=skeleton` only on non–Work Graph reads when you need field names/types.
 3. If `next_action` is set, call that action. Do not `discovery.search`.
 4. Default `detail=compact` **without** expand. Add `expand: ["instruction_packet", "blocked_work"]` only when `state=blocked` or `detail=full` — see `discovery.describe` → `agents.work_next` → `loop_compact.recommended_expand`.
-5. Cheap batch on one sync `agentstack.execute`: `agents.work_next`, `agents.plan_get`, `agents.plan_claim`.
+5. Cheap batch on one sync `agentstack.execute`: `agents.work_next`, `agents.plan_get`, `agents.plan_claim` (same `project_id` + `home`). When `plan_get` and `work_next` share a batch, the controller stamps `_work_graph_batch_handoff` so compact `plan_get` may build claim eligibility without `include_claimable` on every solo read.
 6. One per sync execute: `agents.plan_propose`, `agents.plan_apply_proposal`, `agents.plan_recovery_scan`, `context.get`, plus heavy LLM (`bots.simulate`, `agents.run` with `wait=true`).
 
 ## `result_kind` before claim
