@@ -267,16 +267,25 @@ export function agentstackAuthHeaders(cfg) {
   const h = agentstackMcpHeaderBlock(cfg);
   if (!h) return null;
   const pid = h['X-Project-ID'] || h['x-project-id'];
-  const stampPid = (out) => {
-    const n = Number(String(pid ?? '').trim());
-    if (Number.isInteger(n) && n >= 1) out['X-Project-ID'] = String(n);
-    return out;
-  };
   const auth = typeof h.Authorization === 'string' ? h.Authorization : '';
   const bearer =
     auth.startsWith('Bearer ') && !auth.includes('${')
       ? auth.slice('Bearer '.length).trim()
       : '';
+  const stampPid = (out) => {
+    let n = Number(String(pid ?? '').trim());
+    if (!Number.isInteger(n) || n < 1) {
+      const payload = bearer ? decodeJwtPayload(bearer) : null;
+      const jwtPid = payload?.project_id;
+      const jn = Number(String(jwtPid ?? '').trim());
+      if (Number.isInteger(jn) && jn >= 1) n = jn;
+    }
+    if (!Number.isInteger(n) || n < 1) {
+      n = ECOSYSTEM_PROJECT_ID;
+    }
+    out['X-Project-ID'] = String(n);
+    return out;
+  };
   if (bearer && isDeviceCodeMcpBearer(bearer)) {
     return stampPid({ Authorization: `Bearer ${bearer}` });
   }
@@ -642,13 +651,24 @@ export function profileBriefFromJwt(authHeaders) {
   return { email, displayName: displayName || null, userId, role };
 }
 
-export async function fetchAuthMeBrief(headers, { baseUrl = 'https://agentstack.tech', timeoutMs = 2500 } = {}) {
+export async function fetchAuthMeBrief(headers, { baseUrl = 'https://agentstack.tech', timeoutMs = 2500, projectId } = {}) {
   if (!headers) return null;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
+    const reqHeaders = { ...headers };
+    if (!reqHeaders['X-Project-ID'] && !reqHeaders['x-project-id']) {
+      let pid = projectId;
+      const auth = typeof reqHeaders.Authorization === 'string' ? reqHeaders.Authorization : '';
+      const payload =
+        auth.startsWith('Bearer ') && !auth.includes('${') ? decodeJwtPayload(auth) : null;
+      const jwtPid = payload?.project_id;
+      const jn = Number(String(jwtPid ?? '').trim());
+      if (Number.isInteger(jn) && jn >= 1) pid = jn;
+      stampAgentstackProjectHeader(reqHeaders, pid ?? ECOSYSTEM_PROJECT_ID);
+    }
     const res = await fetch(`${String(baseUrl).replace(/\/$/, '')}/api/auth/me`, {
-      headers,
+      headers: reqHeaders,
       signal: ctrl.signal,
     });
     if (!res.ok) return null;
