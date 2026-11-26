@@ -9,7 +9,7 @@ Gene: `core.agents.work_graph.gen1`. One loop. Domain skills run only when `next
 
 ## Platform Phase 0 (reports ↔ bus ↔ WG)
 
-Before claiming platform repair work (`project_id=1`): recipe **`mcp_platform_intake_v1`** or `python deploy/vps/scripts/_bus_agent_cycle.py --intake-only` → `docs/_generated/bus_intake_latest.json`. Read `merged_actionable.report_ids` and `orphan_backlog`; prefer `diagnostics.reports.ingest_orphans` (`dry_run=true` first) when `orphan_count > 0`. Runbook: `docs/operations/REPORT_WORK_GRAPH_RUNBOOK.md`.
+Before claiming platform repair work (`project_id=1`): recipe **`mcp_platform_intake_v1`** or `python deploy/vps/scripts/_bus_agent_cycle.py --intake-only` → `docs/_generated/bus_intake_latest.json`. Read `merged_actionable.suggested_report_ids` (not an MCP action) and `orphan_backlog`; prefer `diagnostics.reports.ingest_orphans` (`dry_run=true` first) when `orphan_count > 0`. Runbook: `docs/operations/REPORT_WORK_GRAPH_RUNBOOK.md`.
 
 Never call `discovery.describe` without `params.action`.
 
