@@ -1,6 +1,6 @@
 ---
 name: agentstack-showcase
-description: Use when editing the public showcase gallery, ecosystem catalog on project 1, gallery health probes, or showcase.catalog MCP actions.
+description: Use when editing the public showcase gallery, ecosystem catalog on project 1, gallery health probes, or showcase.catalog.* MCP actions.
 ---
 
 # AgentStack Showcase catalog (ecosystem)

@@ -223,7 +223,7 @@
 | `bots.set_brain` | `bots_admin` | Wire Fleet agent or knowledge brain to the bot. Change one phrase in fallback_text with replacements, not a full paste. |
 | `bots.set_handoff` | `bots_run` | Toggle handoff_active for a conversation; pair with bots.conversations to pick conversation_id. |
 | `bots.simulate` | `bots_run` | Dry-run one bot brain turn without outbound. Heavy LLM: at most one per sync agentstack.execute (60s batch; 180s if this is the only heavy step). action=capabilities returns schema hints without LLM. |
-| `bots.staff_reply` | `bots_run` | Enqueue staff/agent outbound to bots.outbound worker. MCP success is outbound_job_id only; use bots.conversations include_messages for provider_message_id and quote-reply index. |
+| `bots.staff_reply` | `bots_run` | Enqueue staff/agent outbound to the bus outbound worker. MCP success is outbound_job_id only; use bots.conversations include_messages for provider_message_id and quote-reply index. |
 | `bots.templates` | `bots_run` | List built-in bot templates before bots.create. |
 | `bots.update` | `bots_admin` | Partial bot_spec update (commands, brain, name, …) — same as REST PUT. commands is a keyed list: pass write_mode (merge\|replace\|delete). A short commands array without write_mode merges by trigger and |
 | `bots.waba_templates` | `bots_run` | List WhatsApp Business API templates (builtins + optional Graph sync). |

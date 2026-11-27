@@ -2,6 +2,12 @@
 
 All notable changes to the AgentStack Cursor plugin are documented here. Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.5.0] - 2026-11-26
+
+### Fixed
+
+- Plugin CI: `audit-plugin-prose-leaks` (work-graph SKILL), stale-action scan (`showcase.catalog.*`, capability matrix `bots.staff_reply` copy).
+
 ## [0.4.27] - 2026-11-11
 
 ### Changed

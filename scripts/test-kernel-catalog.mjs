@@ -143,7 +143,10 @@ const { cfg: cleaned, changed } = normalizeAgentstackMcpConfig(dirty, {
 assert.equal(changed, true);
 assert.equal(cleaned.mcpServers.agentstack.tools, undefined);
 assert.equal(cleaned.mcpServers.agentstack.headers['X-API-Key'], 'ask_test');
-assert.deepEqual(agentstackAuthHeaders(cleaned), { 'X-API-Key': 'ask_test' });
+assert.deepEqual(agentstackAuthHeaders(cleaned), {
+  'X-API-Key': 'ask_test',
+  'X-Project-ID': '1',
+});
 
 const devDirty = {
   mcpServers: {
