@@ -23,8 +23,18 @@ export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
     15_000,
     Number(process.env.AGENTSTACK_MCP_FETCH_TIMEOUT_MS || 130_000),
   );
+  const connectBudgetMs = Math.min(
+    timeoutMs,
+    Math.max(8_000, Number(process.env.AGENTSTACK_MCP_CONNECT_TIMEOUT_MS || 25_000)),
+  );
   let res;
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const attemptTimeoutMs =
+      attempt > 0 &&
+      res != null &&
+      isRetryableMcpHttpStatus(res.status)
+        ? connectBudgetMs
+        : timeoutMs;
     res = await fetch(`${root}/mcp`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
@@ -34,7 +44,7 @@ export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
         params: { name: MCP_EXECUTE_TOOL_ALIAS, arguments: payload },
         id: 2,
       }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: AbortSignal.timeout(attemptTimeoutMs),
     });
     if (res.ok || !isRetryableMcpHttpStatus(res.status) || attempt >= maxAttempts - 1) {
       break;
@@ -42,7 +52,11 @@ export async function postAgentstackExecute(baseUrl, authHeaders, payload) {
     await sleep(retryDelayMs(res, attempt));
   }
   if (!res.ok) {
-    throw new Error(`tools/call HTTP ${res.status}`);
+    const warmingHint =
+      res.status === 503
+        ? ' (upstream_unavailable — wait ~15s after deploy; retry system.ping or discovery.list)'
+        : '';
+    throw new Error(`tools/call HTTP ${res.status}${warmingHint}`);
   }
   const body = await res.json();
   if (body?.error) {
